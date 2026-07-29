@@ -1,0 +1,42 @@
+.layout {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout__header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: #1a1a2e;
+  color: #fff;
+  flex-wrap: wrap;
+}
+
+.layout__brand {
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.25rem;
+  text-decoration: none;
+}
+
+.layout__subtitle {
+  color: #c9c9d6;
+  font-size: 0.9rem;
+}
+
+.layout__content {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .layout__content {
+    padding: 1rem;
+  }
+}

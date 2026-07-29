@@ -1,0 +1,18 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY PlayPredict.Api.csproj ./
+RUN dotnet restore PlayPredict.Api.csproj
+
+COPY . .
+
+ENV ASPNETCORE_ENVIRONMENT=Development
+ENV ASPNETCORE_URLS=http://+:8080
+
+EXPOSE 8080
+
+CMD ["dotnet", "watch", "run", "--no-launch-profile", "--urls", "http://+:8080"]

@@ -1,0 +1,271 @@
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.admin-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.breadcrumb {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+  color: #4a4ad1;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background: #4a4ad1;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #3838ad;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #333;
+  border-color: #ccc;
+}
+
+.btn-secondary:hover {
+  background: #f2f2f2;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+table.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+
+.admin-table th {
+  background: #f7f7fb;
+  font-weight: 600;
+  color: #444;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tr.is-clickable {
+  cursor: pointer;
+}
+
+.admin-table tr.is-clickable:hover {
+  background: #fafaff;
+}
+
+.badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge--active,
+.badge--Active,
+.badge--Finished {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge--draft,
+.badge--Draft,
+.badge--Scheduled {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.badge--Cancelled,
+.badge--inactive {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.badge--InProgress {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.badge--Suspended {
+  background: #ffe5b4;
+  color: #7a4f01;
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #777;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.status-message {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.status-message--loading {
+  background: #e7ecff;
+  color: #33408f;
+}
+
+.status-message--error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-message--success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.form-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  max-width: 520px;
+}
+
+.form-field {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-field input[type='text'],
+.form-field input[type='number'],
+.form-field input[type='datetime-local'],
+.form-field select,
+.form-field textarea {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+.form-field-error {
+  color: #a1121f;
+  font-size: 0.8rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-field {
+  flex: 1;
+}
+
+.form-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.match-row-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 20;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 380px;
+  width: 100%;
+}
+
+.modal-card h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 500px) {
+  .form-row {
+    flex-direction: column;
+  }
+}

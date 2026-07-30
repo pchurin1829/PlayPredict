@@ -299,3 +299,43 @@ table.admin-table {
 .auth-alt-link a {
   color: #4a4ad1;
 }
+
+.prediction-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.prediction-row__inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.prediction-row__input {
+  width: 3.5rem;
+  box-sizing: border-box;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  text-align: center;
+}
+
+.prediction-row__separator {
+  display: inline-block;
+  width: 0.75rem;
+  text-align: center;
+}
+
+.prediction-row__message {
+  min-height: 1.1rem;
+  font-size: 0.8rem;
+}
+
+.prediction-row__saved {
+  color: #155724;
+  font-size: 0.8rem;
+}

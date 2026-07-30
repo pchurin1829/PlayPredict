@@ -1,8 +1,73 @@
 # PROJECT STATUS
 
-Versión: 0.3.0
-Estado: Sprint 3 (Usuarios/Autenticación), Sprint 3.5 (limpieza funcional pre-Pronósticos) y el fix de edición de Partidos Finalizados completados, commiteados (`df43594`) y pusheados a `origin/main`.
-Próximo paso: Sprint 4 (ETAPA 3 del PLAN_IMPLEMENTACION_MVP — Pronósticos). No iniciar sin aprobación explícita.
+Versión: 0.4.0
+Estado: Sprint 4 (Sistema de Pronósticos — infraestructura, sin puntos/rankings) implementado. Sin commitear — pendiente de aprobación explícita del usuario.
+Próximo paso: Sprint 5 en adelante (puntos, rankings, posiciones, premios). No iniciar sin aprobación explícita.
+
+---
+
+## Sprint 4 — Sistema de Pronósticos
+
+Objetivo: construir toda la infraestructura para que un usuario pueda pronosticar partidos, sin calcular puntos, sin tablas, sin rankings ni posiciones (eso queda para Sprint 5 en adelante).
+
+### Modelo
+
+- Nueva entidad `Prediction` (`backend/Domain/Entities/Prediction.cs`): `Id`, `MatchId`, `UserId`, `PredictedHomeScore`, `PredictedAwayScore`, `CreatedAtUtc`, `UpdatedAtUtc`.
+- Configuración EF (`backend/Data/Configurations/PredictionConfiguration.cs`): índice único `(UserId, MatchId)` — un usuario solo puede tener un pronóstico por partido; FKs a `Matches` y `Users` con `DeleteBehavior.Restrict`.
+- Migración `AddPredictions` creada y aplicada (tabla `Predictions`).
+
+### Backend
+
+- DTOs (`backend/Dtos/PredictionDtos.cs`): `PredictionDto`, `CreatePredictionDto`, `UpdatePredictionDto`, `MatchWithPredictionDto` (partido + resultado oficial + pronóstico propio, si existe).
+- Endpoints (`backend/Endpoints/PredictionEndpoints.cs`, grupo `/api/predictions`, todos con `RequireAuthorization()`):
+  - `GET /api/predictions/rounds/{roundId}` — partidos de la Fecha con el pronóstico propio embebido (o `null`). Es el endpoint que alimenta la pantalla principal del frontend.
+  - `GET /api/predictions/me` — todos los pronósticos del usuario autenticado.
+  - `POST /api/predictions` — crea un pronóstico (`matchId`, `predictedHomeScore`, `predictedAwayScore`).
+  - `PUT /api/predictions/{id}` — modifica un pronóstico propio.
+- Reglas implementadas:
+  - Un usuario, un pronóstico por partido: índice único en base + verificación explícita antes de insertar (409 si ya existe).
+  - Solo se puede crear o modificar un pronóstico mientras el partido está Programado, En juego o Suspendido (`IsOpenForPrediction`). Bloqueado (400) para Finalizado y Cancelado, tanto al crear como al editar.
+  - Un usuario no puede modificar el pronóstico de otro usuario (403).
+  - Goles pronosticados no pueden ser negativos (400 con detalle de campo).
+  - Sin autenticación → 401 en todos los endpoints.
+  - No se calculan puntos ni se compara contra el resultado oficial en ningún punto del código.
+
+### Frontend
+
+- Nueva entrada "Pronósticos" en el menú (`Layout.tsx`), visible para cualquier usuario autenticado.
+- 4 pantallas nuevas (`frontend/src/pages/`), navegación exactamente igual a la del panel administrativo pero de solo lectura hasta llegar a los partidos:
+  - `PredictionsCompetitionsPage` (`/predictions`) — lista de Competencias.
+  - `PredictionsEditionsPage` (`/predictions/competitions/:competitionId/editions`) — lista de Ediciones.
+  - `PredictionsRoundsPage` (`/predictions/editions/:editionId/rounds`) — lista de Fechas.
+  - `PredictionsMatchesPage` (`/predictions/rounds/:roundId`) — pantalla única de carga: por cada partido muestra equipos, fecha, hora, resultado oficial (si existe) y un bloque "Mi pronóstico" con inputs Local/Visitante y botón "Guardar pronóstico" (o "Actualizar pronóstico" si ya existe uno), todo guardado partido por partido sin salir de la pantalla.
+  - Estados especiales en la columna "Mi pronóstico": partido Finalizado → texto fijo "Pronóstico cerrado" (+ el valor pronosticado entre paréntesis si existía); partido Cancelado → "—" (no se permite pronosticar).
+- Tipos nuevos en `frontend/src/api/types.ts`: `Prediction`, `MatchWithPrediction`.
+- CSS: 3 clases puntuales agregadas a `admin.css` (`.prediction-row`, `.prediction-row__inputs`, `.prediction-row__input`, `.prediction-row__saved`) reutilizando los mismos colores y tipografía ya definidos en el archivo. Sin cambios de layout, colores ni rediseño de pantallas existentes.
+
+### Pruebas realizadas
+
+- **Backend (vía `curl`)**: crear pronóstico (201); duplicado sobre el mismo partido (409); editar pronóstico propio (200, persiste); `GET /me` y `GET /rounds/{roundId}` reflejan el cambio; crear/editar sobre partido Finalizado (400 en ambos casos); crear sobre partido Cancelado (400); goles negativos (400); sin token (401 en todos los endpoints); usuario distinto intentando editar un pronóstico ajeno (403).
+- **Frontend (navegador)**: navegación completa Competencias → Ediciones → Fechas → Partidos bajo "Pronósticos"; pantalla de carga renderiza correctamente con el estilo existente; guardar un pronóstico nuevo muestra "Pronóstico guardado correctamente." y cambia el botón a "Actualizar pronóstico"; recargar la página conserva el valor cargado; partido Finalizado muestra "Pronóstico cerrado (X - Y)" sin inputs; partido Cancelado muestra "—" sin inputs ni botón.
+  - Nota técnica: la herramienta de automatización de navegador de esta sesión no lograba entregar clics/tecleo reales a la página (se verificó que tampoco funcionaba en un input preexistente de "Mi perfil", ajeno a este Sprint). Se validó el flujo disparando los mismos eventos DOM nativos que React escucha y confirmando las peticiones de red resultantes (201 al guardar, datos persistidos al recargar) — el comportamiento verificado es el mismo que produciría una interacción real de mouse/teclado. Se sugiere una prueba manual rápida antes de aprobar, dado que no se pudo confirmar con clics 100% "físicos" en esta sesión.
+- Swagger (`/swagger`) expone correctamente los 4 endpoints nuevos bajo "Predictions", con sus DTOs.
+- `dotnet build`: OK. `npm run build`: OK. `docker compose up -d --build`: 3 servicios healthy. Logs de `backend`/`frontend` sin errores ni excepciones.
+- Datos de prueba (usuarios, pronósticos, estados de partido) usados durante la validación fueron revertidos al final; el fixture quedó en su estado limpio (6 partidos Programados, sin pronósticos).
+
+### Archivos modificados/creados
+
+Backend: `Domain/Entities/Prediction.cs` (nuevo), `Data/Configurations/PredictionConfiguration.cs` (nuevo), `Dtos/PredictionDtos.cs` (nuevo), `Endpoints/PredictionEndpoints.cs` (nuevo), `Migrations/20260730172829_AddPredictions.cs` y `.Designer.cs` (nuevos), `Data/PlayPredictDbContext.cs`, `Migrations/PlayPredictDbContextModelSnapshot.cs`, `Program.cs` (modificados).
+
+Frontend: `pages/PredictionsCompetitionsPage.tsx`, `pages/PredictionsEditionsPage.tsx`, `pages/PredictionsRoundsPage.tsx`, `pages/PredictionsMatchesPage.tsx` (nuevos), `api/types.ts`, `App.tsx`, `components/Layout.tsx`, `components/admin.css` (modificados).
+
+### Ajuste de UX posterior (antes de aprobar el sprint)
+
+Pedido por el usuario tras probar la pantalla manualmente. Sin tocar lógica de negocio ni backend:
+
+- `PredictionsMatchesPage.tsx`: los inputs de goles pasaron de `type="number"` (con `min={0}`, que forzaba a mostrar/asumir "0") a `type="text"` con `inputMode="numeric"`, `pattern="[0-9]*"` y `placeholder="-"`; el `onChange` sanitiza con `replace(/\D/g, '')`, descartando letras, signos y decimales antes de guardarlos en el estado. Sin pronóstico previo, el campo queda vacío (ya era así en el estado, pero el tipo `number` lo hacía sentir como "0"); con pronóstico existente, se sigue precargando el valor real.
+- Se agregó `setTimeout(..., 4000)` para limpiar `savedMessage` tras guardar — antes el mensaje "Pronóstico guardado correctamente." quedaba fijo indefinidamente (no desaparecía).
+- El botón Guardar/Actualizar no se tocó.
+- `admin.css`: agregadas `.prediction-row__separator` (guion centrado, ancho fijo) y `.prediction-row__message` (contenedor de error/éxito con `min-height` reservado) para que la fila no cambie de alto al aparecer/desaparecer el mensaje; `.prediction-row__input` ahora incluye `box-sizing: border-box` y `text-align: center` para que ambos campos midan exactamente lo mismo.
+- Verificado en el navegador: campos vacíos con placeholder "-" cuando no hay pronóstico; solo dígitos aceptados (probado enviando `"2a-3.5b"` → queda `"235"`); valores reales precargados cuando existe pronóstico; alto de fila idéntico (79.2px) antes y después de mostrar el mensaje de éxito; mensaje desaparece solo a los ~4 segundos; persistencia confirmada tras recargar.
 
 ---
 

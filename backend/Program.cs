@@ -88,6 +88,7 @@ app.MapCompetitionEndpoints();
 app.MapEditionEndpoints();
 app.MapRoundEndpoints();
 app.MapMatchEndpoints();
+app.MapPredictionEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {

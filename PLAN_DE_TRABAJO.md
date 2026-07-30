@@ -35,11 +35,19 @@ Nota: este sprint se implementó en la sesión anterior (cortada por error 529) 
 - [x] Consistencia visual mínima revisada (ya cumplía, salvo estados)
 - [x] Autenticación verificada de punta a punta (login, logout, persistencia, rutas protegidas, ADMIN/USER) sin modificar JWT ni roles
 
+## Sprint 4 - ETAPA 3: Sistema de Pronósticos (infraestructura) (completado, sin commitear)
+- [x] Entidad Prediction (MatchId, UserId, PredictedHomeScore, PredictedAwayScore, CreatedAtUtc, UpdatedAtUtc) + configuración EF Core (único por UserId+MatchId)
+- [x] Migración `AddPredictions` creada y aplicada
+- [x] Endpoints REST: GET partidos con pronóstico por Fecha, GET mis pronósticos, POST crear, PUT modificar
+- [x] Reglas: un pronóstico por usuario y partido; solo editable en Programado/En juego/Suspendido; bloqueado en Finalizado y Cancelado; no se puede modificar el pronóstico de otro usuario
+- [x] Pantalla "Pronósticos" en el frontend con navegación Competencia → Edición → Fecha → Partidos y carga partido por partido desde una única pantalla
+- [ ] Cálculo de puntos, comparación con resultado oficial, rankings, posiciones y premios (explícitamente fuera de este sprint, queda para Sprint 5 en adelante)
+
 ## MVP
 - [~] Competencias Oficiales — módulo base (Competencia/Edición/Fecha/Partido) funcionando; falta lo no incluido en el Sprint 2 (p. ej. estados avanzados de administración)
 - [ ] Ligas Privadas
 - [~] Partidos — alta, edición y Resultado Oficial funcionando vía panel administrativo
-- [ ] Pronósticos
+- [~] Pronósticos — infraestructura completa (carga y edición) funcionando; falta cálculo de puntos y comparación con resultado oficial
 - [ ] Rankings
 - [ ] Premios
 - [~] Panel Administrador — fixture administrable (Competencias → Ediciones → Fechas → Partidos) + Usuarios; faltan las secciones de Resultados/Premios/Ligas del panel completo

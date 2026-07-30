@@ -13,6 +13,10 @@ import RoundsListPage from './pages/RoundsListPage'
 import RoundFormPage from './pages/RoundFormPage'
 import MatchesListPage from './pages/MatchesListPage'
 import MatchFormPage from './pages/MatchFormPage'
+import PredictionsCompetitionsPage from './pages/PredictionsCompetitionsPage'
+import PredictionsEditionsPage from './pages/PredictionsEditionsPage'
+import PredictionsRoundsPage from './pages/PredictionsRoundsPage'
+import PredictionsMatchesPage from './pages/PredictionsMatchesPage'
 import './components/admin.css'
 
 function App() {
@@ -58,6 +62,14 @@ function App() {
         <Route path="/rounds/:roundId/matches/new" element={<MatchFormPage />} />
 
         <Route path="/matches/:matchId/edit" element={<MatchFormPage />} />
+
+        <Route path="/predictions" element={<PredictionsCompetitionsPage />} />
+        <Route
+          path="/predictions/competitions/:competitionId/editions"
+          element={<PredictionsEditionsPage />}
+        />
+        <Route path="/predictions/editions/:editionId/rounds" element={<PredictionsRoundsPage />} />
+        <Route path="/predictions/rounds/:roundId" element={<PredictionsMatchesPage />} />
 
         <Route path="*" element={<Navigate to="/competitions" replace />} />
       </Route>

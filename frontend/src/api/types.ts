@@ -76,3 +76,25 @@ export interface AuthResponse {
   token: string
   user: User
 }
+
+export interface Prediction {
+  id: number
+  matchId: number
+  userId: number
+  predictedHomeScore: number
+  predictedAwayScore: number
+  createdAtUtc: string
+  updatedAtUtc: string
+}
+
+export interface MatchWithPrediction {
+  id: number
+  roundId: number
+  participantHome: string
+  participantAway: string
+  startsAtUtc: string
+  status: MatchStatus
+  homeGoals: number | null
+  awayGoals: number | null
+  myPrediction: Prediction | null
+}

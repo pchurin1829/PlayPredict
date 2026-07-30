@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { isoToLocalInput, localInputToIsoUtc } from '../api/dateUtils'
-import { EDITION_STATUSES, type Edition, type EditionStatus } from '../api/types'
+import { EDITION_STATUSES, EDITION_STATUS_LABELS, type Edition, type EditionStatus } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 
 export default function EditionFormPage() {
@@ -130,7 +130,7 @@ export default function EditionFormPage() {
           >
             {EDITION_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {EDITION_STATUS_LABELS[s]}
               </option>
             ))}
           </select>

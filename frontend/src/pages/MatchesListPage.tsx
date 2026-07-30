@@ -1,18 +1,30 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import type { Match, Round } from '../api/types'
+import { MATCH_STATUS_LABELS, type Match, type Round } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 import MatchResultModal from '../components/MatchResultModal'
 
 export default function MatchesListPage() {
   const { roundId } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const [round, setRound] = useState<Round | null>(null)
   const [matches, setMatches] = useState<Match[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [resultTarget, setResultTarget] = useState<Match | null>(null)
-  const [savedMessage, setSavedMessage] = useState<string | null>(null)
+  const [savedMessage, setSavedMessage] = useState<string | null>(
+    (location.state as { savedMessage?: string } | null)?.savedMessage ?? null,
+  )
+
+  useEffect(() => {
+    if (!savedMessage) return
+    navigate(location.pathname, { replace: true })
+    const timeout = setTimeout(() => setSavedMessage(null), 4000)
+    return () => clearTimeout(timeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function loadMatches() {
     setError(null)
@@ -85,7 +97,7 @@ export default function MatchesListPage() {
                   </td>
                   <td>{new Date(m.startsAtUtc).toLocaleString()}</td>
                   <td>
-                    <span className={`badge badge--${m.status}`}>{m.status}</span>
+                    <span className={`badge badge--${m.status}`}>{MATCH_STATUS_LABELS[m.status]}</span>
                   </td>
                   <td>
                     {m.status === 'Finished' ? `${m.homeGoals} - ${m.awayGoals}` : '—'}

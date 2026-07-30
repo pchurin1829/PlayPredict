@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { isoToLocalInput, localInputToIsoUtc } from '../api/dateUtils'
-import { MATCH_STATUSES, type Match, type MatchStatus } from '../api/types'
+import { MATCH_STATUSES, MATCH_STATUS_LABELS, type Match, type MatchStatus } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 
 export default function MatchFormPage() {
@@ -21,7 +21,6 @@ export default function MatchFormPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
-  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     if (!isEdit) return
@@ -46,7 +45,6 @@ export default function MatchFormPage() {
     setSaving(true)
     setError(null)
     setFieldErrors({})
-    setSaved(false)
 
     try {
       if (isEdit) {
@@ -54,20 +52,22 @@ export default function MatchFormPage() {
           participantHome,
           participantAway,
           startsAtUtc: localInputToIsoUtc(startsAtUtc),
-          status,
+          // Un partido Finalizado no debe enviar status: su resultado oficial
+          // solo se modifica desde "Cargar resultado".
+          ...(currentStatus === 'Finished' ? {} : { status }),
         })
-        setSaved(true)
       } else {
-        const created = await api.post<Match>(`/rounds/${roundIdParam}/matches`, {
+        await api.post<Match>(`/rounds/${roundIdParam}/matches`, {
           participantHome,
           participantAway,
           startsAtUtc: localInputToIsoUtc(startsAtUtc),
           status,
         })
-        setSaved(true)
-        navigate(`/matches/${created.id}/edit`, { replace: true })
-        return
       }
+      navigate(`/rounds/${roundId}/matches`, {
+        replace: true,
+        state: { savedMessage: 'Partido guardado correctamente.' },
+      })
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message)
@@ -94,7 +94,6 @@ export default function MatchFormPage() {
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}
-      {saved && <StatusMessage kind="success" message="Partido guardado correctamente." />}
       {currentStatus === 'Finished' && (
         <StatusMessage
           kind="loading"
@@ -143,18 +142,21 @@ export default function MatchFormPage() {
 
         <div className="form-field">
           <label htmlFor="status">Estado</label>
-          <select
-            id="status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as MatchStatus)}
-            disabled={currentStatus === 'Finished'}
-          >
-            {MATCH_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+          {currentStatus === 'Finished' ? (
+            <input id="status" type="text" value={MATCH_STATUS_LABELS.Finished} disabled />
+          ) : (
+            <select
+              id="status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as MatchStatus)}
+            >
+              {MATCH_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {MATCH_STATUS_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          )}
           {fieldErrors.status && <span className="form-field-error">{fieldErrors.status[0]}</span>}
         </div>
 
@@ -162,6 +164,9 @@ export default function MatchFormPage() {
           <button type="submit" className="btn btn-primary" disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
+          <Link to={`/rounds/${roundId}/matches`} className="btn btn-secondary">
+            Volver a Partidos
+          </Link>
         </div>
       </form>
     </div>

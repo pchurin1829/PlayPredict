@@ -159,6 +159,13 @@ public static class MatchEndpoints
             errors["participantAway"] = ["El participante visitante no puede superar los 150 caracteres."];
         }
 
+        // Un partido Finalizado solo puede modificarse vía /result: este endpoint nunca
+        // le cambia el estado ni el resultado, sin importar qué status llegue en el DTO.
+        if (fallbackStatus == MatchStatus.Finished)
+        {
+            return (errors, MatchStatus.Finished);
+        }
+
         var status = fallbackStatus;
         if (!string.IsNullOrWhiteSpace(statusInput))
         {

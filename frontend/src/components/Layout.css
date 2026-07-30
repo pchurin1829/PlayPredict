@@ -26,6 +26,29 @@
   font-size: 0.9rem;
 }
 
+.layout__nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.layout__nav a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.layout__nav a:hover {
+  text-decoration: underline;
+}
+
+.layout__logout {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
 .layout__content {
   flex: 1;
   padding: 1.5rem;

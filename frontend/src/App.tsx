@@ -1,5 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
+import { RequireAdmin, RequireAuth } from './auth/AuthContext'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import ProfilePage from './pages/ProfilePage'
+import AdminUsersPage from './pages/AdminUsersPage'
 import CompetitionsListPage from './pages/CompetitionsListPage'
 import CompetitionFormPage from './pages/CompetitionFormPage'
 import EditionsListPage from './pages/EditionsListPage'
@@ -13,8 +18,27 @@ import './components/admin.css'
 function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+
+      <Route
+        element={
+          <RequireAuth>
+            <Layout />
+          </RequireAuth>
+        }
+      >
         <Route path="/" element={<Navigate to="/competitions" replace />} />
+
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route
+          path="/admin/users"
+          element={
+            <RequireAdmin>
+              <AdminUsersPage />
+            </RequireAdmin>
+          }
+        />
 
         <Route path="/competitions" element={<CompetitionsListPage />} />
         <Route path="/competitions/new" element={<CompetitionFormPage />} />

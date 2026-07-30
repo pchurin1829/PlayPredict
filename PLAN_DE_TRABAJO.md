@@ -18,6 +18,23 @@
 - [x] Panel administrativo básico en el frontend (listas y formularios para las 4 entidades + carga de resultado)
 - [ ] Recálculo de Pronósticos y Rankings a partir del Resultado Oficial (queda para un sprint posterior)
 
+## Sprint 3 - ETAPA 2: Usuarios (completado)
+- [x] Entidades Company, Role, User, UserRole + configuraciones EF Core
+- [x] Migración `AddUsersAndAuthentication` aplicada
+- [x] Autenticación JWT (registro, login) y endpoints de perfil propio
+- [x] Administración de usuarios (listar, activar/desactivar) restringida a rol ADMIN
+- [x] Páginas de Registro, Login, Perfil y Administración de Usuarios en el frontend
+- [x] Rutas protegidas (`RequireAuth`, `RequireAdmin`) y persistencia de sesión
+
+Nota: este sprint se implementó en la sesión anterior (cortada por error 529) sin documentarse ni commitearse; se verificó y se dio por finalizado con aprobación explícita al inicio de esta sesión.
+
+## Sprint 3.5 - Limpieza funcional pre-Pronósticos (completado)
+- [x] Datos de demostración corregidos e idempotentes (Liga Profesional + Copa Libertadores, sin registros técnicos de prueba)
+- [x] Textos visibles revisados; estados de Edición/Partido traducidos al castellano en la interfaz
+- [x] Navegación Competencias → Ediciones → Fechas → Partidos revisada (ya cumplía)
+- [x] Consistencia visual mínima revisada (ya cumplía, salvo estados)
+- [x] Autenticación verificada de punta a punta (login, logout, persistencia, rutas protegidas, ADMIN/USER) sin modificar JWT ni roles
+
 ## MVP
 - [~] Competencias Oficiales — módulo base (Competencia/Edición/Fecha/Partido) funcionando; falta lo no incluido en el Sprint 2 (p. ej. estados avanzados de administración)
 - [ ] Ligas Privadas
@@ -25,4 +42,5 @@
 - [ ] Pronósticos
 - [ ] Rankings
 - [ ] Premios
-- [~] Panel Administrador — fixture administrable (Competencias → Ediciones → Fechas → Partidos); faltan las secciones de Resultados/Premios/Usuarios/Ligas del panel completo
+- [~] Panel Administrador — fixture administrable (Competencias → Ediciones → Fechas → Partidos) + Usuarios; faltan las secciones de Resultados/Premios/Ligas del panel completo
+- [x] Usuarios — Registro, Login, Perfil, administración básica (activar/desactivar) funcionando

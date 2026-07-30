@@ -44,3 +44,35 @@ export interface Match {
 
 export const EDITION_STATUSES: EditionStatus[] = ['Draft', 'Active', 'Finished', 'Cancelled']
 export const MATCH_STATUSES: MatchStatus[] = ['Scheduled', 'InProgress', 'Suspended', 'Cancelled']
+
+export const EDITION_STATUS_LABELS: Record<EditionStatus, string> = {
+  Draft: 'Borrador',
+  Active: 'Activa',
+  Finished: 'Finalizada',
+  Cancelled: 'Cancelada',
+}
+
+export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
+  Scheduled: 'Programado',
+  InProgress: 'En curso',
+  Finished: 'Finalizado',
+  Suspended: 'Suspendido',
+  Cancelled: 'Cancelado',
+}
+
+export interface User {
+  id: number
+  companyId: number
+  firstName: string
+  lastName: string
+  email: string
+  isActive: boolean
+  createdAtUtc: string
+  lastAccessUtc: string | null
+  roles: string[]
+}
+
+export interface AuthResponse {
+  token: string
+  user: User
+}

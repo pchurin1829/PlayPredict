@@ -269,3 +269,33 @@ table.admin-table {
     flex-direction: column;
   }
 }
+
+.auth-page {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: #f2f2f7;
+  box-sizing: border-box;
+}
+
+.auth-page .form-card {
+  width: 100%;
+}
+
+.auth-page h1 {
+  margin-top: 0;
+  font-size: 1.3rem;
+}
+
+.auth-alt-link {
+  margin-top: 1rem;
+  margin-bottom: 0;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.auth-alt-link a {
+  color: #4a4ad1;
+}

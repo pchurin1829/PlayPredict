@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import type { Competition, Edition } from '../api/types'
+import { EDITION_STATUS_LABELS, type Competition, type Edition } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 
 export default function EditionsListPage() {
@@ -74,7 +74,7 @@ export default function EditionsListPage() {
                   <td>{ed.name}</td>
                   <td>{new Date(ed.startDateUtc).toLocaleDateString()}</td>
                   <td>
-                    <span className={`badge badge--${ed.status}`}>{ed.status}</span>
+                    <span className={`badge badge--${ed.status}`}>{EDITION_STATUS_LABELS[ed.status]}</span>
                   </td>
                   <td>
                     <Link

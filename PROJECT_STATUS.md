@@ -1,8 +1,131 @@
 # PROJECT STATUS
 
-Versión: 0.2.0
-Estado: Sprint 2 completado — módulo base del fixture administrable (Competencia → Edición → Fecha → Partido) funcionando de punta a punta, con panel administrativo en el frontend.
-Próximo paso: Sprint 3 (ETAPA 2 del PLAN_IMPLEMENTACION_MVP — Usuarios: Registro, Login, Perfil).
+Versión: 0.3.0
+Estado: Sprint 3 (Usuarios/Autenticación) y Sprint 3.5 (limpieza funcional pre-Pronósticos) completados. Sin commitear — pendiente de aprobación explícita del usuario.
+Próximo paso: Sprint 4 (ETAPA 3 del PLAN_IMPLEMENTACION_MVP — Pronósticos).
+
+---
+
+## Nota sobre esta actualización
+
+Esta sesión comenzó tras un corte por error 529 en la sesión anterior. Al verificar el estado real (protocolo "Inicio Sesion"), se encontró que el Sprint 3 completo ya estaba implementado en el árbol de trabajo (compilando y corriendo en los contenedores), pero sin commit y sin reflejarse en `SESSION.md`/`PROJECT_STATUS.md`/`PLAN_DE_TRABAJO.md`. Con aprobación explícita del usuario, se dio el Sprint 3 por finalizado, se documentó, y a continuación se ejecutó el Sprint 3.5 solicitado.
+
+---
+
+## Sprint 3 — Usuarios y Autenticación
+
+### Backend
+
+- Entidades de dominio nuevas (`backend/Domain/Entities/`): `Company`, `Role`, `User`, `UserRole`. Constante `RoleNames` (`backend/Domain/Constants/RoleNames.cs`) con los roles `ADMIN` y `USER`.
+- Configuraciones EF Core (`backend/Data/Configurations/`): `CompanyConfiguration`, `RoleConfiguration`, `UserConfiguration`, `UserRoleConfiguration`.
+- Migración `AddUsersAndAuthentication` aplicada (tablas `Companies`, `Roles`, `Users`, `UserRoles`).
+- Autenticación JWT: `backend/Services/JwtTokenService.cs` genera el token (claims de id, empresa, nombre, email y rol); `Program.cs` registra `AddAuthentication().AddJwtBearer(...)` y `AddAuthorization()`; configuración en `appsettings.json` (sección `Jwt`: Key/Issuer/Audience/ExpiresMinutes — clave de desarrollo, debe reemplazarse antes de producción).
+- Endpoints (`backend/Endpoints/`):
+  - `AuthEndpoints`: `POST /api/auth/register`, `POST /api/auth/login` (devuelven token + datos de usuario).
+  - `UserEndpoints`: `GET /api/users/me`, `PUT /api/users/me` (perfil propio).
+  - `AdminUserEndpoints`: `GET /api/admin/users`, `PUT /api/admin/users/{id}` (activar/desactivar), protegidos con rol `ADMIN`.
+- Contraseñas hasheadas con `PasswordHasher<User>` (Microsoft.AspNetCore.Identity.Core).
+- Seed (`backend/Data/DataSeeder.cs`): `SeedCoreDataAsync` (corre en todos los entornos) crea la empresa "PlayPredict" y los roles ADMIN/USER si no existen — prerrequisito para que Registro/Login funcionen. `SeedAdminUserAsync` (solo Development) crea el usuario `admin@playpredict.local` / `admin123` con rol ADMIN.
+
+### Frontend
+
+- `frontend/src/auth/`: `AuthContext.tsx` (estado de sesión, `login`/`logout`, `RequireAuth`, `RequireAdmin`), `token.ts` (persistencia del JWT en `localStorage`).
+- Páginas nuevas (`frontend/src/pages/`): `LoginPage`, `RegisterPage`, `ProfilePage`, `AdminUsersPage`.
+- `App.tsx`: rutas `/login` y `/register` públicas; el resto de la aplicación envuelta en `RequireAuth`; `/admin/users` envuelta además en `RequireAdmin`.
+- `Layout.tsx`: muestra el nombre del usuario logueado, link a "Usuarios" solo si tiene rol ADMIN, y botón "Salir" (logout).
+- `client.ts`: agrega el header `Authorization: Bearer <token>` a las peticiones y maneja 401 (limpia el token).
+
+### Verificado en esta sesión
+
+- `dotnet build`: OK. `npm run build`: OK.
+- Login con usuario admin (`POST /api/auth/login`) → 200, token válido.
+- `GET /api/users/me` sin token → 401. Con token → 200.
+- `GET /api/admin/users` con token ADMIN → 200. Con token de un usuario USER recién registrado → 403.
+- Registro de usuario nuevo (`POST /api/auth/register`) → 200, asigna rol USER automáticamente (usuario de prueba eliminado después de la verificación).
+- En el navegador: login, sesión persistida entre recargas, ruta protegida (`/competitions`) redirige a `/login` sin sesión, logout funciona, panel "Usuarios" visible solo para ADMIN.
+
+---
+
+## Sprint 3.5 — Limpieza funcional pre-Pronósticos
+
+Sin nuevas funcionalidades, sin cambios al modelo de datos, sin nuevas migraciones, sin commit.
+
+### 1. Datos de demostración
+
+- Eliminados de la base de datos: competencia técnica "Competancia Amigos 1" (con su edición "edicion 1", fecha "fecha 1" y partido de prueba CELP–GELP), y la edición/fecha/partido de prueba manual que existía bajo "Copa Libertadores" ("Apertura 2026" / "Fecha 1 - Apertura", 1 partido finalizado con resultado 2-1).
+- `backend/Data/DataSeeder.cs` reestructurado: el seed ahora crea **dos** competencias de forma idempotente (antes solo creaba Liga Profesional):
+  - Liga Profesional → Clausura 2026 → Fecha 1 → 3 partidos (Equipo A-F), sin cambios respecto al Sprint 2.
+  - Copa Libertadores → Fase de Grupos 2026 → Fecha 1 → 3 partidos (Equipo G-L), nuevo.
+  - Cada competencia se verifica por nombre antes de insertar (no duplica en reinicios sucesivos).
+- Corregido el deporte "Futbol" (sin tilde) → "Fútbol" en Copa Libertadores.
+- Usuario de prueba `test.sprint35@playpredict.local` (creado y eliminado en esta misma sesión para verificar el registro) — no queda rastro.
+- **Nota para el usuario**: quedan dos usuarios de prueba preexistentes de la sesión anterior (`juan.perez@example.com`, `maria.lopez@example.com`, rol USER) que no se tocaron porque no estaban en el alcance explícito de esta limpieza (la consigna hablaba de datos de fixture, no de usuarios). Si se quiere, se pueden eliminar en una futura sesión con aprobación.
+
+### 2. Textos visibles
+
+- La mayoría de la interfaz ya estaba en castellano correcto (verificado archivo por archivo: títulos, breadcrumbs, botones, mensajes de error/éxito, formularios).
+- Único problema encontrado: los estados de Edición y Partido se mostraban en inglés crudo (valores del enum) tanto en las tablas (badges) como en los combos de edición. Corregido agregando `EDITION_STATUS_LABELS` y `MATCH_STATUS_LABELS` en `frontend/src/api/types.ts` (mapeo de visualización; los valores enviados a la API siguen siendo los del enum en inglés, sin tocar el modelo de datos):
+  - Edición: Draft → Borrador, Active → Activa, Finished → Finalizada, Cancelled → Cancelada.
+  - Partido: Scheduled → Programado, InProgress → En curso, Finished → Finalizado, Suspended → Suspendido, Cancelled → Cancelado.
+- Archivos actualizados: `EditionsListPage.tsx`, `EditionFormPage.tsx`, `MatchesListPage.tsx`, `MatchFormPage.tsx`.
+- No se encontraron literales "Competancia", "Futbol", "Draft", "Round", "Edition" ni "Competition" como texto visible al usuario (esos términos solo aparecen como nombres de tipos/rutas en el código, no en la UI).
+
+### 3. Navegación
+
+- Revisada de punta a punta: Competencias → Ediciones → Fechas → Partidos, con breadcrumb "← [nivel anterior]" en cada pantalla de lista y de formulario. Sin cambios de código necesarios (ya cumplía).
+
+### 4. Consistencia visual mínima
+
+- Revisados títulos, botones (`btn-primary`/`btn-secondary`), mensajes de éxito ("... guardado/a correctamente") y de error ("No se pudo cargar...", "Ocurrió un error inesperado al..."): ya eran consistentes entre pantallas. Único ajuste fue el de los nombres de estado (punto 2).
+
+### 5. Autenticación (solo verificación, sin tocar JWT ni roles)
+
+- Login con usuario y contraseña correctos → 200 + token.
+- Login con contraseña incorrecta → 401.
+- Ruta protegida sin sesión → redirige a `/login`.
+- Sesión persiste entre recargas (token en `localStorage`, verificado en navegador).
+- Logout limpia la sesión y redirige.
+- Acceso ADMIN a `/api/admin/users` y a la pantalla "Usuarios" → funciona.
+- Restricción USER: token de usuario sin rol ADMIN contra `/api/admin/users` → 403 (verificado por API).
+
+### Validaciones ejecutadas
+
+- `dotnet build` (backend): OK, sin errores.
+- `npm run build` (frontend): OK, sin errores.
+- `docker compose up -d --build`: los 3 servicios levantan `healthy`/`Up`.
+- Datos de demostración verificados directamente en PostgreSQL tras el rebuild (persisten correctamente).
+- Logs de `backend` y `frontend` revisados tras el rebuild: sin errores ni excepciones.
+- Navegación, login, logout y estados verificados visualmente en el navegador.
+- `git status --short`: cambios pendientes de Sprint 3 + Sprint 3.5, sin commit.
+
+---
+
+## Fix post-Sprint 3.5 — Edición de Partido rompía el Resultado Oficial
+
+**Reportado por el usuario** durante la revisión visual del Sprint 3.5: un partido Finalizado con resultado cargado, al editarse (aunque solo se cambiaran participantes/horario) volvía a Programado; los goles seguían en la base de datos pero el listado dejaba de mostrarlos porque dependía del estado.
+
+### Causa exacta
+
+- **Frontend** (`MatchFormPage.tsx`): el estado del formulario `status` se inicializaba en `'Scheduled'` y solo se sincronizaba con el valor real del partido cuando este **no** era `Finished` (a propósito, porque "Finalizado" no es una opción seleccionable). Para un partido Finalizado, `status` nunca se actualizaba y quedaba en `'Scheduled'`. Al guardar, el payload de `PUT /api/matches/{id}` siempre incluía ese `status`, enviando accidentalmente `"Scheduled"`.
+- **Backend** (`MatchEndpoints.cs`, función `ValidateMatch`): el endpoint general aceptaba cualquier `status` válido recibido en el DTO y lo aplicaba tal cual (solo rechazaba explícitamente el valor `"Finished"`), sin ninguna protección para un partido que **ya** estuviera Finalizado. Combinado con el bug del frontend, esto sobrescribía el estado a `Scheduled` sin tocar los goles (que ese endpoint nunca gestiona), produciendo exactamente el síntoma reportado.
+
+### Corrección
+
+- **Backend** (`backend/Endpoints/MatchEndpoints.cs`): en `ValidateMatch`, si el partido ya está `Finished`, se ignora cualquier `status` recibido y se devuelve siempre `Finished` — el endpoint general nunca puede sacar a un partido de Finalizado, sin importar qué envíe el cliente. El resultado oficial (`HomeGoals`/`AwayGoals`) solo se modifica en `PUT /api/matches/{id}/result`, que no fue tocado.
+- **Frontend** (`frontend/src/pages/MatchFormPage.tsx`):
+  - Si el partido es Finalizado, el campo Estado se muestra como texto fijo "Finalizado" (no editable), en vez de un `<select>`.
+  - Al guardar un partido Finalizado, el payload **no** incluye `status`.
+  - Tras guardar correctamente (alta o edición), se navega automáticamente a la lista de Partidos de la Fecha, mostrando "Partido guardado correctamente." (antes se quedaba en el formulario).
+  - Se agregó el botón "Volver a Partidos" junto a "Guardar", que navega sin guardar (además del enlace superior "← Partidos" ya existente).
+
+### Pruebas realizadas
+
+- **Caso A (Programado)**: editar participantes/horario de un partido Programado y guardar → vuelve a la lista, muestra "Partido guardado correctamente.", el estado sigue Programado. Verificado por API y en el navegador.
+- **Caso B (Finalizado)** — reproduce exactamente el escenario reportado: cargar resultado 1-3 → Finalizado y "1 - 3" visibles → Editar Partido (estado se ve como "Finalizado", no editable) → cambiar solo horario → Guardar → vuelve automáticamente a la lista → sigue Finalizado → sigue mostrando "1 - 3" → al abrir "Cargar resultado" de nuevo, los goles 1 y 3 siguen cargados. Verificado por API (incluyendo un intento explícito de forzar `status: "Scheduled"` sobre un partido Finalizado, que el backend ahora ignora) y en el navegador.
+- **Caso C (Cancelar)**: modificar un campo sin guardar y presionar "Volver a Partidos" → no se persiste ningún cambio. Verificado en el navegador.
+- Validaciones no afectadas: intentar poner `status: "Finished"` manualmente vía `PUT /api/matches/{id}` en un partido no Finalizado → sigue rechazado (400); cambiar a Suspendido/otros estados válidos en un partido no Finalizado → sigue funcionando.
+- `dotnet build`: OK. `npm run build`: OK. `docker compose ps`: 3 servicios healthy. Consola del navegador sin errores. Logs de `backend`/`frontend` sin errores ni excepciones.
+- Datos de demostración usados durante estas pruebas (nombres/fechas/resultados de prueba) se revirtieron al final, dejando el seed de Liga Profesional y Copa Libertadores en su estado limpio original (6 partidos Programados).
 
 ---
 

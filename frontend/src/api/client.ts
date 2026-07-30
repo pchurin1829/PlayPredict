@@ -1,3 +1,5 @@
+import { getToken } from '../auth/token'
+
 export class ApiError extends Error {
   fieldErrors: Record<string, string[]>
 
@@ -8,9 +10,15 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getToken()
+
   const response = await fetch(`/api${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
   })
 
   if (!response.ok) {

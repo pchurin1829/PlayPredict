@@ -83,11 +83,11 @@ public static class PredictionEndpoints
                 });
             }
 
-            if (!IsOpenForPrediction(match.Status))
+            if (!CanCreateOrEditPrediction(match))
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    ["status"] = ["Este partido no admite pronósticos en su estado actual."]
+                    ["status"] = ["Este partido no admite pronósticos: ya comenzó, no está Programado, o su horario de inicio ya pasó."]
                 });
             }
 
@@ -148,11 +148,11 @@ public static class PredictionEndpoints
             }
 
             var match = await db.Matches.FindAsync(prediction.MatchId);
-            if (match is null || !IsOpenForPrediction(match.Status))
+            if (match is null || !CanCreateOrEditPrediction(match))
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    ["status"] = ["Este partido ya no admite modificar el pronóstico."]
+                    ["status"] = ["Este partido ya no admite modificar el pronóstico: ya comenzó, no está Programado, o su horario de inicio ya pasó."]
                 });
             }
 
@@ -166,10 +166,12 @@ public static class PredictionEndpoints
         });
     }
 
-    // Un pronóstico solo puede cargarse o modificarse mientras el partido esté
-    // Programado, En juego o Suspendido. Cancelado y Finalizado quedan cerrados.
-    private static bool IsOpenForPrediction(MatchStatus status) =>
-        status is MatchStatus.Scheduled or MatchStatus.InProgress or MatchStatus.Suspended;
+    // Regla definitiva: un pronóstico solo puede crearse o modificarse si el partido
+    // está Programado Y su horario de inicio todavía no llegó. Cualquier otro caso
+    // (Programado con horario ya pasado, En juego, Suspendido, Finalizado, Cancelado)
+    // queda cerrado. El backend es la autoridad final de esta regla.
+    private static bool CanCreateOrEditPrediction(Match match) =>
+        match.Status == MatchStatus.Scheduled && DateTime.UtcNow < match.StartsAtUtc;
 
     private static Dictionary<string, string[]> ValidateScores(int homeScore, int awayScore)
     {
@@ -193,5 +195,5 @@ public static class PredictionEndpoints
 
     private static MatchWithPredictionDto ToMatchWithPredictionDto(Match m, Prediction? prediction) =>
         new(m.Id, m.RoundId, m.ParticipantHome, m.ParticipantAway, m.StartsAtUtc, m.Status.ToString(),
-            m.HomeGoals, m.AwayGoals, prediction is null ? null : ToDto(prediction));
+            m.HomeGoals, m.AwayGoals, prediction is null ? null : ToDto(prediction), CanCreateOrEditPrediction(m));
 }

@@ -97,4 +97,5 @@ export interface MatchWithPrediction {
   homeGoals: number | null
   awayGoals: number | null
   myPrediction: Prediction | null
+  canPredict: boolean
 }

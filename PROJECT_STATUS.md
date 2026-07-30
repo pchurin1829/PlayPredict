@@ -1,7 +1,7 @@
 # PROJECT STATUS
 
-Versión: 0.4.0
-Estado: Sprint 4 (Sistema de Pronósticos — infraestructura, sin puntos/rankings) implementado. Sin commitear — pendiente de aprobación explícita del usuario.
+Versión: 0.4.1
+Estado: Sprint 4 (Sistema de Pronósticos) commiteado en `1fd819f`. Fix de la regla de cierre de Pronósticos aplicado sobre ese commit — sin commitear todavía, pendiente de aprobación explícita del usuario.
 Próximo paso: Sprint 5 en adelante (puntos, rankings, posiciones, premios). No iniciar sin aprobación explícita.
 
 ---
@@ -26,7 +26,7 @@ Objetivo: construir toda la infraestructura para que un usuario pueda pronostica
   - `PUT /api/predictions/{id}` — modifica un pronóstico propio.
 - Reglas implementadas:
   - Un usuario, un pronóstico por partido: índice único en base + verificación explícita antes de insertar (409 si ya existe).
-  - Solo se puede crear o modificar un pronóstico mientras el partido está Programado, En juego o Suspendido (`IsOpenForPrediction`). Bloqueado (400) para Finalizado y Cancelado, tanto al crear como al editar.
+  - Solo se puede crear o modificar un pronóstico si el partido está Programado **y** su horario de inicio todavía no llegó (`CanCreateOrEditPrediction`, corregido — ver "Fix: regla de cierre de Pronósticos" más abajo). Bloqueado (400) en cualquier otro caso, tanto al crear como al editar.
   - Un usuario no puede modificar el pronóstico de otro usuario (403).
   - Goles pronosticados no pueden ser negativos (400 con detalle de campo).
   - Sin autenticación → 401 en todos los endpoints.
@@ -68,6 +68,47 @@ Pedido por el usuario tras probar la pantalla manualmente. Sin tocar lógica de 
 - El botón Guardar/Actualizar no se tocó.
 - `admin.css`: agregadas `.prediction-row__separator` (guion centrado, ancho fijo) y `.prediction-row__message` (contenedor de error/éxito con `min-height` reservado) para que la fila no cambie de alto al aparecer/desaparecer el mensaje; `.prediction-row__input` ahora incluye `box-sizing: border-box` y `text-align: center` para que ambos campos midan exactamente lo mismo.
 - Verificado en el navegador: campos vacíos con placeholder "-" cuando no hay pronóstico; solo dígitos aceptados (probado enviando `"2a-3.5b"` → queda `"235"`); valores reales precargados cuando existe pronóstico; alto de fila idéntico (79.2px) antes y después de mostrar el mensaje de éxito; mensaje desaparece solo a los ~4 segundos; persistencia confirmada tras recargar.
+
+Sprint 4 completo (entidad, migración, endpoints, pantallas, reglas originales y este ajuste de UX) commiteado en `1fd819f` — "feat: implement match predictions".
+
+---
+
+## Fix: regla de cierre de Pronósticos (sobre el commit `1fd819f`)
+
+### Diagnóstico
+
+El informe final del Sprint 4 describía la regla como "solo editable/creable mientras el partido esté Programado, En juego o Suspendido; bloqueado para Finalizado y Cancelado". Se verificó que **esa descripción era fiel al código tal como quedó commiteado** — no fue un error de redacción del informe. El código coincidía con la especificación original del Sprint 4, pero esa especificación quedó superada por la regla definitiva acordada después:
+
+> Un pronóstico solamente puede crearse o modificarse cuando el Partido está en estado Programado **y** la fecha/hora actual UTC es anterior a la fecha/hora de inicio del Partido. Cualquier otro caso (Programado con horario ya pasado, En juego, Suspendido, Finalizado, Cancelado) debe quedar bloqueado.
+
+Evidencia de la causa: en `backend/Endpoints/PredictionEndpoints.cs`, la función `IsOpenForPrediction(MatchStatus status)` (usada en `POST /api/predictions` y `PUT /api/predictions/{id}`) devolvía `true` para `Scheduled`, `InProgress` y `Suspended` sin comparar contra `DateTime.UtcNow`/`StartsAtUtc`. Además, `MatchWithPredictionDto` no exponía ningún indicador tipo `canPredict`: el frontend (`PredictionsMatchesPage.tsx`) calculaba la editabilidad por su cuenta con una función local `canPredict(status)` que replicaba la misma regla incompleta, en vez de depender de una decisión del backend.
+
+**Conclusión: el problema estaba en el código, no solo en el informe.**
+
+### Corrección
+
+- `backend/Endpoints/PredictionEndpoints.cs`: `IsOpenForPrediction` reemplazada por `CanCreateOrEditPrediction(Match match) => match.Status == MatchStatus.Scheduled && DateTime.UtcNow < match.StartsAtUtc`, usada en `POST`, `PUT` y para calcular el nuevo campo del DTO.
+- `backend/Dtos/PredictionDtos.cs`: `MatchWithPredictionDto` ahora incluye `bool CanPredict`, calculado con la misma función — el backend es la única fuente de verdad.
+- `frontend/src/api/types.ts`: `MatchWithPrediction` incluye `canPredict: boolean`.
+- `frontend/src/pages/PredictionsMatchesPage.tsx`: eliminada la función local `canPredict(status)`; ahora usa directamente `m.canPredict` recibido del backend. El texto "Pronóstico cerrado (X - Y)" ahora se muestra para **todos** los casos bloqueados salvo Cancelado (que sigue mostrando "—", sin cambios en ese criterio visual).
+
+### Pruebas realizadas (los 6 casos, por API)
+
+Preparados vía SQL directa sobre partidos de prueba (Scheduled+futuro, Scheduled+pasado, InProgress, Suspended, Finished, Cancelled):
+
+| Caso | Estado / horario | Crear (POST) | Editar (PUT) | `canPredict` en GET |
+|---|---|---|---|---|
+| A | Programado + horario futuro | 201 permitido | 200 permitido | `true` |
+| B | Programado + horario pasado | 400 bloqueado | 400 bloqueado | `false` |
+| C | En juego | 400 bloqueado | 400 bloqueado | `false` |
+| D | Suspendido | 400 bloqueado | 400 bloqueado | `false` |
+| E | Finalizado | 400 bloqueado | 400 bloqueado | `false` |
+| F | Cancelado | 400 bloqueado | 400 bloqueado | `false` |
+
+Verificado además visualmente en el navegador (Fechas de Liga Profesional y Copa Libertadores): fila editable solo en el caso A; el resto muestra "Pronóstico cerrado (X - Y)" o "—" (Cancelado) según corresponda, con el valor del pronóstico ya cargado visible aunque no editable.
+
+- `dotnet build`: OK. `npm run build`: OK. Logs de `backend`/`frontend` revisados tras el fix: sin errores ni excepciones.
+- Datos de prueba (cambios de estado/horario en partidos 15-20, pronósticos de prueba) revertidos al final; el fixture quedó en su estado limpio (6 partidos Programados con horario futuro, sin pronósticos).
 
 ---
 

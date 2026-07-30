@@ -27,4 +27,5 @@ public record MatchWithPredictionDto(
     string Status,
     int? HomeGoals,
     int? AwayGoals,
-    PredictionDto? MyPrediction);
+    PredictionDto? MyPrediction,
+    bool CanPredict);

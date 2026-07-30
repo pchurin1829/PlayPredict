@@ -12,10 +12,6 @@ interface RowState {
   savedMessage: string | null
 }
 
-function canPredict(status: MatchWithPrediction['status']): boolean {
-  return status === 'Scheduled' || status === 'InProgress' || status === 'Suspended'
-}
-
 function sanitizeDigits(value: string): string {
   return value.replace(/\D/g, '')
 }
@@ -144,7 +140,7 @@ export default function PredictionsMatchesPage() {
               {matches.map((m) => {
                 const row = rows[m.id]
                 const startsAt = new Date(m.startsAtUtc)
-                const editable = canPredict(m.status)
+                const editable = m.canPredict
 
                 return (
                   <tr key={m.id}>
@@ -203,14 +199,14 @@ export default function PredictionsMatchesPage() {
                         </div>
                       )}
 
-                      {!editable && m.status === 'Finished' && (
+                      {!editable && m.status === 'Cancelled' && <span>—</span>}
+
+                      {!editable && m.status !== 'Cancelled' && (
                         <span>
                           Pronóstico cerrado
                           {m.myPrediction && ` (${m.myPrediction.predictedHomeScore} - ${m.myPrediction.predictedAwayScore})`}
                         </span>
                       )}
-
-                      {!editable && m.status === 'Cancelled' && <span>—</span>}
                     </td>
                   </tr>
                 )

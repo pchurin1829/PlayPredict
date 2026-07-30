@@ -1,8 +1,8 @@
 # PROJECT STATUS
 
 Versión: 0.3.0
-Estado: Sprint 3 (Usuarios/Autenticación) y Sprint 3.5 (limpieza funcional pre-Pronósticos) completados. Sin commitear — pendiente de aprobación explícita del usuario.
-Próximo paso: Sprint 4 (ETAPA 3 del PLAN_IMPLEMENTACION_MVP — Pronósticos).
+Estado: Sprint 3 (Usuarios/Autenticación), Sprint 3.5 (limpieza funcional pre-Pronósticos) y el fix de edición de Partidos Finalizados completados, commiteados (`df43594`) y pusheados a `origin/main`.
+Próximo paso: Sprint 4 (ETAPA 3 del PLAN_IMPLEMENTACION_MVP — Pronósticos). No iniciar sin aprobación explícita.
 
 ---
 
@@ -96,7 +96,7 @@ Sin nuevas funcionalidades, sin cambios al modelo de datos, sin nuevas migracion
 - Datos de demostración verificados directamente en PostgreSQL tras el rebuild (persisten correctamente).
 - Logs de `backend` y `frontend` revisados tras el rebuild: sin errores ni excepciones.
 - Navegación, login, logout y estados verificados visualmente en el navegador.
-- `git status --short`: cambios pendientes de Sprint 3 + Sprint 3.5, sin commit.
+- `git status --short`: en el momento de esta validación, cambios pendientes de Sprint 3 + Sprint 3.5 sin commit (se commitearon junto con el fix posterior, ver más abajo).
 
 ---
 
@@ -126,6 +126,10 @@ Sin nuevas funcionalidades, sin cambios al modelo de datos, sin nuevas migracion
 - Validaciones no afectadas: intentar poner `status: "Finished"` manualmente vía `PUT /api/matches/{id}` en un partido no Finalizado → sigue rechazado (400); cambiar a Suspendido/otros estados válidos en un partido no Finalizado → sigue funcionando.
 - `dotnet build`: OK. `npm run build`: OK. `docker compose ps`: 3 servicios healthy. Consola del navegador sin errores. Logs de `backend`/`frontend` sin errores ni excepciones.
 - Datos de demostración usados durante estas pruebas (nombres/fechas/resultados de prueba) se revirtieron al final, dejando el seed de Liga Profesional y Copa Libertadores en su estado limpio original (6 partidos Programados).
+
+### Commit y push
+
+Sprint 3 + Sprint 3.5 + este fix se aprobaron y commitearon juntos en un único commit: `df43594` — "feat: add authentication and complete pre-predictions cleanup" (44 archivos, 2195 inserciones, 84 eliminaciones), pusheado a `origin/main`. Verificado sin `.env`, `bin/`, `obj/`, `node_modules/` ni `dist/` incluidos.
 
 ---
 

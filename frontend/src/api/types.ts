@@ -116,3 +116,15 @@ export interface MatchWithPrediction {
   myPrediction: Prediction | null
   canPredict: boolean
 }
+
+export interface RankingEntry {
+  position: number
+  userId: number
+  firstName: string
+  lastName: string
+  points: number
+  exactCount: number
+  correctCount: number
+  incorrectCount: number
+  evaluatedCount: number
+}

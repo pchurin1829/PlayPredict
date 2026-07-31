@@ -42,6 +42,7 @@ var jwtAudience = jwtSection["Audience"]!;
 
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddScoped<PredictionEvaluationService>();
+builder.Services.AddScoped<RankingService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -91,6 +92,7 @@ app.MapRoundEndpoints();
 app.MapMatchEndpoints();
 app.MapPredictionEndpoints();
 app.MapEditionScoringConfigurationEndpoints();
+app.MapRankingEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -108,6 +110,12 @@ using (var scope = app.Services.CreateScope())
     // Después de cualquier seed de datos: garantiza que toda Edición (existente o
     // recién sembrada) tenga configuración de puntuación.
     await DataSeeder.SeedEditionScoringConfigurationsAsync(db);
+
+    if (app.Environment.IsDevelopment())
+    {
+        var evaluationService = scope.ServiceProvider.GetRequiredService<PredictionEvaluationService>();
+        await DataSeeder.SeedRankingDemoAsync(db, evaluationService);
+    }
 }
 
 app.Run();

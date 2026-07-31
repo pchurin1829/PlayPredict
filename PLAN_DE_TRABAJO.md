@@ -56,12 +56,23 @@ Nota: este sprint se implementó en la sesión anterior (cortada por error 529) 
 - [x] Pantalla de Pronósticos del usuario muestra puntos/motivo cuando el partido está Finalizado, o "Sin pronóstico" si no pronosticó
 - [ ] Rankings, posiciones, premios, bonificaciones, multiplicadores, historial de evaluaciones (explícitamente fuera de este sprint)
 
+## Sprint 6 - Motor de Rankings (completado, sin commitear)
+- [x] `RankingService`: Ranking General por Edición y Ranking por Fecha, calculados dinámicamente (sin tabla, sin migración)
+- [x] Orden: puntos → exactos → correctos → incorrectos (asc) → apellido/nombre (solo desempate visual)
+- [x] Posición compartida estilo ranking deportivo (1-2-2-4)
+- [x] Solo participan usuarios con al menos un pronóstico evaluado
+- [x] Endpoints `GET /api/rankings/editions/{editionId}` y `GET /api/rankings/rounds/{roundId}`, autenticados
+- [x] Pantallas "Rankings" en el frontend: Competencia → Edición → Ranking General / Fechas → Ranking por Fecha
+- [x] Datos de demostración idempotentes (4 usuarios, Fecha 1 de Clausura 2026 con nombres y resultados reales) — Ranking verificado exacto contra el esperado
+- [x] Recálculo automático confirmado al agregar y al corregir un resultado oficial
+- [ ] Ranking mensual, histórico, por empresa, por grupo privado, premios, bonificaciones (explícitamente fuera de este sprint)
+
 ## MVP
 - [~] Competencias Oficiales — módulo base (Competencia/Edición/Fecha/Partido) funcionando; falta lo no incluido en el Sprint 2 (p. ej. estados avanzados de administración)
 - [ ] Ligas Privadas
 - [~] Partidos — alta, edición y Resultado Oficial funcionando vía panel administrativo
-- [~] Pronósticos — infraestructura completa (carga, edición y cálculo automático de puntos) funcionando; falta ranking y posiciones
-- [ ] Rankings
+- [~] Pronósticos — infraestructura completa (carga, edición y cálculo automático de puntos) funcionando
+- [~] Rankings — Ranking General y por Fecha funcionando; falta ranking histórico/mensual y por grupo privado
 - [ ] Premios
 - [~] Panel Administrador — fixture administrable (Competencias → Ediciones → Fechas → Partidos) + Usuarios + Configuración de puntuación por Edición; faltan las secciones de Resultados/Premios/Ligas del panel completo
 - [x] Usuarios — Registro, Login, Perfil, administración básica (activar/desactivar) funcionando

@@ -18,6 +18,11 @@ import PredictionsCompetitionsPage from './pages/PredictionsCompetitionsPage'
 import PredictionsEditionsPage from './pages/PredictionsEditionsPage'
 import PredictionsRoundsPage from './pages/PredictionsRoundsPage'
 import PredictionsMatchesPage from './pages/PredictionsMatchesPage'
+import RankingsCompetitionsPage from './pages/RankingsCompetitionsPage'
+import RankingsEditionsPage from './pages/RankingsEditionsPage'
+import RankingsRoundsPage from './pages/RankingsRoundsPage'
+import RankingGeneralPage from './pages/RankingGeneralPage'
+import RankingRoundPage from './pages/RankingRoundPage'
 import './components/admin.css'
 
 function App() {
@@ -79,6 +84,15 @@ function App() {
         />
         <Route path="/predictions/editions/:editionId/rounds" element={<PredictionsRoundsPage />} />
         <Route path="/predictions/rounds/:roundId" element={<PredictionsMatchesPage />} />
+
+        <Route path="/rankings" element={<RankingsCompetitionsPage />} />
+        <Route
+          path="/rankings/competitions/:competitionId/editions"
+          element={<RankingsEditionsPage />}
+        />
+        <Route path="/rankings/editions/:editionId" element={<RankingGeneralPage />} />
+        <Route path="/rankings/editions/:editionId/rounds" element={<RankingsRoundsPage />} />
+        <Route path="/rankings/rounds/:roundId" element={<RankingRoundPage />} />
 
         <Route path="*" element={<Navigate to="/competitions" replace />} />
       </Route>

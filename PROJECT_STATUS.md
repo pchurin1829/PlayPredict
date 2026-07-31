@@ -1,8 +1,79 @@
 # PROJECT STATUS
 
-Versión: 0.6.0
-Estado: Sprint 5 (Motor de Puntuación Configurable Básico) aprobado, verificado visualmente y commiteado, junto con la consolidación de `docs/`.
-Próximo paso: Sprint 6 (Ranking General). No iniciar sin aprobación explícita.
+Versión: 0.7.0
+Estado: Sprint 6 (Motor de Rankings) implementado y aprobado funcionalmente. Pendiente únicamente realizar el commit.
+Próximo paso: Sprint 7 — Premios. No iniciar sin aprobación explícita.
+
+---
+
+## Sprint 6 — Motor de Rankings
+
+Objetivo: mostrar posiciones a partir de las evaluaciones ya calculadas por el Motor de Puntuación (Sprint 5). El Ranking **no calcula puntos** — únicamente consulta y ordena.
+
+### Alcance
+
+Implementado: Ranking General de una Edición, Ranking por Fecha. Explícitamente fuera de alcance (no implementado): ranking mensual, histórico, por empresa, por grupo privado, premios, bonificaciones.
+
+### Modelo
+
+Sin tabla nueva, sin migración. Todo se calcula dinámicamente consultando `Predictions`, `PredictionEvaluations`, `Matches`, `Rounds` y `Editions` en el momento de la consulta.
+
+### Backend
+
+- `backend/Services/RankingService.cs`: responsabilidad única, sin persistir nada.
+  - `GetEditionRankingAsync(db, editionId)`: filtra `PredictionEvaluations` por `Prediction.Match.Round.EditionId`.
+  - `GetRoundRankingAsync(db, roundId)`: filtra por `Prediction.Match.RoundId`.
+  - Ambos agrupan por usuario, suman `Points`, cuentan `ExactScore`/`CorrectOutcome`/`Incorrect` y el total evaluado.
+  - **Orden**: puntos (desc) → exactos (desc) → correctos (desc) → incorrectos (asc) → apellido → nombre. Los dos últimos criterios (apellido/nombre) solo desempatan visualmente el orden de la lista; nunca alteran el número de posición.
+  - **Posición compartida**: se calcula comparando la tupla (puntos, exactos, correctos, incorrectos) fila a fila; si es idéntica a la anterior, se repite el mismo número de posición. Estilo "ranking deportivo" (1, 2, 2, 4, ...) — tras un empate en la posición 2, el siguiente usuario va en la posición 4, no en la 3.
+  - Solo participan usuarios con al menos una `PredictionEvaluation` (join implícito: si no hay evaluación, no hay fila).
+- `backend/Dtos/RankingDtos.cs`: `RankingEntryDto(Position, UserId, FirstName, LastName, Points, ExactCount, CorrectCount, IncorrectCount, EvaluatedCount)`.
+- `backend/Endpoints/RankingEndpoints.cs`: `GET /api/rankings/editions/{editionId}` y `GET /api/rankings/rounds/{roundId}`, ambos `RequireAuthorization()` (sin restricción de rol — cualquier usuario autenticado puede consultar rankings). 404 si la Edición/Fecha no existe.
+- `RankingService` registrado como `Scoped` en `Program.cs`.
+
+### Frontend
+
+- Nueva entrada "Rankings" en el menú (`Layout.tsx`), visible para cualquier usuario autenticado.
+- 5 pantallas nuevas (mismo estilo que Fixture/Pronósticos, sin rediseño):
+  - `RankingsCompetitionsPage` (`/rankings`) — lista de Competencias.
+  - `RankingsEditionsPage` (`/rankings/competitions/:competitionId/editions`) — lista de Ediciones; cada fila lleva al Ranking General de esa Edición, con un botón secundario "Ranking por Fecha" hacia la lista de Fechas.
+  - `RankingGeneralPage` (`/rankings/editions/:editionId`) — tabla del Ranking General, con acceso directo a "Ranking por Fecha".
+  - `RankingsRoundsPage` (`/rankings/editions/:editionId/rounds`) — lista de Fechas de la Edición.
+  - `RankingRoundPage` (`/rankings/rounds/:roundId`) — tabla del Ranking de esa Fecha.
+- Columnas de la tabla: `#` / Usuario / Puntos / Exactos / Correctos / Incorrectos / Pronósticos — el número de posición (`#`) se muestra tal cual lo entrega el backend, sin recalcularlo ni reordenar en el cliente.
+- `frontend/src/api/types.ts`: nuevo tipo `RankingEntry`.
+
+### Datos de demostración (solo Development, idempotentes)
+
+- `backend/Data/DataSeeder.cs`:
+  - Los 3 partidos de Fecha 1 / Clausura 2026 pasaron de nombres genéricos ("Equipo A".."F") a nombres reales: Boca Juniors–River Plate, Racing Club–Independiente, Estudiantes–Gimnasia (cambiado en el seed base `SeedAsync`, y con un ajuste de compatibilidad en `SeedRankingDemoAsync` para bases de datos que ya tenían el seed anterior aplicado).
+  - `SeedRankingDemoAsync` (nuevo, solo Development, llamado después de `SeedEditionScoringConfigurationsAsync` para que la configuración de puntuación ya exista): crea 4 usuarios (Ana Torres, Juan Pérez, María López, Pedro Gómez — rol USER, contraseña `demo123`, emails `@playpredict.local` para no colisionar con usuarios de prueba preexistentes de sesiones anteriores), sus pronósticos, carga los 3 resultados oficiales (Boca 2-1 River, Racing 1-1 Independiente, Estudiantes 0-2 Gimnasia) y dispara la evaluación automática vía `PredictionEvaluationService` — la misma vía que usaría un Administrador desde el panel.
+  - Totales resultantes verificados exactos con la configuración de puntuación por defecto (6/3/0): Ana 12, Juan 15, María 9, Pedro 6 — coinciden con los valores esperados del enunciado del Sprint.
+  - Idempotente: cada paso (nombres de partido, alta de usuario, alta de pronóstico, carga de resultado) verifica su propia condición antes de escribir; correr el seed varias veces nunca duplica nada.
+
+### Pruebas realizadas
+
+- Ranking General de Clausura 2026 verificado exacto: 1° Juan Pérez (15), 2° Ana Torres (12), 3° María López (9), 4° Pedro Gómez (6) — coincide con el "Ranking esperado" del enunciado. Confirmado por API y visualmente en el navegador.
+- Ranking por Fecha (Fecha 1) idéntico al General (es la única Fecha de esa Edición) — confirmado.
+- **Empates y posición compartida**: se creó temporalmente un usuario con los mismos pronósticos que Ana Torres (mismo resultado exacto en los 3 partidos) → el ranking mostró posición 2 compartida entre ambos (ordenados alfabéticamente, "Acosta" antes que "Torres"), y el siguiente usuario saltó a la posición 4. Verificado por API y visualmente. Usuario y datos de prueba eliminados al final.
+- **Agregar un resultado nuevo**: se creó un pronóstico de Juan sobre un partido de Copa Libertadores (Edición sin ranking previo, `[]` vacío) y se cargó su resultado oficial por primera vez → el ranking de esa Edición pasó de vacío a mostrar a Juan automáticamente. Revertido al final (partido de vuelta a Programado sin resultado, pronóstico y evaluación eliminados).
+- **Corregir un resultado existente**: se cambió el resultado de Estudiantes–Gimnasia de 0-2 a 2-2 → el ranking general recalculó automáticamente y generó nuevos empates (Juan/Ana en 9, Pedro/María en 6), confirmando el recálculo. Revertido al resultado original (0-2); el ranking volvió exactamente a 15/12/9/6.
+- Verificado en PostgreSQL al final: `Predictions` = 12, `PredictionEvaluations` = 12 (exactamente las 4 usuarias × 3 partidos, sin residuos de las pruebas temporales).
+- Swagger (`/swagger`) expone correctamente `GET /api/rankings/editions/{editionId}` y `GET /api/rankings/rounds/{roundId}` bajo "Rankings".
+- `dotnet build`: OK. `npm run build`: OK. `docker compose up -d --build`: 3 servicios healthy (hubo que esperar el arranque normal del backend tras aplicar el seed nuevo). Logs de `backend`/`frontend` revisados: sin errores ni excepciones. Consola del navegador sin errores.
+
+### Archivos modificados/creados
+
+Backend: `Dtos/RankingDtos.cs`, `Services/RankingService.cs`, `Endpoints/RankingEndpoints.cs` (nuevos); `Data/DataSeeder.cs`, `Program.cs` (modificados).
+
+Frontend: `pages/RankingsCompetitionsPage.tsx`, `pages/RankingsEditionsPage.tsx`, `pages/RankingsRoundsPage.tsx`, `pages/RankingGeneralPage.tsx`, `pages/RankingRoundPage.tsx` (nuevos); `api/types.ts`, `App.tsx`, `components/Layout.tsx` (modificados).
+
+### Revisión técnica previa al commit (misma sesión, tras la aprobación funcional)
+
+- Documentación: verificado que no quedaran referencias obsoletas ("Sprint 6 pendiente", "próximo paso: Sprint 6", etc.) en `SESSION.md`/`PROJECT_STATUS.md`; corregido el encabezado de estado y el "próximo paso" para reflejar que el Sprint 6 ya está aprobado funcionalmente, pendiente únicamente del commit, y que el próximo paso es el Sprint 7 (Premios).
+- Seed: confirmado (no fue necesario corregir nada) que `SeedRankingDemoAsync`, `SeedAsync` y `SeedAdminUserAsync` — los únicos que crean usuarios/pronósticos/evaluaciones/resultados de demostración — solo se invocan dentro de `if (app.Environment.IsDevelopment())` en `Program.cs`; no existe ningún otro punto de llamada. En Producción no se siembra ningún dato de demostración.
+- UX de ranking vacío: confirmado (ya estaba implementado, no fue necesario agregar nada) que tanto `RankingGeneralPage.tsx` como `RankingRoundPage.tsx` muestran un mensaje ("Todavía no hay pronósticos evaluados en esta Edición/Fecha.") en vez de una tabla vacía cuando el ranking no tiene filas.
+- `dotnet build`: OK. `npm run build`: OK. `docker compose ps`: 3 servicios `Up`/`healthy`.
 
 ---
 

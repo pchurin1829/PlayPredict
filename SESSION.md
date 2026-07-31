@@ -7,10 +7,10 @@ PlayPredict
 main (sincronizada con origin/main)
 
 ## Último commit
-afe2776 — docs: sync session after Sprint 5
+c8f9629 — feat: implement edition and round rankings
 
 ## Estado del entorno
-- Git: rama `main`. Sprint 6 (Motor de Rankings) implementado y aprobado funcionalmente sobre el commit `afe2776`. Pendiente únicamente realizar el commit.
+- Git: rama `main`, sincronizada con `origin/main` (push realizado). Sprint 6 (Motor de Rankings) commiteado y pusheado en `c8f9629`.
 - Docker (`docker compose ps`): los 3 servicios levantados y healthy.
   - `playpredict_db` (PostgreSQL 18) — Up, healthy
   - `playpredict_backend` — Up, healthy
@@ -37,7 +37,7 @@ No se implementó (fuera de alcance): ranking mensual, histórico, por empresa, 
 Detalle completo en PROJECT_STATUS.md.
 
 ## Pendiente inmediato
-Únicamente realizar el commit del Sprint 6 (ya aprobado funcionalmente por el usuario).
+Ninguno. Sprint 6 cerrado (commit y push realizados).
 
 ## Próximo paso exacto
 Sprint 7 — Premios. No iniciar sin aprobación explícita.

@@ -7,7 +7,7 @@ PlayPredict
 main (sincronizada con origin/main)
 
 ## Último commit
-170ee0f — fix: enforce prediction cutoff by match status and start time
+b30ce30 — feat: implement configurable scoring engine
 
 ## Estado del entorno
 - Git: rama `main`. Sprint 5 (Motor de Puntuación Configurable Básico), su verificación visual final y la consolidación de `docs/` aprobados y commiteados en esta sesión.

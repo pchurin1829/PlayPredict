@@ -17,7 +17,9 @@ export default function Layout() {
           <Link to="/competitions">Fixture</Link>
           <Link to="/predictions">Pronósticos</Link>
           <Link to="/rankings">Rankings</Link>
+          <Link to="/prizes">Premios</Link>
           {user?.roles.includes('ADMIN') && <Link to="/admin/users">Usuarios</Link>}
+          {user?.roles.includes('ADMIN') && <Link to="/admin/prizes">Administrar Premios</Link>}
           <Link to="/profile">{user ? `${user.firstName} ${user.lastName}` : 'Perfil'}</Link>
           <button type="button" className="btn btn-secondary layout__logout" onClick={logout}>
             Salir

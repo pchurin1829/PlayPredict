@@ -43,6 +43,7 @@ var jwtAudience = jwtSection["Audience"]!;
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddScoped<PredictionEvaluationService>();
 builder.Services.AddScoped<RankingService>();
+builder.Services.AddScoped<PrizeWinnerService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -93,6 +94,8 @@ app.MapMatchEndpoints();
 app.MapPredictionEndpoints();
 app.MapEditionScoringConfigurationEndpoints();
 app.MapRankingEndpoints();
+app.MapAdminPrizeEndpoints();
+app.MapPrizeEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -115,6 +118,7 @@ using (var scope = app.Services.CreateScope())
     {
         var evaluationService = scope.ServiceProvider.GetRequiredService<PredictionEvaluationService>();
         await DataSeeder.SeedRankingDemoAsync(db, evaluationService);
+        await DataSeeder.SeedPrizesDemoAsync(db);
     }
 }
 

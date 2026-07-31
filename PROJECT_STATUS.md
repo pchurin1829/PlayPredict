@@ -1,8 +1,90 @@
 # PROJECT STATUS
 
-Versión: 0.7.0
-Estado: Sprint 6 (Motor de Rankings) implementado y aprobado funcionalmente. Pendiente únicamente realizar el commit.
-Próximo paso: Sprint 7 — Premios. No iniciar sin aprobación explícita.
+Versión: 0.8.0
+Estado: Sprint 7 (Módulo de Premios) implementado — sin commitear todavía, pendiente de aprobación explícita del usuario.
+Próximo paso: Sprint 8 (Configuración de Competencias). No iniciar sin aprobación explícita.
+
+---
+
+## Sprint 7 — Módulo de Premios
+
+Objetivo: permitir definir y visualizar Premios asociados a una Edición o a una Fecha. El Premio **no calcula puntos ni posiciones** — el Ranking (Sprint 6) sigue siendo la única fuente para determinarlas.
+
+### Alcance
+
+Implementado: administración de premios (alta, edición, publicar, cerrar, cancelar), premios por Edición, premios por Fecha, premio por posición (rango), premio por mayor cantidad de marcadores exactos, premio "Ganador de Fecha", cálculo del ganador actual provisional, visualización para usuarios. Explícitamente fuera de alcance: `PrizeWinner` persistido, entrega real, pagos, cupones automáticos, reclamos, notificaciones, historial de ganadores, premios mensuales/por empresa/ligas privadas, rediseño visual del panel.
+
+### Modelo
+
+- `Prize` (`backend/Domain/Entities/Prize.cs`): `EditionId` (obligatorio), `RoundId` (opcional, obligatorio solo si `ScopeType == Round`, debe pertenecer a la misma Edición), `Name`, `Description`, `PrizeType`, `ReferenceValue` (texto descriptivo, no un pago procesado), `SponsorName`, `ImageUrl`, `ScopeType`, `AwardCriteria`, `PositionFrom`/`PositionTo` (solo usados con `AwardCriteria == Position`), `Status`, `CreatedAtUtc`, `UpdatedAtUtc`.
+- Enums nuevos (`backend/Domain/Enums/`): `PrizeType` (Money, Product, Service, Coupon, Ticket, Recognition, Other), `PrizeScopeType` (Edition, Round, Special), `PrizeAwardCriteria` (Position, RoundWinner, MostExactScores), `PrizeStatus` (Draft, Published, Closed, Cancelled).
+- Migración `AddPrizes` creada y aplicada (tabla `Prizes`, FKs a `Editions` y `Rounds` con `DeleteBehavior.Restrict`).
+- No se creó `PrizeWinner` ni `PrizeDelivery`: el ganador nunca se persiste, siempre se deriva en el momento de la consulta.
+
+### Backend
+
+- `backend/Services/PrizeWinnerService.cs`: responsabilidad única — dado un `Prize`, consulta `RankingService` (Ranking General o por Fecha, según `ScopeType`) y devuelve la lista de usuarios ganadores actuales *provisionales* según `AwardCriteria`:
+  - `Position`: usuarios cuya posición está entre `PositionFrom` y `PositionTo`.
+  - `RoundWinner`: posición 1 del Ranking por Fecha (todos los empatados si hay empate).
+  - `MostExactScores`: usuarios con el `ExactCount` máximo del Ranking correspondiente (todos los empatados); si el Ranking está vacío, no devuelve ningún ganador (nunca lo inventa).
+- `backend/Services/PrizeMapper.cs`: arma el DTO de lectura (`PrizeDto`) con las etiquetas en castellano (`prizeTypeLabel`, `scopeLabel`, `criteriaLabel`, `statusLabel`) y el texto descriptivo `forLabel` (p. ej. "Para: 1.º puesto del Ranking General", "Para: Ganador de la Fecha 1", "Para: Mayor cantidad de marcadores exactos del Ranking General"), además de `currentWinners` y `hasProvisionalWinner`. Compartido entre endpoints administrativos y públicos.
+- `backend/Dtos/PrizeDtos.cs`: `PrizeDto`, `CreatePrizeDto`, `UpdatePrizeDto`, `PrizeWinnerUserDto`.
+- `backend/Endpoints/AdminPrizeEndpoints.cs` (`/api/admin/prizes`, `RequireAuthorization(RoleNames.Admin)`):
+  - `GET`/`GET {id}`: listar todos los Premios (cualquier estado) y obtener uno.
+  - `POST`: crea siempre en estado Borrador. Validaciones: Edición existente, Fecha existente y perteneciente a la misma Edición cuando `ScopeType == Round`, nombre obligatorio y longitudes máximas, enums válidos, `RoundWinner` solo compatible con ámbito Fecha, posiciones (`PositionFrom >= 1`, `PositionTo >= PositionFrom`) obligatorias solo con criterio Posición.
+  - `PUT {id}`: misma validación; bloqueado si el Premio está Cancelado. La Edición no es editable (fija desde la creación).
+  - `PUT {id}/publish`: solo desde Borrador, re-validando coherencia.
+  - `PUT {id}/close`: solo desde Publicado.
+  - `PUT {id}/cancel`: desde Borrador o Publicado; bloqueado si ya está Cerrado o Cancelado.
+- `backend/Endpoints/PrizeEndpoints.cs` (`/api/prizes`, `RequireAuthorization()` sin restricción de rol): `GET /editions/{editionId}`, `GET /rounds/{roundId}`, `GET /{id}` — los tres filtran exclusivamente `Published`/`Closed`; un Premio Borrador o Cancelado devuelve 404 en el `GET /{id}` público y nunca aparece en los listados.
+- `PrizeWinnerService` registrado como `Scoped` en `Program.cs`.
+
+### Frontend administrativo
+
+- Nueva entrada "Administrar Premios" en el menú (solo ADMIN).
+- `AdminPrizesListPage` (`/admin/prizes`): tabla con Nombre, Edición (+ Fecha si aplica), Ámbito, Criterio, Estado, Sponsor, Ganador actual; botones Editar y, según el estado, Publicar / Cerrar / Cancelar.
+- `AdminPrizeFormPage` (`/admin/prizes/new` y `/admin/prizes/:id/edit`): formulario único de alta/edición con selects en cascada Competencia → Edición (Edición fija y deshabilitada al editar) → Fecha (solo si Ámbito = Fecha), selects de Tipo/Ámbito/Criterio, campos de posición (solo si Criterio = Posición), Estado mostrado como texto de solo lectura. Mismo estilo (`form-card`, `btn`, etc.) que el resto del panel, sin rediseño.
+
+### Frontend de usuario
+
+- Nueva entrada "Premios" en el menú, visible para cualquier usuario autenticado.
+- `PrizesCompetitionsPage` (`/prizes`) → `PrizesEditionsPage` (`/prizes/competitions/:id/editions`) → `PrizesListPage` (`/prizes/editions/:id`), misma navegación jerárquica que Rankings/Pronósticos.
+- Cada Premio se muestra como tarjeta simple: Nombre, Descripción, Tipo, Valor de referencia (si tiene), Sponsor (si tiene), "Para quién es" (`forLabel`), Estado, y "Ganador actual (provisional): ..." o "Todavía no hay ganador provisional." si el Ranking no tiene datos. Sin botones administrativos, sin Premios Borrador ni Cancelados, sin entrega/pago/reclamo.
+
+### Datos de demostración (solo Development, idempotentes)
+
+`backend/Data/DataSeeder.cs`, `SeedPrizesDemoAsync` (corre después de `SeedRankingDemoAsync`, idempotente por `EditionId`+`Name`), sobre Clausura 2026 / Fecha 1:
+
+| Premio | Tipo | Ámbito | Criterio | Estado | Ganador actual esperado |
+|---|---|---|---|---|---|
+| Gran Premio Clausura 2026 | Dinero | Edición | Posición 1 | Publicado | Juan Pérez |
+| Segundo Premio Clausura 2026 | Producto | Edición | Posición 2 | Publicado | Ana Torres |
+| Premio Fecha 1 | Producto | Fecha | Ganador de Fecha | Publicado | Juan Pérez |
+| Rey de los Exactos | Reconocimiento | Edición | Mayor cantidad de exactos | Publicado | Juan Pérez |
+| Premio Sorpresa | Otro | Edición | Posición 3 | Borrador | (no visible para usuarios) |
+
+### Pruebas realizadas (casos A-L del enunciado, todos por API; datos temporales revertidos)
+
+- **A-D**: ganadores verificados exactos — posición 1 → Juan Pérez; posición 2 → Ana Torres; Ganador de Fecha 1 → Juan Pérez; mayor cantidad de exactos → Juan Pérez.
+- **E**: usuario temporal con pronósticos idénticos a Juan Pérez (empate en posición 1) → el Premio de posición 1 devolvió ambos usuarios como ganadores provisionales. Revertido (usuario, pronósticos y evaluaciones eliminados).
+- **F**: mismo usuario temporal (mismo `ExactCount` máximo) → el Premio "Rey de los Exactos" devolvió ambos usuarios empatados. Revertido junto con el caso E.
+- **G**: `GET /api/admin/prizes` (ADMIN) incluye el Premio Borrador; `GET /api/prizes/editions/7` (USER) lo excluye; `GET /api/prizes/{id}` (USER) devuelve 404 para ese Premio.
+- **H**: Premio temporal publicado y cancelado → excluido de `GET /api/prizes/editions/{id}` y 404 en `GET /api/prizes/{id}` para USER. Revertido (eliminado).
+- **I**: crear Premio con `EditionId` de una Edición y `RoundId` de una Fecha de otra Edición → 400 ("La Fecha indicada no pertenece a la Edición del Premio.").
+- **J**: `PositionFrom = 3`, `PositionTo = 2` → 400 ("La posición hasta debe ser mayor o igual a la posición desde.").
+- **K**: usuario USER contra `GET`/`POST /api/admin/prizes` → 403 en ambos.
+- **L**: Premio temporal sobre la Edición de Copa Libertadores (Ranking vacío) → `currentWinners: []`, `hasProvisionalWinner: false`; ningún ganador inventado. Revertido (eliminado).
+- Validaciones adicionales verificadas: modificar un Premio Cancelado → 400; cerrar un Premio en Borrador → 400; cancelar un Premio ya Cerrado → 400.
+- Verificado visualmente en el navegador: lista administrativa (con las 5 filas y las acciones correctas según estado), formulario de alta con selects en cascada Competencia → Edición → Fecha funcionando, flujo completo de alta → edición end-to-end, y las 4 tarjetas de Premios Publicados en la pantalla de usuario (el Premio Borrador no aparece). Consola del navegador sin errores.
+- Swagger expone correctamente los 8 endpoints nuevos (`Admin Prizes` y `Prizes`).
+- `dotnet build`: OK. `npm run build`: OK. `docker compose up -d --build`: 3 servicios healthy. Migración `AddPrizes` aplicada y verificada en PostgreSQL. Logs de `backend`/`frontend`/`db` revisados: sin errores de la aplicación.
+- Estado final verificado: 5 `Prizes`, 12 `Predictions`, 12 `PredictionEvaluations`, sin datos temporales residuales de las pruebas (Premios y usuario temporal de las pruebas E/F/H/L/UI eliminados directamente por no existir endpoint de borrado físico, tal como establece el principio "un Premio publicado no se elimina físicamente" — la eliminación directa se aplicó únicamente a los registros de prueba creados en esta sesión, nunca a los 5 Premios de demostración).
+
+### Archivos modificados/creados
+
+Backend: `Domain/Entities/Prize.cs`, `Domain/Enums/PrizeType.cs`, `Domain/Enums/PrizeScopeType.cs`, `Domain/Enums/PrizeAwardCriteria.cs`, `Domain/Enums/PrizeStatus.cs`, `Data/Configurations/PrizeConfiguration.cs`, `Dtos/PrizeDtos.cs`, `Services/PrizeWinnerService.cs`, `Services/PrizeMapper.cs`, `Endpoints/AdminPrizeEndpoints.cs`, `Endpoints/PrizeEndpoints.cs`, `Migrations/20260731180119_AddPrizes.cs` y `.Designer.cs` (nuevos); `Data/PlayPredictDbContext.cs`, `Data/DataSeeder.cs`, `Program.cs`, `Migrations/PlayPredictDbContextModelSnapshot.cs` (modificados).
+
+Frontend: `pages/AdminPrizesListPage.tsx`, `pages/AdminPrizeFormPage.tsx`, `pages/PrizesCompetitionsPage.tsx`, `pages/PrizesEditionsPage.tsx`, `pages/PrizesListPage.tsx` (nuevos); `api/types.ts`, `App.tsx`, `components/Layout.tsx`, `components/admin.css` (modificados).
 
 ---
 

@@ -128,3 +128,84 @@ export interface RankingEntry {
   incorrectCount: number
   evaluatedCount: number
 }
+
+export type PrizeType = 'Money' | 'Product' | 'Service' | 'Coupon' | 'Ticket' | 'Recognition' | 'Other'
+export type PrizeScopeType = 'Edition' | 'Round' | 'Special'
+export type PrizeAwardCriteria = 'Position' | 'RoundWinner' | 'MostExactScores'
+export type PrizeStatus = 'Draft' | 'Published' | 'Closed' | 'Cancelled'
+
+export const PRIZE_TYPES: PrizeType[] = [
+  'Money',
+  'Product',
+  'Service',
+  'Coupon',
+  'Ticket',
+  'Recognition',
+  'Other',
+]
+export const PRIZE_SCOPE_TYPES: PrizeScopeType[] = ['Edition', 'Round', 'Special']
+export const PRIZE_AWARD_CRITERIA: PrizeAwardCriteria[] = ['Position', 'RoundWinner', 'MostExactScores']
+export const PRIZE_STATUSES: PrizeStatus[] = ['Draft', 'Published', 'Closed', 'Cancelled']
+
+export const PRIZE_TYPE_LABELS: Record<PrizeType, string> = {
+  Money: 'Dinero',
+  Product: 'Producto',
+  Service: 'Servicio',
+  Coupon: 'Cupón',
+  Ticket: 'Entrada',
+  Recognition: 'Reconocimiento',
+  Other: 'Otro',
+}
+
+export const PRIZE_SCOPE_LABELS: Record<PrizeScopeType, string> = {
+  Edition: 'Edición',
+  Round: 'Fecha',
+  Special: 'Especial',
+}
+
+export const PRIZE_CRITERIA_LABELS: Record<PrizeAwardCriteria, string> = {
+  Position: 'Posición en el Ranking',
+  RoundWinner: 'Ganador de la Fecha',
+  MostExactScores: 'Mayor cantidad de marcadores exactos',
+}
+
+export const PRIZE_STATUS_LABELS: Record<PrizeStatus, string> = {
+  Draft: 'Borrador',
+  Published: 'Publicado',
+  Closed: 'Cerrado',
+  Cancelled: 'Cancelado',
+}
+
+export interface PrizeWinnerUser {
+  userId: number
+  firstName: string
+  lastName: string
+}
+
+export interface Prize {
+  id: number
+  editionId: number
+  editionName: string
+  roundId: number | null
+  roundName: string | null
+  name: string
+  description: string | null
+  prizeType: PrizeType
+  prizeTypeLabel: string
+  referenceValue: string | null
+  sponsorName: string | null
+  imageUrl: string | null
+  scopeType: PrizeScopeType
+  scopeLabel: string
+  awardCriteria: PrizeAwardCriteria
+  criteriaLabel: string
+  positionFrom: number | null
+  positionTo: number | null
+  status: PrizeStatus
+  statusLabel: string
+  forLabel: string
+  currentWinners: PrizeWinnerUser[]
+  hasProvisionalWinner: boolean
+  createdAtUtc: string
+  updatedAtUtc: string
+}

@@ -67,12 +67,23 @@ Nota: este sprint se implementó en la sesión anterior (cortada por error 529) 
 - [x] Recálculo automático confirmado al agregar y al corregir un resultado oficial
 - [ ] Ranking mensual, histórico, por empresa, por grupo privado, premios, bonificaciones (explícitamente fuera de este sprint)
 
+## Sprint 7 - Módulo de Premios (completado, sin commitear)
+- [x] Entidad `Prize` (Edition obligatoria, Round opcional, tipo/ámbito/criterio/posiciones/estado) + 4 enums + migración `AddPrizes`
+- [x] `PrizeWinnerService`: ganador actual provisional derivado del Ranking (Sprint 6), nunca persistido, para los 3 criterios (Posición, Ganador de Fecha, Mayor cantidad de exactos)
+- [x] Endpoints administrativos `/api/admin/prizes` (CRUD + publicar/cerrar/cancelar, solo ADMIN) con validación completa
+- [x] Endpoints públicos `/api/prizes/...` (autenticados) — solo Publicado/Cerrado, nunca Borrador ni Cancelado
+- [x] Pantallas administrativas: lista de Premios con acciones, alta y edición con selects en cascada Competencia → Edición → Fecha
+- [x] Pantallas de usuario: Premios → Competencia → Edición → tarjetas de Premios con ganador actual provisional
+- [x] Datos de demostración idempotentes (5 Premios sobre Clausura 2026, 4 Publicados + 1 Borrador) — ganadores verificados exactos
+- [x] Casos A-L del enunciado verificados (empates, visibilidad por estado, validaciones 400/403, ranking vacío sin ganador inventado)
+- [ ] PrizeWinner persistido, entrega/pagos/cupones, reclamos, notificaciones, historial de ganadores, premios mensuales/por empresa/ligas privadas (explícitamente fuera de este sprint)
+
 ## MVP
 - [~] Competencias Oficiales — módulo base (Competencia/Edición/Fecha/Partido) funcionando; falta lo no incluido en el Sprint 2 (p. ej. estados avanzados de administración)
 - [ ] Ligas Privadas
 - [~] Partidos — alta, edición y Resultado Oficial funcionando vía panel administrativo
 - [~] Pronósticos — infraestructura completa (carga, edición y cálculo automático de puntos) funcionando
 - [~] Rankings — Ranking General y por Fecha funcionando; falta ranking histórico/mensual y por grupo privado
-- [ ] Premios
-- [~] Panel Administrador — fixture administrable (Competencias → Ediciones → Fechas → Partidos) + Usuarios + Configuración de puntuación por Edición; faltan las secciones de Resultados/Premios/Ligas del panel completo
+- [~] Premios — administración, publicación y visualización con ganador actual provisional funcionando; falta entrega real, pagos e historial de ganadores
+- [~] Panel Administrador — fixture administrable (Competencias → Ediciones → Fechas → Partidos) + Usuarios + Configuración de puntuación por Edición + Premios; faltan las secciones de Resultados/Ligas del panel completo
 - [x] Usuarios — Registro, Login, Perfil, administración básica (activar/desactivar) funcionando

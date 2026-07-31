@@ -306,4 +306,78 @@ public static class DataSeeder
 
         await db.SaveChangesAsync();
     }
+
+    // Sólo en Development: Premios de demostración (Sprint 7) sobre Clausura 2026 / Fecha 1.
+    // El Premio no calcula nada; solo describe el ámbito y criterio, y el ganador actual se
+    // deriva en tiempo real desde el Ranking (Sprint 6). Idempotente por (EditionId, Name).
+    private static readonly (
+        string Name,
+        PrizeType Type,
+        string Description,
+        string? ReferenceValue,
+        string? Sponsor,
+        PrizeScopeType Scope,
+        PrizeAwardCriteria Criteria,
+        int? PositionFrom,
+        int? PositionTo,
+        PrizeStatus Status)[] PrizeDemoData =
+    {
+        ("Gran Premio Clausura 2026", PrizeType.Money,
+            "Premio para el primer puesto del Ranking General.", "$50.000.000", DefaultCompanyName,
+            PrizeScopeType.Edition, PrizeAwardCriteria.Position, 1, 1, PrizeStatus.Published),
+        ("Segundo Premio Clausura 2026", PrizeType.Product,
+            "Viaje para dos personas.", null, DefaultCompanyName,
+            PrizeScopeType.Edition, PrizeAwardCriteria.Position, 2, 2, PrizeStatus.Published),
+        ("Premio Fecha 1", PrizeType.Product,
+            "Camiseta oficial.", null, DefaultCompanyName,
+            PrizeScopeType.Round, PrizeAwardCriteria.RoundWinner, null, null, PrizeStatus.Published),
+        ("Rey de los Exactos", PrizeType.Recognition,
+            "Reconocimiento para quien consiga más marcadores exactos.", null, null,
+            PrizeScopeType.Edition, PrizeAwardCriteria.MostExactScores, null, null, PrizeStatus.Published),
+        ("Premio Sorpresa", PrizeType.Other,
+            "Premio especial pendiente de publicación.", null, null,
+            PrizeScopeType.Edition, PrizeAwardCriteria.Position, 3, 3, PrizeStatus.Draft),
+    };
+
+    public static async Task SeedPrizesDemoAsync(PlayPredictDbContext db)
+    {
+        var edition = await db.Editions.FirstOrDefaultAsync(e => e.Name == ClausuraEditionName);
+        if (edition is null)
+        {
+            // El seed base (SeedAsync) todavía no corrió; nada que hacer todavía.
+            return;
+        }
+
+        var round = await db.Rounds.FirstOrDefaultAsync(r => r.Name == RoundName && r.EditionId == edition.Id);
+
+        var now = DateTime.UtcNow;
+        foreach (var d in PrizeDemoData)
+        {
+            var exists = await db.Prizes.AnyAsync(p => p.EditionId == edition.Id && p.Name == d.Name);
+            if (exists)
+            {
+                continue;
+            }
+
+            db.Prizes.Add(new Prize
+            {
+                EditionId = edition.Id,
+                RoundId = d.Scope == PrizeScopeType.Round ? round?.Id : null,
+                Name = d.Name,
+                Description = d.Description,
+                PrizeType = d.Type,
+                ReferenceValue = d.ReferenceValue,
+                SponsorName = d.Sponsor,
+                ScopeType = d.Scope,
+                AwardCriteria = d.Criteria,
+                PositionFrom = d.PositionFrom,
+                PositionTo = d.PositionTo,
+                Status = d.Status,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            });
+        }
+
+        await db.SaveChangesAsync();
+    }
 }

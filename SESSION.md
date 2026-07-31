@@ -7,10 +7,10 @@ PlayPredict
 main (sincronizada con origin/main)
 
 ## Último commit
-c8f9629 — feat: implement edition and round rankings
+469ea14 — docs: sync session after Sprint 6
 
 ## Estado del entorno
-- Git: rama `main`, sincronizada con `origin/main` (push realizado). Sprint 6 (Motor de Rankings) commiteado y pusheado en `c8f9629`.
+- Git: rama `main`. Sprint 7 (Módulo de Premios) implementado en esta sesión sobre el commit `469ea14`. Sin commitear — pendiente de aprobación explícita del usuario.
 - Docker (`docker compose ps`): los 3 servicios levantados y healthy.
   - `playpredict_db` (PostgreSQL 18) — Up, healthy
   - `playpredict_backend` — Up, healthy
@@ -20,27 +20,28 @@ c8f9629 — feat: implement edition and round rankings
   - Backend Swagger: http://localhost:8006/swagger
   - Backend health: http://localhost:8006/api/health
 - Usuario administrador de desarrollo: `admin@playpredict.local` / `admin123` (creado por el seed, solo en Development).
-- Usuarios de demostración del Ranking (solo Development, contraseña `demo123`): `ana.torres@playpredict.local`, `juan.perez@playpredict.local`, `maria.lopez@playpredict.local`, `pedro.gomez@playpredict.local`. No colisionan con los usuarios de prueba preexistentes de sesiones anteriores (`juan.perez@example.com`, `maria.lopez@example.com`, `prueba@example.com`), que se dejaron intactos.
+- Usuarios de demostración del Ranking (solo Development, contraseña `demo123`): `ana.torres@playpredict.local`, `juan.perez@playpredict.local`, `maria.lopez@playpredict.local`, `pedro.gomez@playpredict.local`.
 
 ## Último trabajo completado
-**Sprint 6 — Motor de Rankings**: el Ranking no calcula puntos (eso ya lo hace el Motor de Puntuación del Sprint 5); solo consulta `PredictionEvaluations` existentes y calcula posiciones dinámicamente, sin persistir nada.
+**Sprint 7 — Módulo de Premios**: el Premio no calcula puntos ni posiciones; describe qué se entrega y a quién, y el "ganador actual" se deriva en tiempo real consultando el Ranking (Sprint 6) — nunca se persiste un ganador definitivo.
 
-- Backend: `RankingService` (responsabilidad única, sin estado) con `GetEditionRankingAsync`/`GetRoundRankingAsync`; agrupa evaluaciones por usuario, suma puntos y cuenta exactos/correctos/incorrectos; ordena por puntos → exactos → correctos → incorrectos (asc) → apellido/nombre (solo para desempate visual); asigna posición compartida al estilo "1-2-2-4" (ranking deportivo estándar, no "1-2-2-3"). Solo participan usuarios con al menos un pronóstico evaluado.
-- Endpoints `GET /api/rankings/editions/{editionId}` y `GET /api/rankings/rounds/{roundId}`, autenticados, sin restricción de rol.
-- Sin migración: no se creó ninguna tabla nueva, todo se calcula en memoria a partir de `Predictions`/`PredictionEvaluations`/`Matches`/`Rounds`/`Editions`.
-- Frontend: nueva entrada "Rankings" en el menú, con navegación Competencia → Edición → (Ranking General | Fechas → Ranking por Fecha), tabla con columnas # / Usuario / Puntos / Exactos / Correctos / Incorrectos / Pronósticos.
-- Datos de demostración (solo Development, idempotentes): Fecha 1 de Clausura 2026 con nombres reales (Boca Juniors–River Plate, Racing Club–Independiente, Estudiantes–Gimnasia) y resultados oficiales (2-1, 1-1, 0-2); 4 usuarios (Ana Torres, Juan Pérez, María López, Pedro Gómez) con sus pronósticos ya evaluados. Ranking resultante verificado exacto: Juan 15, Ana 12, María 9, Pedro 6.
-- Probado en el navegador y por API: ranking correcto, empates con posición compartida y desempate alfabético (prueba temporal revertida), recálculo automático al agregar un resultado nuevo y al corregir uno existente (pruebas temporales revertidas). Fixture final limpio: 12 Predictions, 12 PredictionEvaluations, exactamente las esperadas.
+- Backend: entidad `Prize` (Edition obligatoria, Round opcional, tipo/ámbito/criterio/posiciones/estado) + 4 enums (`PrizeType`, `PrizeScopeType`, `PrizeAwardCriteria`, `PrizeStatus`) + migración `AddPrizes`. Servicio `PrizeWinnerService` (consulta `RankingService`, nunca calcula puntos) para los 3 criterios: Posición (rango en Ranking General o por Fecha), Ganador de Fecha (posición 1 de esa Fecha, con empates), Mayor cantidad de exactos (máximo `ExactCount`, con empates). `PrizeMapper` arma el DTO de lectura con textos en castellano y el "Para: ..." descriptivo.
+- Endpoints administrativos (`/api/admin/prizes`, solo ADMIN): listar, obtener, crear, editar, publicar, cerrar, cancelar — con validación completa (Edición/Fecha existentes, coherencia Edición-Fecha, criterio compatible con el ámbito, posiciones válidas, enums válidos, transiciones de estado controladas).
+- Endpoints públicos (`/api/prizes/...`, cualquier usuario autenticado): por Edición, por Fecha y por Id — devuelven únicamente Premios Publicados o Cerrados, nunca Borrador ni Cancelados.
+- Frontend administrativo: pantallas "Premios" (lista con acciones Publicar/Cerrar/Cancelar), "Nuevo Premio" y "Editar Premio" (con selects en cascada Competencia → Edición → Fecha), agregadas al menú.
+- Frontend de usuario: navegación "Premios" → Competencia → Edición → tarjetas de Premios (Nombre, Descripción, Tipo, Valor de referencia, Sponsor, "Para quién es", Estado, Ganador actual provisional); nunca muestra Borrador ni Cancelados, ni controles administrativos.
+- Datos de demostración (solo Development, idempotentes): 5 Premios sobre Clausura 2026 — 4 Publicados (1° y 2° puesto, Ganador de Fecha 1, Mayor cantidad de exactos) y 1 en Borrador ("Premio Sorpresa"). Ganadores actuales verificados exactos: Juan Pérez (1°, Fecha 1, exactos), Ana Torres (2°).
+- Probado exhaustivamente (casos A-L del enunciado, todos con datos temporales revertidos): ganadores por posición, por Fecha y por exactos; empates con múltiples ganadores provisionales (posición y exactos); visibilidad Borrador/Cancelado oculta para USER pero visible para ADMIN; 400 en Fecha de otra Edición y en rango de posiciones inválido; 403 para USER en endpoints administrativos; sin ganador inventado cuando el Ranking está vacío; transiciones de estado inválidas bloqueadas (modificar Cancelado, cerrar Borrador, cancelar Cerrado). Verificado también visualmente en el navegador (lista admin, formulario con selects en cascada, tarjetas de usuario) y por API/Swagger.
 
-No se implementó (fuera de alcance): ranking mensual, histórico, por empresa, por grupo privado, premios, bonificaciones.
+No se implementó (fuera de alcance): PrizeWinner persistido, entrega/pagos/cupones, reclamos, notificaciones, historial de ganadores, premios mensuales/por empresa/ligas privadas, rediseño visual.
 
 Detalle completo en PROJECT_STATUS.md.
 
 ## Pendiente inmediato
-Ninguno. Sprint 6 cerrado (commit y push realizados).
+Aprobación explícita del usuario para hacer commit del Sprint 7.
 
 ## Próximo paso exacto
-Sprint 7 — Premios. No iniciar sin aprobación explícita.
+Esperar aprobación del usuario para el commit del Sprint 7. No iniciar Sprint 8 (Configuración de Competencias) sin aprobación explícita.
 
 ## Comandos para retomar
 ```bash

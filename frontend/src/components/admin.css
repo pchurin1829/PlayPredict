@@ -111,9 +111,15 @@ table.admin-table {
 
 .badge--active,
 .badge--Active,
-.badge--Finished {
+.badge--Finished,
+.badge--Published {
   background: #d4edda;
   color: #155724;
+}
+
+.badge--Closed {
+  background: #e2e3e5;
+  color: #383d41;
 }
 
 .badge--draft,
@@ -344,4 +350,74 @@ table.admin-table {
   font-size: 0.85rem;
   line-height: 1.5;
   color: #333;
+}
+
+.prize-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.prize-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.prize-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.prize-card__header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.prize-card__description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.prize-card__details {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.prize-card__details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.prize-card__details dt {
+  color: #777;
+}
+
+.prize-card__details dd {
+  margin: 0;
+  font-weight: 600;
+  color: #333;
+  text-align: right;
+}
+
+.prize-card__winner {
+  font-size: 0.85rem;
+  color: #155724;
+  border-top: 1px solid #eee;
+  padding-top: 0.65rem;
+}
+
+.prize-card__no-winner {
+  color: #777;
 }

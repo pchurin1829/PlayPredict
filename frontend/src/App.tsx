@@ -23,6 +23,11 @@ import RankingsEditionsPage from './pages/RankingsEditionsPage'
 import RankingsRoundsPage from './pages/RankingsRoundsPage'
 import RankingGeneralPage from './pages/RankingGeneralPage'
 import RankingRoundPage from './pages/RankingRoundPage'
+import AdminPrizesListPage from './pages/AdminPrizesListPage'
+import AdminPrizeFormPage from './pages/AdminPrizeFormPage'
+import PrizesCompetitionsPage from './pages/PrizesCompetitionsPage'
+import PrizesEditionsPage from './pages/PrizesEditionsPage'
+import PrizesListPage from './pages/PrizesListPage'
 import './components/admin.css'
 
 function App() {
@@ -93,6 +98,38 @@ function App() {
         <Route path="/rankings/editions/:editionId" element={<RankingGeneralPage />} />
         <Route path="/rankings/editions/:editionId/rounds" element={<RankingsRoundsPage />} />
         <Route path="/rankings/rounds/:roundId" element={<RankingRoundPage />} />
+
+        <Route path="/prizes" element={<PrizesCompetitionsPage />} />
+        <Route
+          path="/prizes/competitions/:competitionId/editions"
+          element={<PrizesEditionsPage />}
+        />
+        <Route path="/prizes/editions/:editionId" element={<PrizesListPage />} />
+
+        <Route
+          path="/admin/prizes"
+          element={
+            <RequireAdmin>
+              <AdminPrizesListPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/prizes/new"
+          element={
+            <RequireAdmin>
+              <AdminPrizeFormPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/prizes/:prizeId/edit"
+          element={
+            <RequireAdmin>
+              <AdminPrizeFormPage />
+            </RequireAdmin>
+          }
+        />
 
         <Route path="*" element={<Navigate to="/competitions" replace />} />
       </Route>

@@ -1,0 +1,136 @@
+﻿Structured titles
+0001 : 00:00:00:00,00:00:03:00,10
+80 80 80
+C1Y00 Sí, sí, ya lo tenemos en
+C1Y00 la cabeza, para gente lo
+
+0002 : 00:00:03:00,00:00:06:00,10
+80 80 80
+C1Y00 paso por acá, por lo
+C1Y00 tenemos todo en la cabeza.
+
+0003 : 00:00:06:00,00:00:08:00,10
+80 80 80
+C1Y00 La idea es iniciar el
+C1Y00 campeonato, para que
+
+0004 : 00:00:08:00,00:00:14:00,10
+80 80 80
+C1Y00 se ejueve el campeonato de a principio a
+C1Y00 fin, que estarda como cuatro o cinco meses,
+
+0005 : 00:00:14:00,00:00:17:00,10
+80 80 80
+C1Y00 entonces ahí puede poner
+C1Y00 un premio importante,
+
+0006 : 00:00:18:00,00:00:22:00,10
+80 80 80
+C1Y00 que como viendes y
+C1Y00 jugos, en un momento existe
+
+0007 : 00:00:22:00,00:00:26:00,10
+80 80 80
+C1Y00 el premio, el principal
+C1Y00 atractivo de todo esto.
+
+0008 : 00:00:26:00,00:00:30:00,10
+80 80 80
+C1Y00 Entonces, en un campeonato que
+C1Y00 por ahí dura cuatro o cinco meses
+
+0009 : 00:00:30:00,00:00:34:00,10
+80 80 80
+C1Y00 al campeón, ellos pueden dar un
+C1Y00 premio de 50 millones de pesos.
+
+0010 : 00:00:34:00,00:00:37:00,11
+80 80 80
+C1Y00 Qué un montón de guita, hoy en día.
+
+0011 : 00:00:39:00,00:00:46:00,10
+80 80 80
+C1Y00 Entonces, si se inicia en un campeonato,
+C1Y00 que va a ser copa el NEN por 50 millones,
+
+0012 : 00:00:47:00,00:00:51:00,10
+80 80 80
+C1Y00 hay dos maneras de
+C1Y00 sumar, una fecha a fecha
+
+0013 : 00:00:51:00,00:00:55:00,10
+80 80 80
+C1Y00 partido a partido, que
+C1Y00 es de la siguiente manera.
+
+0014 : 00:00:55:00,00:01:00:00,10
+80 80 80
+C1Y00 Resultado exacto, tres puntos,
+C1Y00 resultado exacto, seis puntos.
+
+0015 : 00:01:00:00,00:01:03:00,10
+80 80 80
+C1Y00 Si vos pusiste dos acerios y
+C1Y00 salió dos acero, seis puntos.
+
+0016 : 00:01:03:00,00:01:06:00,11
+80 80 80
+C1Y00 Si ganó tu equipo, un acero, tres puntos.
+
+0017 : 00:01:06:00,00:01:09:00,10
+80 80 80
+C1Y00 Resultado pegar el
+C1Y00 resultado y en exacto, tres
+
+0018 : 00:01:09:00,00:01:12:00,10
+80 80 80
+C1Y00 puntos, seis puntos, exacto,
+C1Y00 tres puntos y en exacto.
+
+0019 : 00:01:12:00,00:01:17:00,10
+80 80 80
+C1Y00 Y ahí se le agrega algo al marcado
+C1Y00 pago que es goleador del partido.
+
+0020 : 00:01:17:00,00:01:20:00,11
+80 80 80
+C1Y00 A vos te permite poner un jugador.
+
+0021 : 00:01:20:00,00:01:26:00,10
+80 80 80
+C1Y00 Si ese jugador mete por cada gol que
+C1Y00 mete ese jugador en el partido, dos puntos.
+
+0022 : 00:01:26:00,00:01:30:00,11
+80 80 80
+C1Y00 Eso se suma partido a partido.
+
+0023 : 00:01:30:00,00:01:37:00,10
+80 80 80
+C1Y00 Pero después, zona a, ganador zona a,
+C1Y00 50 puntos, ganador zona a, 50 puntos.
+
+0024 : 00:01:37:00,00:01:40:00,10
+80 80 80
+C1Y00 Viste que en el torno
+C1Y00 argentino, hay zona a y zona a.
+
+0025 : 00:01:40:00,00:01:47:00,10
+80 80 80
+C1Y00 Ganador zona a, 50 puntos,
+C1Y00 ganador zona a, 50 puntos.
+
+0026 : 00:01:47:00,00:01:50:00,11
+80 80 80
+C1Y00 Ganador del campeonato, campeón.
+
+0027 : 00:01:50:00,00:01:53:00,10
+80 80 80
+C1Y00 Después en el octagonal
+C1Y00 ese que se hace, 100 puntos,
+
+0028 : 00:01:53:00,00:01:59:00,10
+80 80 80
+C1Y00 subcampeón, 50 puntos, goleador
+C1Y00 del campeonato, 80 puntos.
+

@@ -49,6 +49,7 @@ public static class EditionEndpoints
                 return Results.ValidationProblem(errors);
             }
 
+            var now = DateTime.UtcNow;
             var edition = new Edition
             {
                 CompetitionId = competitionId,
@@ -56,10 +57,23 @@ public static class EditionEndpoints
                 StartDateUtc = dto.StartDateUtc,
                 EndDateUtc = dto.EndDateUtc,
                 Status = status,
-                CreatedAtUtc = DateTime.UtcNow
+                CreatedAtUtc = now
             };
 
             db.Editions.Add(edition);
+
+            // Toda Edición debe contar con configuración de puntuación desde su creación,
+            // con los valores iniciales editables (6 / 3 / 0).
+            db.EditionScoringConfigurations.Add(new EditionScoringConfiguration
+            {
+                Edition = edition,
+                ExactScorePoints = 6,
+                CorrectOutcomePoints = 3,
+                IncorrectPoints = 0,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            });
+
             await db.SaveChangesAsync();
 
             return Results.Created($"/api/editions/{edition.Id}", ToDto(edition));

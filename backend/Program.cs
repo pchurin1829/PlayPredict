@@ -41,6 +41,7 @@ var jwtIssuer = jwtSection["Issuer"]!;
 var jwtAudience = jwtSection["Audience"]!;
 
 builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddScoped<PredictionEvaluationService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -89,6 +90,7 @@ app.MapEditionEndpoints();
 app.MapRoundEndpoints();
 app.MapMatchEndpoints();
 app.MapPredictionEndpoints();
+app.MapEditionScoringConfigurationEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -102,6 +104,10 @@ using (var scope = app.Services.CreateScope())
         await DataSeeder.SeedAsync(db);
         await DataSeeder.SeedAdminUserAsync(db);
     }
+
+    // Después de cualquier seed de datos: garantiza que toda Edición (existente o
+    // recién sembrada) tenga configuración de puntuación.
+    await DataSeeder.SeedEditionScoringConfigurationsAsync(db);
 }
 
 app.Run();

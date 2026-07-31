@@ -108,4 +108,4 @@ npm run dev
 
 ## Documentación funcional
 
-Ver carpeta [docs/](docs/) para el modelo conceptual, modelo de datos, reglas de negocio y pantallas del MVP.
+Ver [docs/README_DOCS.md](docs/README_DOCS.md) — índice de arquitectura (modelo conceptual, modelo de datos, reglas de negocio, Motor de Pronósticos/Puntuación), producto (pantallas, plan de implementación, roadmap) y propuestas comerciales.

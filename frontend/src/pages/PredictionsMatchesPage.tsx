@@ -201,7 +201,24 @@ export default function PredictionsMatchesPage() {
 
                       {!editable && m.status === 'Cancelled' && <span>—</span>}
 
-                      {!editable && m.status !== 'Cancelled' && (
+                      {!editable && m.status === 'Finished' && (
+                        m.myPrediction ? (
+                          <div className="prediction-result">
+                            <div>
+                              Mi pronóstico: {m.myPrediction.predictedHomeScore} - {m.myPrediction.predictedAwayScore}
+                            </div>
+                            <div>
+                              Resultado oficial: {m.myPrediction.officialHomeScore} - {m.myPrediction.officialAwayScore}
+                            </div>
+                            <div>Puntos obtenidos: {m.myPrediction.points}</div>
+                            <div>Motivo: {m.myPrediction.evaluationLabel}</div>
+                          </div>
+                        ) : (
+                          <span>Sin pronóstico</span>
+                        )
+                      )}
+
+                      {!editable && m.status !== 'Cancelled' && m.status !== 'Finished' && (
                         <span>
                           Pronóstico cerrado
                           {m.myPrediction && ` (${m.myPrediction.predictedHomeScore} - ${m.myPrediction.predictedAwayScore})`}

@@ -19,6 +19,8 @@ public class PlayPredictDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<Prediction> Predictions => Set<Prediction>();
+    public DbSet<EditionScoringConfiguration> EditionScoringConfigurations => Set<EditionScoringConfiguration>();
+    public DbSet<PredictionEvaluation> PredictionEvaluations => Set<PredictionEvaluation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

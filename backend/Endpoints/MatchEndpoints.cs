@@ -3,6 +3,7 @@ using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Dtos;
+using PlayPredict.Api.Services;
 
 namespace PlayPredict.Api.Endpoints;
 
@@ -89,7 +90,7 @@ public static class MatchEndpoints
             return Results.Ok(ToDto(match));
         }).WithTags("Matches");
 
-        app.MapPut("/api/matches/{id:int}/result", async (int id, MatchResultDto dto, PlayPredictDbContext db) =>
+        app.MapPut("/api/matches/{id:int}/result", async (int id, MatchResultDto dto, PlayPredictDbContext db, PredictionEvaluationService evaluationService) =>
         {
             var errors = new Dictionary<string, string[]>();
 
@@ -126,11 +127,12 @@ public static class MatchEndpoints
             match.AwayGoals = dto.AwayGoals;
             match.Status = MatchStatus.Finished;
 
-            await db.SaveChangesAsync();
+            // Evalúa (crea o recalcula) los Pronósticos de este partido con la configuración
+            // de puntuación de su Edición. Todo se persiste en un único SaveChanges, junto con
+            // el resultado oficial, para que quede consistente de forma atómica.
+            await evaluationService.PrepareEvaluationsForMatchAsync(db, match);
 
-            // Punto de extensión: en un sprint posterior, aquí se disparará el
-            // recálculo de Pronósticos y Rankings a partir del Resultado Oficial.
-            // await forecastRecalculationService.RecalculateForMatchAsync(match.Id);
+            await db.SaveChangesAsync();
 
             return Results.Ok(ToDto(match));
         }).WithTags("Matches");

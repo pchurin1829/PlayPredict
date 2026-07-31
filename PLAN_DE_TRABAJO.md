@@ -43,12 +43,25 @@ Nota: este sprint se implementó en la sesión anterior (cortada por error 529) 
 - [x] Pantalla "Pronósticos" en el frontend con navegación Competencia → Edición → Fecha → Partidos y carga partido por partido desde una única pantalla
 - [ ] Cálculo de puntos, comparación con resultado oficial, rankings, posiciones y premios (explícitamente fuera de este sprint, queda para Sprint 5 en adelante)
 
+## Sprint 5 - Motor de Puntuación Configurable Básico (completado, sin commitear)
+- [x] Entidad EditionScoringConfiguration (1 a 1 con Edition, única por EditionId) + configuración EF Core
+- [x] Entidad PredictionEvaluation (única por PredictionId, sin historial) + enum EvaluationType
+- [x] Migración `AddScoringEngine` creada y aplicada
+- [x] Servicio de evaluación (`PredictionEvaluationService`) separado del endpoint, responsabilidad única
+- [x] `PUT /api/matches/{id}/result` dispara la evaluación automática de todos los pronósticos del partido, en la misma transacción implícita
+- [x] Endpoints `GET/PUT /api/editions/{editionId}/scoring-configuration` exclusivos ADMIN, con validación de enteros ≥ 0
+- [x] Configuración inicial automática (6/3/0) para Ediciones existentes (backfill del seed) y nuevas (al crearlas)
+- [x] Reglas: marcador exacto > resultado correcto > incorrecto; recálculo al corregir un resultado oficial sin duplicar evaluaciones; sin evaluación para partidos sin resultado, Cancelados o Suspendidos
+- [x] Pantalla "Configurar puntuación" en el panel administrativo (solo ADMIN)
+- [x] Pantalla de Pronósticos del usuario muestra puntos/motivo cuando el partido está Finalizado, o "Sin pronóstico" si no pronosticó
+- [ ] Rankings, posiciones, premios, bonificaciones, multiplicadores, historial de evaluaciones (explícitamente fuera de este sprint)
+
 ## MVP
 - [~] Competencias Oficiales — módulo base (Competencia/Edición/Fecha/Partido) funcionando; falta lo no incluido en el Sprint 2 (p. ej. estados avanzados de administración)
 - [ ] Ligas Privadas
 - [~] Partidos — alta, edición y Resultado Oficial funcionando vía panel administrativo
-- [~] Pronósticos — infraestructura completa (carga y edición) funcionando; falta cálculo de puntos y comparación con resultado oficial
+- [~] Pronósticos — infraestructura completa (carga, edición y cálculo automático de puntos) funcionando; falta ranking y posiciones
 - [ ] Rankings
 - [ ] Premios
-- [~] Panel Administrador — fixture administrable (Competencias → Ediciones → Fechas → Partidos) + Usuarios; faltan las secciones de Resultados/Premios/Ligas del panel completo
+- [~] Panel Administrador — fixture administrable (Competencias → Ediciones → Fechas → Partidos) + Usuarios + Configuración de puntuación por Edición; faltan las secciones de Resultados/Premios/Ligas del panel completo
 - [x] Usuarios — Registro, Login, Perfil, administración básica (activar/desactivar) funcionando

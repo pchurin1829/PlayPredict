@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { EDITION_STATUS_LABELS, type Competition, type Edition } from '../api/types'
+import { useAuth } from '../auth/AuthContext'
 import StatusMessage from '../components/StatusMessage'
 
 export default function EditionsListPage() {
   const { competitionId } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAdmin = user?.roles.includes('ADMIN') ?? false
 
   const [competition, setCompetition] = useState<Competition | null>(null)
   const [editions, setEditions] = useState<Edition[] | null>(null)
@@ -77,13 +80,24 @@ export default function EditionsListPage() {
                     <span className={`badge badge--${ed.status}`}>{EDITION_STATUS_LABELS[ed.status]}</span>
                   </td>
                   <td>
-                    <Link
-                      to={`/editions/${ed.id}/edit`}
-                      className="btn btn-secondary"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Editar
-                    </Link>
+                    <div className="match-row-actions">
+                      <Link
+                        to={`/editions/${ed.id}/edit`}
+                        className="btn btn-secondary"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Editar
+                      </Link>
+                      {isAdmin && (
+                        <Link
+                          to={`/editions/${ed.id}/scoring-configuration`}
+                          className="btn btn-secondary"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Configurar puntuación
+                        </Link>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

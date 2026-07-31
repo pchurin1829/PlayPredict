@@ -4,6 +4,7 @@ using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Dtos;
+using PlayPredict.Api.Services;
 
 namespace PlayPredict.Api.Endpoints;
 
@@ -37,8 +38,14 @@ public static class PredictionEndpoints
                 .Where(p => p.UserId == user.Id && matchIds.Contains(p.MatchId))
                 .ToListAsync();
 
+            var evaluations = await GetEvaluationsForPredictionsAsync(db, predictions);
+
             var result = matches.Select(m =>
-                ToMatchWithPredictionDto(m, predictions.FirstOrDefault(p => p.MatchId == m.Id)));
+            {
+                var prediction = predictions.FirstOrDefault(p => p.MatchId == m.Id);
+                var evaluation = prediction is null ? null : evaluations.GetValueOrDefault(prediction.Id);
+                return ToMatchWithPredictionDto(m, prediction, evaluation);
+            });
 
             return Results.Ok(result);
         });
@@ -54,10 +61,13 @@ public static class PredictionEndpoints
             var predictions = await db.Predictions
                 .Where(p => p.UserId == user.Id)
                 .OrderByDescending(p => p.UpdatedAtUtc)
-                .Select(p => ToDto(p))
                 .ToListAsync();
 
-            return Results.Ok(predictions);
+            var evaluations = await GetEvaluationsForPredictionsAsync(db, predictions);
+
+            var dtos = predictions.Select(p => ToDto(p, evaluations.GetValueOrDefault(p.Id)));
+
+            return Results.Ok(dtos);
         });
 
         group.MapPost("/", async (CreatePredictionDto dto, ClaimsPrincipal principal, PlayPredictDbContext db) =>
@@ -190,10 +200,31 @@ public static class PredictionEndpoints
         return errors;
     }
 
-    private static PredictionDto ToDto(Prediction p) =>
-        new(p.Id, p.MatchId, p.UserId, p.PredictedHomeScore, p.PredictedAwayScore, p.CreatedAtUtc, p.UpdatedAtUtc);
+    private static async Task<Dictionary<int, PredictionEvaluation>> GetEvaluationsForPredictionsAsync(
+        PlayPredictDbContext db, List<Prediction> predictions)
+    {
+        if (predictions.Count == 0)
+        {
+            return new Dictionary<int, PredictionEvaluation>();
+        }
 
-    private static MatchWithPredictionDto ToMatchWithPredictionDto(Match m, Prediction? prediction) =>
+        var predictionIds = predictions.Select(p => p.Id).ToList();
+        var evaluations = await db.PredictionEvaluations
+            .Where(e => predictionIds.Contains(e.PredictionId))
+            .ToListAsync();
+
+        return evaluations.ToDictionary(e => e.PredictionId);
+    }
+
+    private static PredictionDto ToDto(Prediction p, PredictionEvaluation? evaluation = null) =>
+        new(p.Id, p.MatchId, p.UserId, p.PredictedHomeScore, p.PredictedAwayScore, p.CreatedAtUtc, p.UpdatedAtUtc,
+            evaluation?.Points,
+            evaluation?.EvaluationType.ToString(),
+            evaluation is null ? null : PredictionEvaluationService.GetLabel(evaluation.EvaluationType),
+            evaluation?.OfficialHomeScore,
+            evaluation?.OfficialAwayScore);
+
+    private static MatchWithPredictionDto ToMatchWithPredictionDto(Match m, Prediction? prediction, PredictionEvaluation? evaluation) =>
         new(m.Id, m.RoundId, m.ParticipantHome, m.ParticipantAway, m.StartsAtUtc, m.Status.ToString(),
-            m.HomeGoals, m.AwayGoals, prediction is null ? null : ToDto(prediction), CanCreateOrEditPrediction(m));
+            m.HomeGoals, m.AwayGoals, prediction is null ? null : ToDto(prediction, evaluation), CanCreateOrEditPrediction(m));
 }

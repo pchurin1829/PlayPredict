@@ -7,7 +7,12 @@ public record PredictionDto(
     int PredictedHomeScore,
     int PredictedAwayScore,
     DateTime CreatedAtUtc,
-    DateTime UpdatedAtUtc);
+    DateTime UpdatedAtUtc,
+    int? Points,
+    string? EvaluationType,
+    string? EvaluationLabel,
+    int? OfficialHomeScore,
+    int? OfficialAwayScore);
 
 public record CreatePredictionDto(
     int MatchId,

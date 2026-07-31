@@ -77,12 +77,29 @@ export interface AuthResponse {
   user: User
 }
 
+export type EvaluationType = 'ExactScore' | 'CorrectOutcome' | 'Incorrect'
+
 export interface Prediction {
   id: number
   matchId: number
   userId: number
   predictedHomeScore: number
   predictedAwayScore: number
+  createdAtUtc: string
+  updatedAtUtc: string
+  points: number | null
+  evaluationType: EvaluationType | null
+  evaluationLabel: string | null
+  officialHomeScore: number | null
+  officialAwayScore: number | null
+}
+
+export interface EditionScoringConfiguration {
+  id: number
+  editionId: number
+  exactScorePoints: number
+  correctOutcomePoints: number
+  incorrectPoints: number
   createdAtUtc: string
   updatedAtUtc: string
 }

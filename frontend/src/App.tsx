@@ -9,6 +9,7 @@ import CompetitionsListPage from './pages/CompetitionsListPage'
 import CompetitionFormPage from './pages/CompetitionFormPage'
 import EditionsListPage from './pages/EditionsListPage'
 import EditionFormPage from './pages/EditionFormPage'
+import EditionScoringConfigurationPage from './pages/EditionScoringConfigurationPage'
 import RoundsListPage from './pages/RoundsListPage'
 import RoundFormPage from './pages/RoundFormPage'
 import MatchesListPage from './pages/MatchesListPage'
@@ -54,6 +55,14 @@ function App() {
         />
 
         <Route path="/editions/:editionId/edit" element={<EditionFormPage />} />
+        <Route
+          path="/editions/:editionId/scoring-configuration"
+          element={
+            <RequireAdmin>
+              <EditionScoringConfigurationPage />
+            </RequireAdmin>
+          }
+        />
         <Route path="/editions/:editionId/rounds" element={<RoundsListPage />} />
         <Route path="/editions/:editionId/rounds/new" element={<RoundFormPage />} />
 

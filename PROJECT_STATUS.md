@@ -1,8 +1,122 @@
 # PROJECT STATUS
 
-Versión: 0.4.1
-Estado: Sprint 4 (Sistema de Pronósticos) commiteado en `1fd819f`. Fix de la regla de cierre de Pronósticos aplicado sobre ese commit — sin commitear todavía, pendiente de aprobación explícita del usuario.
-Próximo paso: Sprint 5 en adelante (puntos, rankings, posiciones, premios). No iniciar sin aprobación explícita.
+Versión: 0.6.0
+Estado: Sprint 5 (Motor de Puntuación Configurable Básico) aprobado, verificado visualmente y commiteado, junto con la consolidación de `docs/`.
+Próximo paso: Sprint 6 (Ranking General). No iniciar sin aprobación explícita.
+
+---
+
+## Nota: reorganización de `docs/` consolidada
+
+En la sesión del Sprint 5 se encontró la carpeta `docs/` reorganizada manualmente en el árbol de trabajo, sin commit (archivos planos movidos a `docs/arquitectura/`, `docs/products/`, `docs/business/`). Se informó, no se tocó, y se continuó con el Sprint. En la sesión siguiente, ya aprobado el Sprint 5, se pidió consolidar esa reorganización antes de commitear. Se hizo lo siguiente:
+
+- Se verificó contenido idéntico entre cada archivo movido y su versión commiteada anterior: los 4 `.md` (`MODELO_CONCEPTUAL`, `MODELO_DATOS`, `REGLAS_NEGOCIO`, `PANTALLAS_MVP`, `PLAN_IMPLEMENTACION_MVP` → ahora con sufijo `_v1.0`) son byte-idénticos salvo fin de línea (LF→CRLF, ya esperado en este repo); los 5 PDF de `docs/business/` tienen el mismo hash SHA-256 que sus originales. **No se perdió contenido.**
+- Se renombró `docs/products/ROADMAP_PRONOSTICOS.md` → `docs/products/ROADMAP_PRONOSTICOS_v1.0.md` (único archivo que faltaba el sufijo de versión pedido).
+- No se creó `MOTOR_DE_PRONOSTICOS_v1.0.md` (no existía y no se pidió crearlo); `MODELO_CONCEPTUAL_PRONOSTICOS_v1.0.md` queda como documento central del Motor de Pronósticos.
+- `docs/README_DOCS.md` reescrito con las rutas reales de los 14 documentos existentes (antes listaba archivos inexistentes como `MOTOR_DE_PRONOSTICOS_v1.0` y `PRODUCTO_PLAYPREDICT_v1.0`, y omitía varios que sí existen).
+- `README.md` (raíz): el enlace a `docs/` en "Documentación funcional" apuntaba a la carpeta genérica; se actualizó para apuntar a `docs/README_DOCS.md`. No se encontraron más enlaces rotos en `CLAUDE.md`, `SESSION.md` ni `PROJECT_STATUS.md` (las menciones a rutas antiguas eran registros históricos de sesiones previas, no enlaces activos; se dejaron como constancia de lo ocurrido en su momento).
+- `Audios relevamiento/` se mantiene fuera de `docs/` (es material fuente sin procesar) pero ahora está referenciada explícitamente en `docs/README_DOCS.md`, sección "Research".
+
+Estructura final de `docs/`:
+```
+docs/
+├── README_DOCS.md
+├── arquitectura/
+│   ├── MODELO_CONCEPTUAL_v1.0.md
+│   ├── MODELO_DATOS_v1.0.md
+│   ├── REGLAS_NEGOCIO_v1.0.md
+│   ├── MODELO_CONCEPTUAL_PRONOSTICOS_v1.0.md
+│   ├── TIPOS_PRONOSTICOS_v1.0.md
+│   ├── MOTOR_PUNTUACION_v1.0.md
+│   └── CONFIGURACION_COMPETENCIAS_v1.0.md
+├── products/
+│   ├── PANTALLAS_MVP_v1.0.md
+│   ├── PLAN_IMPLEMENTACION_MVP_v1.0.md
+│   └── ROADMAP_PRONOSTICOS_v1.0.md
+└── business/
+    ├── Etapa_1_28-07-2026_PlayPredict.pdf
+    ├── Propuesta_Plataforma_Engagement_Deportivo_v1.pdf
+    ├── Propuesta_Plataforma_de_Pronosticos_Deportiva_v2.pdf
+    ├── Propuesta_Plataforma_de_Pronosticos_Deportiva_v3.pdf
+    └── Propuesta_Plataforma_de_Pronosticos_Deportiva_v4.pdf
+```
+
+---
+
+## Sprint 5 — Motor de Puntuación Configurable Básico
+
+Objetivo: calcular automáticamente los puntos de los pronósticos de marcador ya existentes, con la puntuación configurable por Edición. Sin rankings, posiciones ni premios (quedan para sprints posteriores).
+
+### Modelo
+
+- `EditionScoringConfiguration` (`backend/Domain/Entities/EditionScoringConfiguration.cs`): `Id`, `EditionId` (único, relación 1 a 1 con `Edition`), `ExactScorePoints`, `CorrectOutcomePoints`, `IncorrectPoints`, `CreatedAtUtc`, `UpdatedAtUtc`. FK a `Edition` con `DeleteBehavior.Restrict`.
+- `PredictionEvaluation` (`backend/Domain/Entities/PredictionEvaluation.cs`): `Id`, `PredictionId` (único, sin historial — se actualiza en el lugar al recalcular), `Points`, `EvaluationType`, `OfficialHomeScore`, `OfficialAwayScore`, `AppliedRuleValue`, `EvaluatedAtUtc`. FK a `Prediction` con `DeleteBehavior.Restrict`.
+- Enum `EvaluationType` (`backend/Domain/Enums/EvaluationType.cs`): `ExactScore`, `CorrectOutcome`, `Incorrect`.
+- Migración `AddScoringEngine` creada y aplicada (tablas `EditionScoringConfigurations`, `PredictionEvaluations`).
+
+### Backend
+
+- `backend/Services/PredictionEvaluationService.cs`: única responsabilidad — dado un `Match` ya con resultado oficial y `Status = Finished`, busca la configuración de puntuación de su Edición (vía `Round.EditionId`), evalúa cada `Prediction` del partido y **prepara** (crea o actualiza) su `PredictionEvaluation` en el `ChangeTracker`, sin llamar a `SaveChangesAsync` — el llamador persiste todo junto en una única transacción implícita. Prioridad: marcador exacto > resultado correcto > incorrecto (una sola categoría aplicada por pronóstico); el signo del resultado (`Math.Sign(local - visitante)`) determina "resultado correcto" (gana local / empate / gana visitante).
+- `backend/Endpoints/MatchEndpoints.cs`, `PUT /api/matches/{id}/result`: además de guardar el resultado oficial, invoca `PredictionEvaluationService.PrepareEvaluationsForMatchAsync` antes del único `SaveChangesAsync` — el resultado oficial y todas las evaluaciones afectadas se guardan atómicamente. Si el resultado se vuelve a cargar (corrección), las evaluaciones existentes se actualizan en el lugar (no se duplican, por el índice único en `PredictionId`).
+- `backend/Endpoints/EditionScoringConfigurationEndpoints.cs` (nuevo): `GET/PUT /api/editions/{editionId}/scoring-configuration`, ambos `RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin))`. El `PUT` valida enteros ≥ 0 por campo (400 con detalle si no) y Edición existente (404).
+- `backend/Dtos/PredictionDtos.cs`: `PredictionDto` ahora incluye `Points`, `EvaluationType`, `EvaluationLabel` (castellano: "Marcador exacto" / "Resultado correcto" / "Incorrecto"), `OfficialHomeScore`, `OfficialAwayScore` — todos `null` si el partido todavía no fue evaluado. `GET /api/predictions/rounds/{roundId}` y `GET /api/predictions/me` arman esta información uniendo `Prediction` con su `PredictionEvaluation` (si existe); `POST`/`PUT` de pronósticos no la incluyen (nunca puede existir evaluación en el momento de crear/editar, porque eso solo es posible mientras el partido no está Finalizado).
+- `backend/Dtos/ScoringDtos.cs` (nuevo): `EditionScoringConfigurationDto`, `UpdateEditionScoringConfigurationDto`.
+- Configuración inicial automática:
+  - `backend/Data/DataSeeder.cs`, `SeedEditionScoringConfigurationsAsync` (corre en todos los entornos, después de cualquier seed de datos): crea 6/3/0 para toda Edición que todavía no tenga configuración — cubre las Ediciones que ya existían antes de este Sprint.
+  - `backend/Endpoints/EditionEndpoints.cs`, `POST /api/competitions/{competitionId}/editions`: ahora crea también la `EditionScoringConfiguration` (6/3/0) en el mismo `SaveChangesAsync` al dar de alta una Edición nueva.
+- No se calculan puntos para partidos sin resultado oficial ni para partidos Cancelados o Suspendidos: la evaluación solo se dispara desde `/result`, que ya rechaza Cancelado y siempre deja el partido en `Finished`; nunca se ejecuta con el partido en otro estado.
+- No hay edición manual de puntos: no existe ningún endpoint que permita escribir `Points` directamente.
+
+### Frontend administrativo
+
+- `frontend/src/pages/EditionScoringConfigurationPage.tsx` (nueva, ruta `/editions/:editionId/scoring-configuration`, envuelta en `RequireAdmin`): formulario con los 3 campos (marcador exacto / resultado correcto / resultado incorrecto), enteros no negativos (clamp en el cliente + validación del backend como autoridad final), mensaje de éxito, botón "Volver a Ediciones". Mismo estilo (`form-card`, `btn`, etc.) que el resto del panel.
+- `frontend/src/pages/EditionsListPage.tsx`: agregado el botón "Configurar puntuación" junto a "Editar" en cada fila, visible solo si `user.roles` incluye `ADMIN`.
+
+### Frontend del usuario (Pronósticos)
+
+- `frontend/src/pages/PredictionsMatchesPage.tsx`: sin cambios en partidos no Finalizados (se mantiene el comportamiento del Sprint 4, sin mostrar puntos). Para partidos Finalizados, la columna "Mi pronóstico" ahora muestra, si el usuario pronosticó: "Mi pronóstico: X - Y", "Resultado oficial: X - Y", "Puntos obtenidos: N", "Motivo: <Marcador exacto|Resultado correcto|Incorrecto>" (todo tomado tal cual de la API, nunca calculado en el cliente). Si el usuario no pronosticó ese partido: "Sin pronóstico", sin inventar evaluación ni puntos. Cancelado sigue mostrando "—".
+- `frontend/src/api/types.ts`: `Prediction` extendido con `points`, `evaluationType`, `evaluationLabel`, `officialHomeScore`, `officialAwayScore`; nuevo tipo `EditionScoringConfiguration`.
+- `admin.css`: una clase nueva (`.prediction-result`) para el bloque de 4 líneas, mismo tamaño de fuente y color que el resto de los textos secundarios del panel. Sin rediseño.
+
+### Pruebas realizadas (Edición "Clausura 2026", vía API con `curl` + verificación visual)
+
+Configuración inicial 6/3/0 (verificada tras el seed).
+
+| Caso | Pronóstico | Resultado oficial | Esperado | Obtenido |
+|---|---|---|---|---|
+| A | 2-1 | 2-1 | 6, Marcador exacto | ✅ 6, ExactScore |
+| B | 1-0 | 3-1 | 3, Resultado correcto | ✅ 3, CorrectOutcome |
+| C | 0-0 | 2-2 | 3, Resultado correcto | ✅ 3, CorrectOutcome |
+| D | 1-2 | 2-1 | 0, Incorrecto | ✅ 0, Incorrect |
+
+- **Caso E** (recálculo por cambio de configuración): se cambió la configuración a 10/4/1 y se volvió a cargar el mismo resultado oficial en los 3 partidos de los casos A-C → recalcularon a 10, 4 y 4 puntos respectivamente, usando los nuevos valores. El partido del Caso D (de otra Edición, con su propia configuración sin modificar) siguió en 0 — confirma que la configuración es por Edición, no global.
+- **Caso F** (corrección de resultado oficial): se corrigió el resultado del Caso B de 3-1 a 1-1 → la evaluación cambió de "Resultado correcto" (4 pts) a "Incorrecto" (1 pt) **en el mismo registro** (`PredictionEvaluations` siguió teniendo exactamente 4 filas en total, una por pronóstico, sin duplicados).
+- **Caso G** (usuario sin pronóstico): un usuario registrado sin pronósticos, al consultar `GET /api/predictions/rounds/{roundId}`, recibe `myPrediction: null` en todos los partidos, incluidos los Finalizados — sin evaluación inventada. Confirmado también visualmente ("Sin pronóstico" en las 3 filas).
+- **Caso H** (autorización): un usuario sin rol ADMIN recibe 403 tanto en `GET` como en `PUT /api/editions/{id}/scoring-configuration`.
+- **Caso I** (validación): `PUT` con valores negativos → 400 con el detalle de los 3 campos; la configuración no se modificó.
+- Verificado en el navegador: pantalla "Configurar puntuación" carga y muestra los valores reales de la base; botón visible solo para ADMIN en la lista de Ediciones; pantalla de Pronósticos muestra exactamente "Mi pronóstico / Resultado oficial / Puntos obtenidos / Motivo" para partidos Finalizados, y "Sin pronóstico" cuando corresponde. Consola del navegador sin errores.
+- Swagger (`/swagger`) expone correctamente `GET/PUT /api/editions/{editionId}/scoring-configuration` bajo "Edition Scoring Configuration", con su DTO.
+- `dotnet build`: OK. `npm run build`: OK. `docker compose up -d --build`: 3 servicios healthy (hubo un timeout transitorio del healthcheck del backend durante el primer arranque post-migración; se resolvió solo, sin intervención de código). Migración `AddScoringEngine` aplicada y verificada directamente en PostgreSQL (2 filas en `EditionScoringConfigurations`, una por Edición existente, ambas en 6/3/0 tras el seed). Logs de `backend`/`frontend`/`db` revisados: sin errores ni excepciones.
+- Datos de prueba (pronósticos, evaluaciones, cambios de resultado/configuración, usuario de prueba) revertidos al final: `Predictions` y `PredictionEvaluations` en 0 filas, ambas configuraciones de puntuación de vuelta en 6/3/0, los 6 partidos de demostración de vuelta en estado Programado sin resultado.
+
+### Archivos modificados/creados
+
+Backend: `Domain/Entities/EditionScoringConfiguration.cs`, `Domain/Entities/PredictionEvaluation.cs`, `Domain/Enums/EvaluationType.cs`, `Data/Configurations/EditionScoringConfigurationConfiguration.cs`, `Data/Configurations/PredictionEvaluationConfiguration.cs`, `Dtos/ScoringDtos.cs`, `Endpoints/EditionScoringConfigurationEndpoints.cs`, `Services/PredictionEvaluationService.cs`, `Migrations/20260731010056_AddScoringEngine.cs` y `.Designer.cs` (nuevos); `Data/PlayPredictDbContext.cs`, `Data/DataSeeder.cs`, `Dtos/PredictionDtos.cs`, `Endpoints/EditionEndpoints.cs`, `Endpoints/MatchEndpoints.cs`, `Endpoints/PredictionEndpoints.cs`, `Migrations/PlayPredictDbContextModelSnapshot.cs`, `Program.cs` (modificados).
+
+Frontend: `pages/EditionScoringConfigurationPage.tsx` (nuevo); `api/types.ts`, `App.tsx`, `pages/EditionsListPage.tsx`, `pages/PredictionsMatchesPage.tsx`, `components/admin.css` (modificados).
+
+### Verificación visual final (sesión posterior, antes de aprobar el commit)
+
+Con el Sprint 5 ya aprobado técnicamente, se pidió una comprobación visual adicional en el navegador (no solo por API) antes de commitear. Se hizo íntegramente en la UI real (pantalla "Configurar puntuación" y modal "Resultado Oficial" del panel de Fixture):
+
+1. Edición "Clausura 2026" configurada en 10 / 4 / 1 desde `/editions/7/scoring-configuration` → mensaje "Configuración guardada correctamente.", valores confirmados al recargar.
+2. Pronóstico 2-1 cargado en "Equipo A vs Equipo B" desde la pantalla de Pronósticos.
+3. Resultado oficial 2-1 → la pantalla de Pronósticos mostró "Puntos obtenidos: 10 / Motivo: Marcador exacto".
+4. Resultado oficial corregido a 3-1 (mismo partido, vía "Cargar resultado" de nuevo) → cambió a "Puntos obtenidos: 4 / Motivo: Resultado correcto".
+5. Resultado oficial corregido a 1-2 → cambió a "Puntos obtenidos: 1 / Motivo: Incorrecto".
+6. Verificado directamente en PostgreSQL después del paso 5: `PredictionEvaluations` tenía exactamente **1 fila** (mismo `Id`, actualizada tres veces) y `Predictions` exactamente 1 fila — confirma que el recálculo actualiza la evaluación existente y nunca duplica.
+
+Después de la verificación se revirtió todo: `Predictions` y `PredictionEvaluations` en 0 filas, la configuración de la Edición 7 de vuelta en 6/3/0, y el partido usado de vuelta en Programado sin resultado (mismo estado que el resto del fixture de demostración).
 
 ---
 

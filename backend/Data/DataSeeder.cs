@@ -41,6 +41,43 @@ public static class DataSeeder
         await db.SaveChangesAsync();
     }
 
+    // Corre en todos los entornos: toda Edición debe contar con configuración de puntuación.
+    // Crea la configuración inicial (6 / 3 / 0) para cualquier Edición que todavía no la tenga
+    // (ediciones creadas antes de este Sprint). Las nuevas Ediciones ya la reciben al crearse
+    // desde el endpoint correspondiente.
+    public static async Task SeedEditionScoringConfigurationsAsync(PlayPredictDbContext db)
+    {
+        var editionIdsWithConfig = await db.EditionScoringConfigurations
+            .Select(c => c.EditionId)
+            .ToListAsync();
+
+        var editionIdsWithoutConfig = await db.Editions
+            .Where(e => !editionIdsWithConfig.Contains(e.Id))
+            .Select(e => e.Id)
+            .ToListAsync();
+
+        if (editionIdsWithoutConfig.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        foreach (var editionId in editionIdsWithoutConfig)
+        {
+            db.EditionScoringConfigurations.Add(new EditionScoringConfiguration
+            {
+                EditionId = editionId,
+                ExactScorePoints = 6,
+                CorrectOutcomePoints = 3,
+                IncorrectPoints = 0,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            });
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     // Sólo en Development: usuario administrador inicial para poder entrar al panel sin registro previo.
     public static async Task SeedAdminUserAsync(PlayPredictDbContext db)
     {

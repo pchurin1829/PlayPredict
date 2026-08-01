@@ -1,8 +1,63 @@
 # PROJECT STATUS
 
-Versión: 0.8.0
-Estado: Sprint 7 (Módulo de Premios) implementado — sin commitear todavía, pendiente de aprobación explícita del usuario.
-Próximo paso: Sprint 8 (Configuración de Competencias). No iniciar sin aprobación explícita.
+Versión: 0.9.0
+Estado: Sprint 8 (Gestión de Experiencias — MVP) implementado — sin commitear todavía, pendiente de aprobación explícita del usuario.
+Próximo paso: Sprint 9. No iniciar sin aprobación explícita.
+
+---
+
+## Sprint 8 — Gestión de Experiencias (MVP)
+
+Objetivo: incorporar el concepto de **Experiencia** (docs/arquitectura/MODELO_CONCEPTUAL_EXPERIENCIA_v1.0.md) como entidad principal de PlayPredict, de forma incremental, sin romper ninguna funcionalidad de los Sprints 1 a 7.
+
+### Alcance
+
+Implementado (MVP): entidad `Experience` con datos generales y puntuación por defecto; relación obligatoria Competencia → Experience con migración que preserva los datos existentes; ABM de Experiencias (listar/crear/editar, sin eliminación física, solo estados Borrador/Publicada/Archivada); concepto "Usar configuración de la Experience" vs "Configuración propia" en la Edición, con herencia completa (nunca parcial); pantallas de administración. Explícitamente fuera de alcance: Wizard, Sponsors, Branding avanzado, dominios, idiomas, plantillas, biblioteca de configuraciones/motores, White Label, campañas, dashboard ejecutivo, estadísticas, auditoría.
+
+### Modelo
+
+- `Experience` (`backend/Domain/Entities/Experience.cs`): `Name`, `Description`, `Status` (`ExperienceStatus`: Draft/Published/Archived), `PrimaryColor`, `SecondaryColor`, `LogoUrl` (placeholder, sin uso en el formulario de este Sprint), `IsPublic`, `DefaultExactScorePoints`/`DefaultCorrectOutcomePoints`/`DefaultIncorrectPoints` (pertenecen directamente a la Experience, sin "Motor" ni plantillas), `CreatedAtUtc`, `UpdatedAtUtc`.
+- `Competition`: nuevo campo obligatorio `ExperienceId` (FK a `Experience`, `DeleteBehavior.Restrict`).
+- `EditionScoringConfiguration`: nuevo campo `UseExperienceDefaults` (bool, default `false` — preserva el comportamiento exacto de los Sprints 1 a 7 para toda Edición existente).
+- Migración `AddExperiences`: creada con `dotnet ef migrations add` y **editada a mano** para un backfill seguro: (1) crea la tabla `Experiences`; (2) inserta una Experience "PlayPredict Demo" (Publicada, pública, 6/3/0) directamente en el `Up()`, en todos los entornos, como medida de compatibilidad; (3) agrega `Competitions.ExperienceId` como nullable; (4) `UPDATE` de backfill: toda Competencia existente sin `ExperienceId` queda asociada a "PlayPredict Demo"; (5) recién entonces `ALTER COLUMN` a `NOT NULL` + `FOREIGN KEY`. Ningún dato existente se pierde. `UseExperienceDefaults` se agrega con `HasDefaultValue(false)` a nivel de EF, sin necesidad de backfill manual.
+
+### Backend
+
+- `backend/Endpoints/AdminExperienceEndpoints.cs` (`/api/admin/experiences`, solo ADMIN): `GET`/`GET {id}`/`POST` (crea en Borrador)/`PUT {id}` (bloqueado si Archivada)/`PUT {id}/publish` (solo desde Borrador)/`PUT {id}/archive` (bloqueado si ya Archivada). Validaciones: nombre obligatorio y longitudes máximas, colores y URL de logo con longitud máxima, puntuación por defecto ≥ 0. Sin endpoints públicos: en este MVP la Experience es puramente administrativa (sin pantalla de jugador todavía).
+- `backend/Endpoints/CompetitionEndpoints.cs`: `POST` acepta `experienceId` opcional — si se omite, se resuelve automáticamente a "PlayPredict Demo" (compatibilidad total con `CompetitionFormPage.tsx`, que no envía este campo); si se indica, se valida que exista. `PUT` solo cambia la Experience si se envía explícitamente un `experienceId` (si se omite, se conserva la actual — así no se resetea accidentalmente al guardar desde el formulario existente).
+- `backend/Endpoints/EditionScoringConfigurationEndpoints.cs`: el DTO ahora incluye `useExperienceDefaults` y los valores "efectivos" (`effectiveExactScorePoints`/`effectiveCorrectOutcomePoints`/`effectiveIncorrectPoints`) — los propios cuando `UseExperienceDefaults` es `false`, o los de la Experience (completos) cuando es `true`. El frontend nunca calcula esto, solo muestra lo que llega.
+- `backend/Services/PredictionEvaluationService.cs`: antes de evaluar un partido, resuelve si la Edición usa configuración propia o de la Experience (vía `Round → Edition → Competition → Experience`) y aplica los valores correspondientes de forma completa (sin mezcla parcial). Refactorizado `Evaluate(...)` para recibir los 3 valores de puntuación explícitos en lugar de la entidad de configuración completa.
+- `backend/Data/DataSeeder.cs`: nuevo `GetOrCreateDemoExperienceAsync` (idempotente por nombre, defensivo — la Experience ya existe por la migración en todo entorno) usado por `SeedCompetitionAsync` para asociar explícitamente las Competencias demo (solo Development) a "PlayPredict Demo".
+- `PlayPredictDbContext`: nuevo `DbSet<Experience> Experiences`.
+
+### Frontend
+
+- Nueva entrada "Experiencias" en el menú (solo ADMIN).
+- `AdminExperiencesListPage` (`/admin/experiences`): tabla con Nombre, Estado, Pública, Puntuación por defecto y acciones Editar/Publicar/Archivar según el estado.
+- `AdminExperienceFormPage` (`/admin/experiences/new` y `/admin/experiences/:id/edit`): dos secciones mediante pestañas simples ("Datos generales": Nombre, Descripción, Color primario, Color secundario, Pública; "Configuración": puntuación por defecto). Estado mostrado como texto de solo lectura. Mismo estilo (`form-card`, `btn`, etc.) que el resto del panel, sin rediseño.
+- `EditionScoringConfigurationPage.tsx`: nuevo checkbox "Usar configuración de la Experience" — al activarlo, deshabilita los 3 campos propios y muestra los valores efectivos que se aplicarán; al guardar, el backend confirma los valores efectivos reales.
+- `api/types.ts`: nuevo tipo `Experience`, `ExperienceStatus`; `Competition` incluye `experienceId`; `EditionScoringConfiguration` incluye `useExperienceDefaults` y los 3 valores efectivos.
+
+### Datos de demostración
+
+Experience "PlayPredict Demo" (Publicada, pública, 6/3/0) creada por la migración `AddExperiences` en todos los entornos (medida de compatibilidad); Liga Profesional y Copa Libertadores quedaron asociadas a ella automáticamente por el backfill. En Development, el seed reasegura esta asociación de forma idempotente si se sembraran Competencias demo nuevas.
+
+### Pruebas realizadas
+
+- Migración aplicada sin pérdida de datos: verificado en PostgreSQL que las 2 Competencias existentes (`Liga Profesional`, `Copa Libertadores`) quedaron con `ExperienceId = 1` (Experience "PlayPredict Demo"), y que las 2 `EditionScoringConfigurations` existentes quedaron con `UseExperienceDefaults = false` (comportamiento idéntico a antes del Sprint).
+- Regresión completa Sprints 1-7 (sin cambios detectados): login, `GET /api/competitions` y `/editions` con el nuevo campo `experienceId` visible pero sin alterar nada más; Ranking General de Clausura 2026 exacto (Juan 15, Ana 12, María 9, Pedro 6); los 5 Premios de Sprint 7 intactos; configuración de puntuación de Edición 7 (configuración propia) sin cambios.
+- **Herencia funcionando de punta a punta**: se cambiaron temporalmente los valores por defecto de la Experience "PlayPredict Demo" a 10/5/1, se activó `UseExperienceDefaults = true` en la Edición 8 (Copa Libertadores) → `GET /api/editions/8/scoring-configuration` mostró `effectiveExactScorePoints: 10` (Edición 7, con configuración propia, siguió en 6); se creó un pronóstico temporal y se cargó un resultado oficial exacto sobre un partido de esa Edición → la evaluación real aplicó **10 puntos** (el valor heredado), no 6 (el valor propio guardado en la Edición) — confirmado directamente en `PredictionEvaluations`. Revertido todo (resultado del partido, pronóstico, evaluación, flag de la Edición 8, valores de la Experience) a su estado original.
+- **Configuración propia funcionando**: confirmado que la Edición 7, con `UseExperienceDefaults = false`, mantuvo sus valores propios (6/3/0) como valores efectivos durante toda la prueba anterior, sin verse afectada por el cambio de valores de la Experience.
+- Alta de Competencia sin `experienceId` (payload idéntico al que envía el formulario actual) → se asoció automáticamente a "PlayPredict Demo". Edición de una Competencia existente sin `experienceId` → conservó su Experience actual (no la reseteó). Ambas pruebas revertidas.
+- Verificado visualmente en el navegador: lista de Experiencias, formulario con las dos secciones (pestañas) mostrando los valores correctos, checkbox "Usar configuración de la Experience" deshabilitando los campos propios y mostrando la nota de valores heredados sin necesidad de guardar, pantalla de Competencias sin cambios visibles. Consola del navegador sin errores.
+- `dotnet build`: OK. `npm run build`: OK. `docker compose up -d --build`: 3 servicios healthy. Logs de `backend`/`frontend`/`db` revisados: sin errores de la aplicación.
+- Estado final verificado: 2 `Competitions`, 12 `Predictions`, 12 `PredictionEvaluations`, 5 `Prizes`, 1 `Experience`, 8 `Users` — exactamente el estado previo al Sprint, sin ningún dato temporal residual.
+
+### Archivos modificados/creados
+
+Backend: `Domain/Entities/Experience.cs`, `Domain/Enums/ExperienceStatus.cs`, `Data/Configurations/ExperienceConfiguration.cs`, `Dtos/ExperienceDtos.cs`, `Endpoints/AdminExperienceEndpoints.cs`, `Migrations/20260801175318_AddExperiences.cs` y `.Designer.cs` (nuevos); `Domain/Entities/Competition.cs`, `Domain/Entities/EditionScoringConfiguration.cs`, `Data/Configurations/CompetitionConfiguration.cs` (sin cambios de código, relación configurada desde `ExperienceConfiguration`), `Data/Configurations/EditionScoringConfigurationConfiguration.cs`, `Data/PlayPredictDbContext.cs`, `Data/DataSeeder.cs`, `Dtos/CompetitionDtos.cs`, `Dtos/ScoringDtos.cs`, `Endpoints/CompetitionEndpoints.cs`, `Endpoints/EditionScoringConfigurationEndpoints.cs`, `Services/PredictionEvaluationService.cs`, `Program.cs`, `Migrations/PlayPredictDbContextModelSnapshot.cs` (modificados).
+
+Frontend: `pages/AdminExperiencesListPage.tsx`, `pages/AdminExperienceFormPage.tsx` (nuevos); `api/types.ts`, `App.tsx`, `components/Layout.tsx`, `components/admin.css`, `pages/EditionScoringConfigurationPage.tsx` (modificados).
 
 ---
 

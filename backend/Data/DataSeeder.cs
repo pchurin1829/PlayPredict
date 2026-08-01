@@ -17,6 +17,7 @@ public static class DataSeeder
     private const string DefaultCompanyName = "PlayPredict";
     private const string AdminEmail = "admin@playpredict.local";
     private const string AdminPassword = "admin123";
+    private const string DemoExperienceName = "PlayPredict Demo";
 
     private const string RankingDemoPassword = "demo123";
 
@@ -136,10 +137,44 @@ public static class DataSeeder
         await db.SaveChangesAsync();
     }
 
+    // Sólo en Development: reutiliza la Experience "PlayPredict Demo" ya creada por la
+    // migración `AddExperiences` (garantizada en todos los entornos para mantener la
+    // compatibilidad de las Competencias existentes); la crea de forma defensiva si no
+    // existiera. Idempotente por nombre — nunca duplica.
+    private static async Task<Experience> GetOrCreateDemoExperienceAsync(PlayPredictDbContext db)
+    {
+        var experience = await db.Experiences.FirstOrDefaultAsync(e => e.Name == DemoExperienceName);
+        if (experience is not null)
+        {
+            return experience;
+        }
+
+        var now = DateTime.UtcNow;
+        experience = new Experience
+        {
+            Name = DemoExperienceName,
+            Description = "Experiencia de demostración generada automáticamente para mantener la compatibilidad de las Competencias existentes al incorporar el modelo de Experiencias.",
+            Status = ExperienceStatus.Published,
+            IsPublic = true,
+            DefaultExactScorePoints = 6,
+            DefaultCorrectOutcomePoints = 3,
+            DefaultIncorrectPoints = 0,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+        db.Experiences.Add(experience);
+        await db.SaveChangesAsync();
+
+        return experience;
+    }
+
     public static async Task SeedAsync(PlayPredictDbContext db)
     {
+        var demoExperience = await GetOrCreateDemoExperienceAsync(db);
+
         await SeedCompetitionAsync(
             db,
+            demoExperience.Id,
             LigaProfesionalName,
             "Competencia de demostración generada por el seed de desarrollo.",
             ClausuraEditionName,
@@ -147,6 +182,7 @@ public static class DataSeeder
 
         await SeedCompetitionAsync(
             db,
+            demoExperience.Id,
             CopaLibertadoresName,
             "Competencia de demostración generada por el seed de desarrollo.",
             FaseDeGruposEditionName,
@@ -155,6 +191,7 @@ public static class DataSeeder
 
     private static async Task SeedCompetitionAsync(
         PlayPredictDbContext db,
+        int experienceId,
         string competitionName,
         string description,
         string editionName,
@@ -169,6 +206,7 @@ public static class DataSeeder
 
         var competition = new Competition
         {
+            ExperienceId = experienceId,
             Name = competitionName,
             Description = description,
             Sport = "Fútbol",

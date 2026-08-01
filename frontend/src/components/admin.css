@@ -117,7 +117,8 @@ table.admin-table {
   color: #155724;
 }
 
-.badge--Closed {
+.badge--Closed,
+.badge--Archived {
   background: #e2e3e5;
   color: #383d41;
 }
@@ -420,4 +421,27 @@ table.admin-table {
 
 .prize-card__no-winner {
   color: #777;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tab-button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px 6px 0 0;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  background: #f2f2f2;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab-button--active {
+  background: #fff;
+  color: #4a4ad1;
 }

@@ -96,6 +96,7 @@ app.MapEditionScoringConfigurationEndpoints();
 app.MapRankingEndpoints();
 app.MapAdminPrizeEndpoints();
 app.MapPrizeEndpoints();
+app.MapAdminExperienceEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {

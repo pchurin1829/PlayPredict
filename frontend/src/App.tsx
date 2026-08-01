@@ -28,6 +28,8 @@ import AdminPrizeFormPage from './pages/AdminPrizeFormPage'
 import PrizesCompetitionsPage from './pages/PrizesCompetitionsPage'
 import PrizesEditionsPage from './pages/PrizesEditionsPage'
 import PrizesListPage from './pages/PrizesListPage'
+import AdminExperiencesListPage from './pages/AdminExperiencesListPage'
+import AdminExperienceFormPage from './pages/AdminExperienceFormPage'
 import './components/admin.css'
 
 function App() {
@@ -127,6 +129,31 @@ function App() {
           element={
             <RequireAdmin>
               <AdminPrizeFormPage />
+            </RequireAdmin>
+          }
+        />
+
+        <Route
+          path="/admin/experiences"
+          element={
+            <RequireAdmin>
+              <AdminExperiencesListPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/experiences/new"
+          element={
+            <RequireAdmin>
+              <AdminExperienceFormPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/experiences/:experienceId/edit"
+          element={
+            <RequireAdmin>
+              <AdminExperienceFormPage />
             </RequireAdmin>
           }
         />

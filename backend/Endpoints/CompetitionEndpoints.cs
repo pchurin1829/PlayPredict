@@ -32,6 +32,27 @@ public static class CompetitionEndpoints
         group.MapPost("", async (CreateCompetitionDto dto, PlayPredictDbContext db) =>
         {
             var errors = ValidateCompetition(dto.Name, dto.Sport);
+
+            // Si no se indica Experience, se asocia a "PlayPredict Demo" para no romper el
+            // alta existente de Competencias (Sprints 1 a 7 no envían este campo).
+            var experienceId = dto.ExperienceId;
+            if (experienceId is null)
+            {
+                experienceId = await db.Experiences
+                    .Where(e => e.Name == DemoExperienceName)
+                    .Select(e => (int?)e.Id)
+                    .FirstOrDefaultAsync();
+
+                if (experienceId is null)
+                {
+                    errors["experienceId"] = ["No se encontró la Experience de demostración; indique una Experience explícita."];
+                }
+            }
+            else if (!await db.Experiences.AnyAsync(e => e.Id == experienceId))
+            {
+                errors["experienceId"] = ["La Experience indicada no existe."];
+            }
+
             if (errors.Count > 0)
             {
                 return Results.ValidationProblem(errors);
@@ -39,6 +60,7 @@ public static class CompetitionEndpoints
 
             var competition = new Competition
             {
+                ExperienceId = experienceId!.Value,
                 Name = dto.Name.Trim(),
                 Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
                 Sport = dto.Sport.Trim(),
@@ -55,10 +77,6 @@ public static class CompetitionEndpoints
         group.MapPut("/{id:int}", async (int id, UpdateCompetitionDto dto, PlayPredictDbContext db) =>
         {
             var errors = ValidateCompetition(dto.Name, dto.Sport);
-            if (errors.Count > 0)
-            {
-                return Results.ValidationProblem(errors);
-            }
 
             var competition = await db.Competitions.FindAsync(id);
             if (competition is null)
@@ -66,16 +84,34 @@ public static class CompetitionEndpoints
                 return Results.NotFound();
             }
 
+            // Si no se indica Experience, se mantiene la actual (los formularios existentes
+            // de edición no envían este campo y no deben resetearla a la Experience demo).
+            if (dto.ExperienceId is not null && !await db.Experiences.AnyAsync(e => e.Id == dto.ExperienceId))
+            {
+                errors["experienceId"] = ["La Experience indicada no existe."];
+            }
+
+            if (errors.Count > 0)
+            {
+                return Results.ValidationProblem(errors);
+            }
+
             competition.Name = dto.Name.Trim();
             competition.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
             competition.Sport = dto.Sport.Trim();
             competition.IsActive = dto.IsActive;
+            if (dto.ExperienceId is not null)
+            {
+                competition.ExperienceId = dto.ExperienceId.Value;
+            }
 
             await db.SaveChangesAsync();
 
             return Results.Ok(ToDto(competition));
         });
     }
+
+    private const string DemoExperienceName = "PlayPredict Demo";
 
     private static Dictionary<string, string[]> ValidateCompetition(string name, string sport)
     {
@@ -103,5 +139,5 @@ public static class CompetitionEndpoints
     }
 
     internal static CompetitionDto ToDto(Competition c) =>
-        new(c.Id, c.Name, c.Description, c.Sport, c.IsActive, c.CreatedAtUtc);
+        new(c.Id, c.ExperienceId, c.Name, c.Description, c.Sport, c.IsActive, c.CreatedAtUtc);
 }

@@ -78,6 +78,16 @@ Nota: este sprint se implementó en la sesión anterior (cortada por error 529) 
 - [x] Casos A-L del enunciado verificados (empates, visibilidad por estado, validaciones 400/403, ranking vacío sin ganador inventado)
 - [ ] PrizeWinner persistido, entrega/pagos/cupones, reclamos, notificaciones, historial de ganadores, premios mensuales/por empresa/ligas privadas (explícitamente fuera de este sprint)
 
+## Sprint 8 - Gestión de Experiencias (MVP) (completado, sin commitear)
+- [x] Entidad `Experience` (datos generales + puntuación por defecto) + enum `ExperienceStatus` (Borrador/Publicada/Archivada)
+- [x] `Competition` pertenece obligatoriamente a una `Experience`; migración `AddExperiences` con backfill seguro (sin pérdida de datos, Competencias existentes asociadas a "PlayPredict Demo")
+- [x] ABM de Experiencias (listar/crear/editar, sin eliminación física, solo estados) vía `/api/admin/experiences`
+- [x] Concepto "Usar configuración de la Experience" vs "Configuración propia" en `EditionScoringConfiguration`, con herencia completa (nunca parcial) aplicada realmente por `PredictionEvaluationService`
+- [x] Pantallas administrativas: Experiencias (lista, alta, edición con secciones Datos generales/Configuración) y checkbox de herencia en "Configurar puntuación" de Edición
+- [x] Datos de demostración (Experience "PlayPredict Demo" asociada a Liga Profesional y Copa Libertadores)
+- [x] Verificado sin regresiones en Sprints 1 a 7 y herencia probada de punta a punta (incluyendo una evaluación real de partido)
+- [ ] Wizard, Sponsors, Branding avanzado, dominios, idiomas, plantillas, biblioteca de configuraciones/motores, White Label, campañas, dashboard ejecutivo, estadísticas, auditoría, mezcla parcial de configuración (explícitamente fuera de este sprint)
+
 ## MVP
 - [~] Competencias Oficiales — módulo base (Competencia/Edición/Fecha/Partido) funcionando; falta lo no incluido en el Sprint 2 (p. ej. estados avanzados de administración)
 - [ ] Ligas Privadas
@@ -85,5 +95,6 @@ Nota: este sprint se implementó en la sesión anterior (cortada por error 529) 
 - [~] Pronósticos — infraestructura completa (carga, edición y cálculo automático de puntos) funcionando
 - [~] Rankings — Ranking General y por Fecha funcionando; falta ranking histórico/mensual y por grupo privado
 - [~] Premios — administración, publicación y visualización con ganador actual provisional funcionando; falta entrega real, pagos e historial de ganadores
-- [~] Panel Administrador — fixture administrable (Competencias → Ediciones → Fechas → Partidos) + Usuarios + Configuración de puntuación por Edición + Premios; faltan las secciones de Resultados/Ligas del panel completo
+- [~] Experiencias — entidad principal con datos generales, puntuación por defecto y herencia por Edición funcionando; falta branding avanzado, sponsors, participantes y publicación de cara al jugador
+- [~] Panel Administrador — fixture administrable (Competencias → Ediciones → Fechas → Partidos) + Usuarios + Configuración de puntuación por Edición + Premios + Experiencias; faltan las secciones de Resultados/Ligas del panel completo
 - [x] Usuarios — Registro, Login, Perfil, administración básica (activar/desactivar) funcionando

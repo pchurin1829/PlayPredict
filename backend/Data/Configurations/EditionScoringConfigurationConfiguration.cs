@@ -15,6 +15,7 @@ public class EditionScoringConfigurationConfiguration : IEntityTypeConfiguration
         builder.Property(c => c.ExactScorePoints).IsRequired();
         builder.Property(c => c.CorrectOutcomePoints).IsRequired();
         builder.Property(c => c.IncorrectPoints).IsRequired();
+        builder.Property(c => c.UseExperienceDefaults).IsRequired().HasDefaultValue(false);
         builder.Property(c => c.CreatedAtUtc).IsRequired();
         builder.Property(c => c.UpdatedAtUtc).IsRequired();
 

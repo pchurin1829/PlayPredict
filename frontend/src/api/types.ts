@@ -1,5 +1,6 @@
 export interface Competition {
   id: number
+  experienceId: number
   name: string
   description: string | null
   sport: string
@@ -100,6 +101,35 @@ export interface EditionScoringConfiguration {
   exactScorePoints: number
   correctOutcomePoints: number
   incorrectPoints: number
+  useExperienceDefaults: boolean
+  effectiveExactScorePoints: number
+  effectiveCorrectOutcomePoints: number
+  effectiveIncorrectPoints: number
+  createdAtUtc: string
+  updatedAtUtc: string
+}
+
+export type ExperienceStatus = 'Draft' | 'Published' | 'Archived'
+
+export const EXPERIENCE_STATUS_LABELS: Record<ExperienceStatus, string> = {
+  Draft: 'Borrador',
+  Published: 'Publicada',
+  Archived: 'Archivada',
+}
+
+export interface Experience {
+  id: number
+  name: string
+  description: string | null
+  status: ExperienceStatus
+  statusLabel: string
+  primaryColor: string | null
+  secondaryColor: string | null
+  logoUrl: string | null
+  isPublic: boolean
+  defaultExactScorePoints: number
+  defaultCorrectOutcomePoints: number
+  defaultIncorrectPoints: number
   createdAtUtc: string
   updatedAtUtc: string
 }

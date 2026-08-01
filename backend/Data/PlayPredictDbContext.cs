@@ -22,6 +22,7 @@ public class PlayPredictDbContext : DbContext
     public DbSet<EditionScoringConfiguration> EditionScoringConfigurations => Set<EditionScoringConfiguration>();
     public DbSet<PredictionEvaluation> PredictionEvaluations => Set<PredictionEvaluation>();
     public DbSet<Prize> Prizes => Set<Prize>();
+    public DbSet<Experience> Experiences => Set<Experience>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

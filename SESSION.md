@@ -7,10 +7,10 @@ PlayPredict
 main (sincronizada con origin/main)
 
 ## Último commit
-469ea14 — docs: sync session after Sprint 6
+152b550 — feat: implement prize management module
 
 ## Estado del entorno
-- Git: rama `main`. Sprint 7 (Módulo de Premios) implementado en esta sesión sobre el commit `469ea14`. Sin commitear — pendiente de aprobación explícita del usuario.
+- Git: rama `main`, sincronizada con `origin/main` (push realizado). Sprint 7 (Módulo de Premios) commiteado y pusheado en `152b550`.
 - Docker (`docker compose ps`): los 3 servicios levantados y healthy.
   - `playpredict_db` (PostgreSQL 18) — Up, healthy
   - `playpredict_backend` — Up, healthy
@@ -32,16 +32,17 @@ main (sincronizada con origin/main)
 - Frontend de usuario: navegación "Premios" → Competencia → Edición → tarjetas de Premios (Nombre, Descripción, Tipo, Valor de referencia, Sponsor, "Para quién es", Estado, Ganador actual provisional); nunca muestra Borrador ni Cancelados, ni controles administrativos.
 - Datos de demostración (solo Development, idempotentes): 5 Premios sobre Clausura 2026 — 4 Publicados (1° y 2° puesto, Ganador de Fecha 1, Mayor cantidad de exactos) y 1 en Borrador ("Premio Sorpresa"). Ganadores actuales verificados exactos: Juan Pérez (1°, Fecha 1, exactos), Ana Torres (2°).
 - Probado exhaustivamente (casos A-L del enunciado, todos con datos temporales revertidos): ganadores por posición, por Fecha y por exactos; empates con múltiples ganadores provisionales (posición y exactos); visibilidad Borrador/Cancelado oculta para USER pero visible para ADMIN; 400 en Fecha de otra Edición y en rango de posiciones inválido; 403 para USER en endpoints administrativos; sin ganador inventado cuando el Ranking está vacío; transiciones de estado inválidas bloqueadas (modificar Cancelado, cerrar Borrador, cancelar Cerrado). Verificado también visualmente en el navegador (lista admin, formulario con selects en cascada, tarjetas de usuario) y por API/Swagger.
+- Verificación final previa al commit: se cambió temporalmente el resultado oficial de Boca–River (2-1 → 1-2) y se confirmó que el ganador del Premio "Gran Premio Clausura 2026" cambió automáticamente de Juan Pérez a María López (sin ningún código específico de Premios, solo por derivarse de `RankingService`); revertido. Se creó un empate temporal en posición 1 y se confirmó que el mismo Premio devolvió ambos usuarios; revertido. Ambos con datos 100% limpios al finalizar.
 
 No se implementó (fuera de alcance): PrizeWinner persistido, entrega/pagos/cupones, reclamos, notificaciones, historial de ganadores, premios mensuales/por empresa/ligas privadas, rediseño visual.
 
 Detalle completo en PROJECT_STATUS.md.
 
 ## Pendiente inmediato
-Aprobación explícita del usuario para hacer commit del Sprint 7.
+Ninguno. Sprint 7 cerrado (commit y push realizados).
 
 ## Próximo paso exacto
-Esperar aprobación del usuario para el commit del Sprint 7. No iniciar Sprint 8 (Configuración de Competencias) sin aprobación explícita.
+Sprint 8 — Configuración de Competencias. No iniciar sin aprobación explícita.
 
 ## Comandos para retomar
 ```bash

@@ -7,10 +7,10 @@ PlayPredict
 main (sincronizada con origin/main)
 
 ## Último commit
-a314ba9 — docs: sync session after product strategy update
+c950d19 — feat: add configurable experiences MVP
 
 ## Estado del entorno
-- Git: rama `main`. Sprint 8 (Gestión de Experiencias — MVP) implementado en esta sesión sobre el commit `a314ba9`. Sin commitear — pendiente de aprobación explícita del usuario.
+- Git: rama `main`, sincronizada con `origin/main` (push realizado). Sprint 8 (Gestión de Experiencias — MVP) commiteado y pusheado en `c950d19`, incluyendo los 3 documentos conceptuales preexistentes (`MODELO_CONCEPTUAL_EXPERIENCIA_v1.0.md`, `MODELO_CONCEPTUAL_ADMINISTRADOR_v1.0.md`, `MODELO_CONCEPTUAL_JUGADOR_v1.0.md`) que estaban sin seguimiento de Git.
 - Docker (`docker compose ps`): los 3 servicios levantados y healthy.
   - `playpredict_db` (PostgreSQL 18) — Up, healthy
   - `playpredict_backend` — Up, healthy
@@ -35,13 +35,15 @@ a314ba9 — docs: sync session after product strategy update
 
 No se implementó (fuera de alcance): Wizard, Sponsors, Branding avanzado, dominios, idiomas, plantillas, biblioteca de configuraciones/motores, White Label, campañas, dashboard ejecutivo, estadísticas, auditoría, mezcla parcial de configuración.
 
+**Revisión visual final previa al commit**: en "PlayPredict Demo" se modificaron temporalmente nombre, descripción, color primario y color secundario, se guardó, se recargó la página y se confirmó la persistencia de los 4 campos; luego se restauraron los valores originales (con acentos correctos) y se verificó la restauración tras recargar. En la configuración de puntuación de la Edición "Fase de Grupos 2026" se probaron ambas fuentes con valores distinguibles (propia 8/4/2 vs. Experience 6/3/0): se confirmó visualmente que los valores efectivos mostrados cambian según la fuente elegida, y se restauró el estado original (6/3/0, configuración propia). Sin errores de consola. Verificado en PostgreSQL que no quedó ningún dato temporal residual.
+
 Detalle completo en PROJECT_STATUS.md.
 
 ## Pendiente inmediato
-Aprobación explícita del usuario para hacer commit del Sprint 8.
+Ninguno. Sprint 8 cerrado (commit y push realizados).
 
 ## Próximo paso exacto
-Esperar aprobación del usuario para el commit del Sprint 8. No iniciar Sprint 9 sin aprobación explícita.
+Sprint 9. No iniciar sin aprobación explícita.
 
 ## Comandos para retomar
 ```bash

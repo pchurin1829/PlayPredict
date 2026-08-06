@@ -84,7 +84,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   const { user } = useAuth()
 
   if (!user?.roles.includes('ADMIN')) {
-    return <Navigate to="/competitions" replace />
+    return <Navigate to="/leagues" replace />
   }
 
   return <>{children}</>

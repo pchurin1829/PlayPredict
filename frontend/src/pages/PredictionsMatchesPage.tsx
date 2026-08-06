@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import type { MatchWithPrediction, Round } from '../api/types'
+import type { LeagueDetail, MatchWithPrediction } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 
 interface RowState {
@@ -27,9 +27,9 @@ function buildInitialRow(match: MatchWithPrediction): RowState {
 }
 
 export default function PredictionsMatchesPage() {
-  const { roundId } = useParams()
+  const { leagueId } = useParams()
 
-  const [round, setRound] = useState<Round | null>(null)
+  const [league, setLeague] = useState<LeagueDetail | null>(null)
   const [matches, setMatches] = useState<MatchWithPrediction[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [rows, setRows] = useState<Record<number, RowState>>({})
@@ -38,12 +38,12 @@ export default function PredictionsMatchesPage() {
     let cancelled = false
 
     Promise.all([
-      api.get<Round>(`/rounds/${roundId}`),
-      api.get<MatchWithPrediction[]>(`/predictions/rounds/${roundId}`),
+      api.get<LeagueDetail>(`/leagues/${leagueId}`),
+      api.get<MatchWithPrediction[]>(`/leagues/${leagueId}/matches`),
     ])
-      .then(([r, ms]) => {
+      .then(([l, ms]) => {
         if (cancelled) return
-        setRound(r)
+        setLeague(l)
         setMatches(ms)
         const initialRows: Record<number, RowState> = {}
         ms.forEach((m) => {
@@ -58,7 +58,7 @@ export default function PredictionsMatchesPage() {
     return () => {
       cancelled = true
     }
-  }, [roundId])
+  }, [leagueId])
 
   function updateRow(matchId: number, patch: Partial<RowState>) {
     setRows((prev) => ({ ...prev, [matchId]: { ...prev[matchId], ...patch } }))
@@ -92,6 +92,7 @@ export default function PredictionsMatchesPage() {
             predictedAwayScore: awayScore,
           })
         : await api.post<MatchWithPrediction['myPrediction']>('/predictions', {
+            leagueId: Number(leagueId),
             matchId: match.id,
             predictedHomeScore: homeScore,
             predictedAwayScore: awayScore,
@@ -111,10 +112,10 @@ export default function PredictionsMatchesPage() {
   return (
     <div>
       <div className="breadcrumb">
-        {round && <Link to={`/predictions/editions/${round.editionId}/rounds`}>← Fechas</Link>}
+        {league && <Link to={`/leagues/${league.id}`}>← {league.name}</Link>}
       </div>
       <div className="admin-header">
-        <h1>Pronósticos — Partidos {round ? `— ${round.name}` : ''}</h1>
+        <h1>Pronósticos {league ? `— ${league.name}` : ''}</h1>
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}

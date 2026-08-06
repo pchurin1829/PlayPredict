@@ -2,6 +2,7 @@ namespace PlayPredict.Api.Dtos;
 
 public record PredictionDto(
     int Id,
+    int LeagueId,
     int MatchId,
     int UserId,
     int PredictedHomeScore,
@@ -15,6 +16,7 @@ public record PredictionDto(
     int? OfficialAwayScore);
 
 public record CreatePredictionDto(
+    int LeagueId,
     int MatchId,
     int PredictedHomeScore,
     int PredictedAwayScore);

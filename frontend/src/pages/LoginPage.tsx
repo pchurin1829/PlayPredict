@@ -24,7 +24,8 @@ export default function LoginPage() {
       const response = await api.post<AuthResponse>('/auth/login', { email, password })
       login(response.token, response.user)
       const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname
-      navigate(from ?? '/competitions', { replace: true })
+      const home = response.user.roles.includes('ADMIN') ? '/competitions' : '/leagues'
+      navigate(from ?? home, { replace: true })
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message)

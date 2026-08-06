@@ -16,6 +16,14 @@ El objetivo es mantener un crecimiento ordenado, evitando implementar caracterí
 
 ---
 
+# Nota de vigencia (Sprint 8.5)
+
+La numeración de Sprints de este documento es la propuesta **original** del roadmap y ya no coincide con la numeración real de ejecución (por ejemplo, el Sprint 8 realmente ejecutado fue "Gestión de Experiencias", no "Configuración de Competencias" como indica este documento más abajo).
+
+A partir del Sprint 8.5 — Ligas y Experiencia de Usuario, el modelo conceptual vigente es `docs/arquitectura/PLAYPREDICT_MODELO_CONCEPTUAL_v2.0.md`. Ese documento incorpora **Liga** (creada libremente por cualquier Jugador sobre una Competencia Oficial, sin duplicar Fixture ni Resultados) como concepto principal nuevo, y simplifica los roles a `ADMIN`/`PLAYER`. El Sprint 11 de este roadmap ("Grupos Privados") queda absorbido conceptualmente por Liga; se mantiene el resto de los Sprints propuestos como referencia de largo plazo, sujetos a reordenamiento según prioridad real del negocio.
+
+---
+
 # Estado actual
 
 ## Infraestructura

@@ -1,12 +1,14 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
-import { RequireAdmin, RequireAuth } from './auth/AuthContext'
+import { RequireAdmin, RequireAuth, useAuth } from './auth/AuthContext'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import CompetitionsListPage from './pages/CompetitionsListPage'
 import CompetitionFormPage from './pages/CompetitionFormPage'
+import ExploreCompetitionsPage from './pages/ExploreCompetitionsPage'
+import CompetitionDetailPage from './pages/CompetitionDetailPage'
 import EditionsListPage from './pages/EditionsListPage'
 import EditionFormPage from './pages/EditionFormPage'
 import EditionScoringConfigurationPage from './pages/EditionScoringConfigurationPage'
@@ -14,10 +16,11 @@ import RoundsListPage from './pages/RoundsListPage'
 import RoundFormPage from './pages/RoundFormPage'
 import MatchesListPage from './pages/MatchesListPage'
 import MatchFormPage from './pages/MatchFormPage'
-import PredictionsCompetitionsPage from './pages/PredictionsCompetitionsPage'
-import PredictionsEditionsPage from './pages/PredictionsEditionsPage'
-import PredictionsRoundsPage from './pages/PredictionsRoundsPage'
 import PredictionsMatchesPage from './pages/PredictionsMatchesPage'
+import LeaguesMinePage from './pages/LeaguesMinePage'
+import LeagueCreatePage from './pages/LeagueCreatePage'
+import LeagueJoinPage from './pages/LeagueJoinPage'
+import LeagueDetailPage from './pages/LeagueDetailPage'
 import RankingsCompetitionsPage from './pages/RankingsCompetitionsPage'
 import RankingsEditionsPage from './pages/RankingsEditionsPage'
 import RankingsRoundsPage from './pages/RankingsRoundsPage'
@@ -32,6 +35,12 @@ import AdminExperiencesListPage from './pages/AdminExperiencesListPage'
 import AdminExperienceFormPage from './pages/AdminExperienceFormPage'
 import './components/admin.css'
 
+function HomeRedirect() {
+  const { user } = useAuth()
+  const isAdmin = user?.roles.includes('ADMIN') ?? false
+  return <Navigate to={isAdmin ? '/competitions' : '/leagues'} replace />
+}
+
 function App() {
   return (
     <Routes>
@@ -45,7 +54,7 @@ function App() {
           </RequireAuth>
         }
       >
-        <Route path="/" element={<Navigate to="/competitions" replace />} />
+        <Route path="/" element={<HomeRedirect />} />
 
         <Route path="/profile" element={<ProfilePage />} />
         <Route
@@ -56,6 +65,9 @@ function App() {
             </RequireAdmin>
           }
         />
+
+        <Route path="/competitions/explore" element={<ExploreCompetitionsPage />} />
+        <Route path="/competitions/:competitionId" element={<CompetitionDetailPage />} />
 
         <Route path="/competitions" element={<CompetitionsListPage />} />
         <Route path="/competitions/new" element={<CompetitionFormPage />} />
@@ -84,13 +96,11 @@ function App() {
 
         <Route path="/matches/:matchId/edit" element={<MatchFormPage />} />
 
-        <Route path="/predictions" element={<PredictionsCompetitionsPage />} />
-        <Route
-          path="/predictions/competitions/:competitionId/editions"
-          element={<PredictionsEditionsPage />}
-        />
-        <Route path="/predictions/editions/:editionId/rounds" element={<PredictionsRoundsPage />} />
-        <Route path="/predictions/rounds/:roundId" element={<PredictionsMatchesPage />} />
+        <Route path="/leagues" element={<LeaguesMinePage />} />
+        <Route path="/leagues/new" element={<LeagueCreatePage />} />
+        <Route path="/leagues/join" element={<LeagueJoinPage />} />
+        <Route path="/leagues/:leagueId" element={<LeagueDetailPage />} />
+        <Route path="/leagues/:leagueId/matches" element={<PredictionsMatchesPage />} />
 
         <Route path="/rankings" element={<RankingsCompetitionsPage />} />
         <Route
@@ -158,7 +168,7 @@ function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/competitions" replace />} />
+        <Route path="*" element={<HomeRedirect />} />
       </Route>
     </Routes>
   )

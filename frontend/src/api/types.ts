@@ -82,6 +82,7 @@ export type EvaluationType = 'ExactScore' | 'CorrectOutcome' | 'Incorrect'
 
 export interface Prediction {
   id: number
+  leagueId: number
   matchId: number
   userId: number
   predictedHomeScore: number
@@ -204,6 +205,50 @@ export const PRIZE_STATUS_LABELS: Record<PrizeStatus, string> = {
   Published: 'Publicado',
   Closed: 'Cerrado',
   Cancelled: 'Cancelado',
+}
+
+export type LeagueScopeType = 'FullCompetition' | 'RoundRange'
+
+export const LEAGUE_SCOPE_LABELS: Record<LeagueScopeType, string> = {
+  FullCompetition: 'Toda la Competencia',
+  RoundRange: 'Rango de Fechas',
+}
+
+export interface RoundSummary {
+  id: number
+  name: string
+  order: number
+}
+
+export interface LeagueSummary {
+  id: number
+  name: string
+  description: string | null
+  competitionId: number
+  competitionName: string
+  scopeType: LeagueScopeType
+  roundFromId: number | null
+  roundToId: number | null
+  roundFromName: string | null
+  roundToName: string | null
+  createdByUserId: number
+  isCreator: boolean
+  participantsCount: number
+  isActive: boolean
+  inviteCode: string | null
+}
+
+export interface LeagueDetail extends LeagueSummary {
+  createdByName: string
+  rounds: RoundSummary[]
+}
+
+export interface LeagueParticipantInfo {
+  userId: number
+  firstName: string
+  lastName: string
+  joinedAtUtc: string
+  isCreator: boolean
 }
 
 export interface PrizeWinnerUser {

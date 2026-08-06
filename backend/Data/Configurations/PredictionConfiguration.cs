@@ -24,9 +24,15 @@ public class PredictionConfiguration : IEntityTypeConfiguration<Prediction>
         builder.Property(p => p.UpdatedAtUtc)
             .IsRequired();
 
-        // Un usuario solo puede tener un pronóstico por partido.
-        builder.HasIndex(p => new { p.UserId, p.MatchId })
+        // El Pronóstico pertenece a una Liga: un usuario puede tener un pronóstico
+        // distinto para el mismo partido en Ligas distintas, pero solo uno por Liga.
+        builder.HasIndex(p => new { p.LeagueId, p.UserId, p.MatchId })
             .IsUnique();
+
+        builder.HasOne(p => p.League)
+            .WithMany()
+            .HasForeignKey(p => p.LeagueId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(p => p.Match)
             .WithMany()

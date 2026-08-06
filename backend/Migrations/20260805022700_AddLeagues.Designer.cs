@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlayPredict.Api.Data;
@@ -11,9 +12,11 @@ using PlayPredict.Api.Data;
 namespace PlayPredict.Api.Migrations
 {
     [DbContext(typeof(PlayPredictDbContext))]
-    partial class PlayPredictDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260805022700_AddLeagues")]
+    partial class AddLeagues
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -241,10 +244,6 @@ namespace PlayPredict.Api.Migrations
 
                     b.Property<int>("CreatedByUserId")
                         .HasColumnType("integer");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("InviteCode")
                         .IsRequired()

@@ -33,6 +33,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-playpredict_db};Username=${POSTGRES_USER:-playpredict_user};Password=${POSTGRES_PASSWORD:-playpredict_password}
+      # Contraseña de los 3 ADMIN de desarrollo (Sprint 8.5). Nunca en appsettings.*.json
+      # (queda trackeado por Git): se toma de .env (gitignored). Si no está definida,
+      # DataSeeder cae a un valor por defecto documentado solo para desarrollo.
+      DevSeed__AdminPassword: ${DEV_ADMIN_PASSWORD:-}
     ports:
       - "${BACKEND_PORT:-8006}:8080"
     volumes:

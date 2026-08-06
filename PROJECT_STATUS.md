@@ -1,8 +1,80 @@
 # PROJECT STATUS
 
 Versión: 0.9.0
-Estado: Sprint 8 (Gestión de Experiencias — MVP) implementado — sin commitear todavía, pendiente de aprobación explícita del usuario.
-Próximo paso: Sprint 9. No iniciar sin aprobación explícita.
+Estado: Sprint 8 (Gestión de Experiencias — MVP) commiteado y pusheado (`1708be5`). Sprint 8.5 (Ligas y Experiencia de Usuario): Fase 1 aprobada; Etapa 1 (Roles y base del modelo) aprobada; Etapa 2 (Gestión básica de Ligas) aprobada; Etapa 2.5 (Experiencia del Jugador — reorganización de navegación, sin backend ni modelo nuevos) **implementada y verificada de punta a punta**. Sprint 8.5 completo — sin commitear todavía. Sprint 8.6 (Hardening y Preparación para Commit) **completado**: auditoría de 7 fases sin cambios de código, todas las validaciones técnicas en verde (build backend/frontend, migraciones, seeder idempotente en 3 ciclos, endpoints por API), recomendación final **A) listo para Commit y Push**. Pendiente únicamente de aprobación explícita del usuario para el commit.
+Próximo paso: commitear el Sprint 8.5 completo (solo tras aprobación explícita). Luego definir el alcance de la Etapa 3 (Ranking de Liga y Premios de Liga) como un sprint/etapa aparte. No hacer commit sin aprobación explícita.
+
+---
+
+## Sprint 8.5 — Ligas y Experiencia de Usuario
+
+Objetivo: incorporar **Liga** como nuevo concepto principal del producto — creada libremente por cualquier `PLAYER` sobre una Competencia Oficial existente, sin duplicar Fixture ni Resultados — y simplificar el modelo de roles a únicamente `ADMIN`/`PLAYER`. Decisiones de producto ya aprobadas por el usuario (no se discuten): ver `docs/arquitectura/PLAYPREDICT_MODELO_CONCEPTUAL_v2.0.md`, Sección 0.
+
+### Fase 1 — Modelo conceptual (completada y aprobada)
+
+- [x] Nuevo documento `docs/arquitectura/PLAYPREDICT_MODELO_CONCEPTUAL_v2.0.md` — modelo conceptual oficial vigente a partir de este Sprint. No reemplaza ni borra `MODELO_CONCEPTUAL_v1.0.md`, `MODELO_CONCEPTUAL_ADMINISTRADOR_v1.0.md` ni `MODELO_CONCEPTUAL_JUGADOR_v1.0.md` (se conservan como historial de los Sprints 1-8).
+- [x] `PROJECT_STATUS.md`, `SESSION.md` y `docs/products/ROADMAP_PRONOSTICOS_v1.0.md` actualizados para reflejar la nueva arquitectura.
+- [x] **Corrección aprobada por el usuario, ya reflejada en toda la documentación**: el Pronóstico **no** es global por Usuario+Partido. Cada Pronóstico pertenece a una Liga — identidad lógica `LeagueId + UserId + MatchId` —, de modo que un mismo Jugador puede pronosticar resultados distintos para el mismo Partido en Ligas distintas. Los Partidos y Resultados Oficiales sí se comparten entre Ligas sin duplicarse; los Pronósticos nunca se comparten entre Ligas. Ver `docs/arquitectura/PLAYPREDICT_MODELO_CONCEPTUAL_v2.0.md`, Sección 9.
+- [x] Sin cambios de backend, frontend ni migraciones en esta fase.
+- [x] Sin commit (fase puramente documental).
+
+### Resumen del modelo vigente (detalle completo en el documento v2.0)
+
+- Roles simplificados a `ADMIN`/`PLAYER`. Registro público siempre crea `PLAYER`. Instalación inicial con 3 usuarios `ADMIN` de ejemplo (hoy hay 1). Login único, sin selector de rol.
+- Competencias Oficiales: sin cambios conceptuales, siguen siendo exclusivamente administrables por `ADMIN`.
+- **Liga** (entidad nueva): creada por cualquier `PLAYER`, referencia una Competencia Oficial, alcance "Competencia completa" o "Fecha X → Fecha Y" (sin selección por fases todavía), código de invitación, Participantes, Ranking propio (calculado, reutilizando `RankingService`), Premios propios opcionales (reutilizando `Prize` con un nuevo ámbito `League`).
+- **Pronóstico: pertenece a la Liga, no es global.** Identidad `LeagueId + UserId + MatchId`. Un mismo Jugador puede pronosticar distinto el mismo Partido en Ligas distintas. El Ranking de cada Liga se calcula exclusivamente con los Pronósticos cargados dentro de ella.
+- `ADMIN` deja de administrar Jugadores (hoy el panel administra todos los usuarios); el `PLAYER` administra únicamente sus propias Ligas.
+
+### Fase 2, Etapa 1 — Roles y base del modelo (implementada — sin commitear)
+
+Alcance: rol `USER`→`PLAYER` (backend, seeds, autorización), 3 usuarios `ADMIN` de desarrollo (contraseña por configuración, guarda anti-producción), entidades `League`/`LeagueParticipant`, `Prediction.LeagueId` (identidad lógica `LeagueId+UserId+MatchId`), migración `AddLeagues` con backfill dinámico e idempotente, y validaciones completas en `POST/PUT /api/predictions` (Liga existe/activa, pertenencia, Competencia, alcance de Fechas, duplicado, horario) — nunca 500, siempre 400/403/404/409 controlado. `GET /api/predictions/rounds/{roundId}` ahora exige `leagueId` explícito (400 si falta; no se elige ninguna Liga por defecto).
+
+Backfill verificado: 1 Liga técnica `[Migración] Liga general — Liga Profesional`, 4 Participantes (Ana/Juan/María/Pedro), los 12 Pronósticos históricos conservados sin pérdida, Ranking General de Clausura 2026 verificado exacto (15/12/9/6) por API tras la migración. Migración probada también sobre una base vacía nueva (16 tablas, 7 migraciones, sin errores). Seeder verificado idempotente en 2 reinicios sucesivos (sin duplicar roles, admins, Liga demo, participantes ni pronósticos).
+
+Problema real encontrado y corregido durante la implementación: el rol `USER` preexistente en la base no se renombraba solo (el seeder solo agrega roles faltantes); quedaba un rol `PLAYER` nuevo y vacío mientras los usuarios existentes seguían apuntando a `USER`. Se corrigió con un `UPDATE` en el lugar dentro de la propia migración `AddLeagues` (preserva el `Id` del Rol y todas las `UserRoles` existentes).
+
+Sin frontend, sin Premios de Liga, sin endpoints de administración de Ligas (crear/editar/unirse) — explícitamente fuera de esta etapa; las Ligas de prueba se crearon/eliminaron directamente por SQL para validar el motor. Sin commit — pendiente de aprobación.
+
+**Corrección de seguridad previa a la Etapa 2**: `backend/appsettings.Development.json` (trackeado por Git, a diferencia de `.env`) tenía la contraseña de los 3 ADMIN en texto plano. Se eliminó esa sección por completo; la contraseña ahora se pasa como variable de entorno `DevSeed__AdminPassword` en `docker-compose.yml`, resuelta desde `.env` (gitignored) — documentada como `DEV_ADMIN_PASSWORD` en `.env.example` sin valor real. Sin esa variable, `DataSeeder` cae a un valor por defecto de solo-desarrollo, con guarda que impide su ejecución fuera de `Development`.
+
+### Fase 2, Etapa 2 — Gestión básica de Ligas (implementada — sin commitear)
+
+Backend: `LeagueEndpoints.cs` (`POST/GET /api/leagues`, `GET /mine`, `GET/PUT /{id}`, `POST /join`, `GET /{id}/participants`, `GET /{id}/matches`) con validación completa (Competencia habilitada, alcance FullCompetition/RoundRange coherente con la Edición, unicidad de `InviteCode`, pertenencia, creador). `Prediction`/`PredictionEndpoints` reutilizados sin duplicar lógica (helpers expuestos como `internal`). Nueva columna `League.Description` (migración `AddLeagueDescription`).
+
+Frontend: pantallas `LeaguesMinePage` (Mis Ligas), `LeagueCreatePage` (con cascada Competencia→Edición→Fecha para el alcance por rango), `LeagueJoinPage`, `LeagueDetailPage`, y `PredictionsMatchesPage.tsx` adaptada para trabajar por `leagueId` (ya no por `roundId` global). Se retiraron `PredictionsCompetitionsPage`/`PredictionsEditionsPage`/`PredictionsRoundsPage` y el link "Pronósticos" del menú por quedar sin ruta válida bajo el nuevo modelo (los Pronósticos se acceden siempre desde una Liga).
+
+Validado de punta a punta en el navegador real (Juan y Ana, dos usuarios distintos): crear Liga, unirse por código (normalizado, idempotente), pronosticar el mismo partido con valores distintos en dos Ligas distintas del mismo usuario, persistencia tras recargar, rechazo 403 al acceder a una Liga ajena, mensaje controlado ante código inválido, participantes sin datos sensibles. Regresión: login ADMIN, panel de Usuarios (roles ya muestran `PLAYER`), Experiencias, Ranking General de Clausura 2026 (15/12/9/6) todo intacto.
+
+Sin Ranking de Liga, sin Premios de Liga, sin edición de participantes, sin eliminación de Ligas — explícitamente fuera de esta etapa. Sin commit — pendiente de aprobación.
+
+### Fase 2, Etapa 2.5 — Experiencia del Jugador (implementada — sin commitear)
+
+Reorganización pura de navegación, **sin backend nuevo, sin modelo de datos nuevo, sin migraciones** — construida enteramente reutilizando endpoints ya existentes (`/competitions`, `/competitions/{id}/editions`, `/editions/{id}/rounds`, `/leagues/mine`).
+
+Pantallas nuevas: `ExploreCompetitionsPage` (`/competitions/explore`, solo Competencias activas: nombre/deporte/edición activa/cantidad de Fechas/estado/Ver) y `CompetitionDetailPage` (`/competitions/:competitionId`, vista del Jugador: info general + "Mis Ligas en esta Competencia" + botón "Crear nueva Liga" con la Competencia preseleccionada). `LeagueCreatePage` ahora acepta `?competitionId=` y, si llega, oculta el selector de Competencia (no se vuelve a pedir). `LeaguesMinePage`: se reemplazó el botón "+ Crear Liga" por "Explorar Competencias" (toda creación de Liga arranca desde una Competencia, sin rutas duplicadas). Menú simplificado para `PLAYER`: Mis Ligas / Explorar Competencias / Unirse por código / Rankings / Perfil — "Fixture" y "Premios" quedaron admin-only (siguen existiendo, solo dejaron de mostrarse al Jugador). Login y ruta raíz (`/`) ahora redirigen según rol: `ADMIN` → `/competitions`, `PLAYER` → `/leagues`.
+
+Validado en el navegador real con 3 usuarios: `PLAYER` nuevo sin Ligas (estado vacío correcto), creación de 2 Ligas distintas sobre la misma Competencia desde su detalle, un segundo usuario uniéndose por código, vuelta al detalle de Competencia mostrando la Liga ya creada, y login `ADMIN` con su panel completo intacto (Fixture/Premios/Usuarios/Administrar Premios/Experiencias todos visibles). Sin errores de consola.
+
+Sin Ranking de Liga, sin Premios, sin dashboard definitivo, sin rediseño visual, sin administración avanzada, sin eliminación de Ligas — explícitamente fuera de esta etapa. Sin commit — pendiente de aprobación.
+
+---
+
+## Sprint 8.6 — Hardening y Preparación para Commit (completado)
+
+Objetivo: dejar el Sprint 8.5 (Fase 1 + Etapas 1, 2 y 2.5) en condiciones de commit con el menor riesgo posible, sin incorporar funcionalidades nuevas, sin cambiar el modelo de datos ni la arquitectura. Ejecutado tras una interrupción de sesión por corte de energía; se hizo primero una auditoría de estado (Fase 0) que confirmó que nada se había perdido.
+
+**Resultado: ningún archivo del repositorio fue modificado.** Las 7 fases fueron de auditoría de solo lectura y pruebas funcionales sobre datos efímeros (revertidos al final, conteos verificados idénticos al baseline).
+
+- **Migraciones**: `AddLeagues` y `AddLeagueDescription` confirmadas necesarias, no redundantes, sin consolidar (no aporta valor, agregaría riesgo). Riesgo verificado bajo; descartado un riesgo teórico sobre el rename de Roles `USER`→`PLAYER` (el orden migración-antes-que-seed en `Program.cs` lo hace imposible en la práctica).
+- **Configuración/secretos**: `appsettings.Development.json`, `.env.example`, `docker-compose.yml`, `Program.cs` limpios. Detectado (no corregido, fuera del diff de este Sprint) que `appsettings.json` base tiene un `Jwt:Key` y una contraseña de PostgreSQL en texto plano como *fallback* — pendiente de un hardening de seguridad aparte.
+- **Limpieza de código**: sin TODO/FIXME/HACK/DEBUG, sin `console.log`/`Console.WriteLine`, sin código muerto ni imports/DTOs/endpoints huérfanos. `oxlint` en 0 errores.
+- **Nomenclatura**: `League`/`LeagueParticipant`/`RoleNames.Player` consistentes con el resto del modelo, sin mezcla `USER`/`Member`/`LeagueUser`. Único hallazgo cosmético sin efecto funcional: estilo de nombre distinto entre la Liga de demostración del seed y la Liga técnica del backfill de la migración.
+- **Validaciones técnicas**: `dotnet build` y `npm run build`/`tsc --noEmit` en verde (0 errores, corridos 2 veces cada uno); migraciones sobre base existente confirmadas (8/8 aplicadas, 0 `Predictions.LeagueId` nulos); **seeder confirmado idempotente en 3 ejecuciones reales consecutivas**, conteos idénticos las 3 veces. La prueba de migración sobre base vacía se abortó en esta sesión por contención de recursos (se priorizó proteger el entorno del usuario); queda respaldada por el análisis de código y por la verificación ya documentada de la sesión de la Etapa 1 sobre una base vacía nueva.
+- **Recorrido funcional** (sustituto del recorrido visual, extensión de Chrome no disponible en la sesión): login ADMIN/PLAYER, competencias, experiencias, usuarios, premios, mis ligas, explorar competencias, crear Liga, unirse por código, abrir Liga, rechazo controlado de pronóstico sobre partido Finalizado, participantes sin datos sensibles — todo correcto por API. Hallazgo menor no bloqueante: `POST /api/leagues` no tiene protección de reintento (un reintento de cliente tras timeout puede crear una Liga duplicada; comportamiento HTTP esperado, no un bug).
+- **Hallazgo de entorno (no de código)**: tras los restarts consecutivos de esta auditoría, el backend real (`dotnet watch`) mostró ciclos de reinicio espurios de su *polling file watcher* (bind mount de Docker Desktop en Windows, ya documentado como "no confiable" en sesiones anteriores). Aislado corriendo el mismo código con `dotnet run` (sin `watch`): arrancó limpio y quedó `healthy` de inmediato. Al cierre de la sesión el contenedor estándar ya se había estabilizado solo.
+
+**Evaluación final**: Arquitectura 9/10, Backend 9/10, Frontend 9/10, Base de Datos 9/10, UX 8/10, Riesgo para commit 9/10. **Recomendación: A) listo para Commit y Push.**
 
 ---
 

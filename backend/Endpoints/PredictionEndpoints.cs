@@ -14,12 +14,37 @@ public static class PredictionEndpoints
     {
         var group = app.MapGroup("/api/predictions").WithTags("Predictions").RequireAuthorization();
 
-        group.MapGet("/rounds/{roundId:int}", async (int roundId, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        // A partir del Sprint 8.5 el Pronóstico pertenece a una Liga: por eso este listado
+        // exige indicar desde qué Liga se está consultando ("Mi pronóstico" ya no es un
+        // concepto único por partido, puede haber uno distinto por Liga). No se elige
+        // ninguna Liga por defecto ni en nombre del usuario: sin `leagueId` explícito, 400.
+        group.MapGet("/rounds/{roundId:int}", async (int roundId, int? leagueId, ClaimsPrincipal principal, PlayPredictDbContext db) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
             if (user is null)
             {
                 return Results.Unauthorized();
+            }
+
+            if (leagueId is null)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["leagueId"] = ["Debés indicar desde qué Liga estás consultando los pronósticos."]
+                });
+            }
+
+            var league = await db.Leagues.FindAsync(leagueId.Value);
+            if (league is null)
+            {
+                return Results.NotFound(new { message = "La Liga indicada no existe." });
+            }
+
+            var isParticipant = await db.LeagueParticipants
+                .AnyAsync(lp => lp.LeagueId == leagueId.Value && lp.UserId == user.Id);
+            if (!isParticipant)
+            {
+                return Results.Json(new { message = "No pertenecés a esta Liga." }, statusCode: StatusCodes.Status403Forbidden);
             }
 
             var roundExists = await db.Rounds.AnyAsync(r => r.Id == roundId);
@@ -35,7 +60,7 @@ public static class PredictionEndpoints
 
             var matchIds = matches.Select(m => m.Id).ToList();
             var predictions = await db.Predictions
-                .Where(p => p.UserId == user.Id && matchIds.Contains(p.MatchId))
+                .Where(p => p.LeagueId == leagueId.Value && p.UserId == user.Id && matchIds.Contains(p.MatchId))
                 .ToListAsync();
 
             var evaluations = await GetEvaluationsForPredictionsAsync(db, predictions);
@@ -50,6 +75,8 @@ public static class PredictionEndpoints
             return Results.Ok(result);
         });
 
+        // Devuelve todos los Pronósticos del usuario, en todas sus Ligas (sin ambigüedad:
+        // es un listado, no "mi pronóstico para este partido").
         group.MapGet("/me", async (ClaimsPrincipal principal, PlayPredictDbContext db) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
@@ -84,32 +111,23 @@ public static class PredictionEndpoints
                 return Results.ValidationProblem(errors);
             }
 
-            var match = await db.Matches.FindAsync(dto.MatchId);
-            if (match is null)
+            var validationError = await ValidatePredictionContextAsync(db, dto.LeagueId, dto.MatchId, user.Id);
+            if (validationError is not null)
             {
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["matchId"] = ["El partido indicado no existe."]
-                });
+                return validationError;
             }
 
-            if (!CanCreateOrEditPrediction(match))
-            {
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["status"] = ["Este partido no admite pronósticos: ya comenzó, no está Programado, o su horario de inicio ya pasó."]
-                });
-            }
-
-            var alreadyExists = await db.Predictions.AnyAsync(p => p.UserId == user.Id && p.MatchId == dto.MatchId);
+            var alreadyExists = await db.Predictions
+                .AnyAsync(p => p.LeagueId == dto.LeagueId && p.UserId == user.Id && p.MatchId == dto.MatchId);
             if (alreadyExists)
             {
-                return Results.Conflict(new { message = "Ya existe un pronóstico para este partido. Modificalo en vez de crear uno nuevo." });
+                return Results.Conflict(new { message = "Ya existe un pronóstico para este partido en esta Liga. Modificalo en vez de crear uno nuevo." });
             }
 
             var now = DateTime.UtcNow;
             var prediction = new Prediction
             {
+                LeagueId = dto.LeagueId,
                 MatchId = dto.MatchId,
                 UserId = user.Id,
                 PredictedHomeScore = dto.PredictedHomeScore,
@@ -126,7 +144,7 @@ public static class PredictionEndpoints
             }
             catch (DbUpdateException)
             {
-                return Results.Conflict(new { message = "Ya existe un pronóstico para este partido." });
+                return Results.Conflict(new { message = "Ya existe un pronóstico para este partido en esta Liga." });
             }
 
             return Results.Created($"/api/predictions/{prediction.Id}", ToDto(prediction));
@@ -157,13 +175,13 @@ public static class PredictionEndpoints
                 return Results.Json(new { message = "No podés modificar el pronóstico de otro usuario." }, statusCode: StatusCodes.Status403Forbidden);
             }
 
-            var match = await db.Matches.FindAsync(prediction.MatchId);
-            if (match is null || !CanCreateOrEditPrediction(match))
+            // La Liga y el Partido de un pronóstico ya existente no cambian al editarlo
+            // (solo el marcador); se revalida igual porque ambos pueden haber cambiado de
+            // estado desde que se creó (Liga desactivada, partido que ya no admite cambios).
+            var validationError = await ValidatePredictionContextAsync(db, prediction.LeagueId, prediction.MatchId, user.Id);
+            if (validationError is not null)
             {
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["status"] = ["Este partido ya no admite modificar el pronóstico: ya comenzó, no está Programado, o su horario de inicio ya pasó."]
-                });
+                return validationError;
             }
 
             prediction.PredictedHomeScore = dto.PredictedHomeScore;
@@ -174,6 +192,94 @@ public static class PredictionEndpoints
 
             return Results.Ok(ToDto(prediction));
         });
+    }
+
+    // Reglas del Sprint 8.5: valida, en orden, todo lo necesario antes de guardar un
+    // Pronóstico. Nunca deja que una clave foránea inválida llegue a SaveChangesAsync
+    // (eso produciría un 500): todo caso inválido conocido se traduce acá a 404/403/400/409.
+    private static async Task<IResult?> ValidatePredictionContextAsync(
+        PlayPredictDbContext db, int leagueId, int matchId, int userId)
+    {
+        var league = await db.Leagues.FindAsync(leagueId);
+        if (league is null)
+        {
+            return Results.NotFound(new { message = "La Liga indicada no existe." });
+        }
+
+        var isParticipant = await db.LeagueParticipants
+            .AnyAsync(lp => lp.LeagueId == leagueId && lp.UserId == userId);
+        if (!isParticipant)
+        {
+            return Results.Json(new { message = "No pertenecés a esta Liga." }, statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        if (!league.IsActive)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["leagueId"] = ["Esta Liga no está activa."]
+            });
+        }
+
+        var match = await db.Matches.FindAsync(matchId);
+        if (match is null)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["matchId"] = ["El partido indicado no existe."]
+            });
+        }
+
+        var matchRound = await db.Rounds.FindAsync(match.RoundId);
+        var matchCompetitionId = matchRound is null
+            ? (int?)null
+            : await db.Editions.Where(e => e.Id == matchRound.EditionId).Select(e => (int?)e.CompetitionId).FirstOrDefaultAsync();
+
+        if (matchRound is null || matchCompetitionId is null || matchCompetitionId.Value != league.CompetitionId)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["matchId"] = ["El partido no pertenece a la Competencia de esta Liga."]
+            });
+        }
+
+        if (!await IsMatchWithinLeagueScopeAsync(db, league, matchRound))
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["matchId"] = ["El partido está fuera del alcance de Fechas de esta Liga."]
+            });
+        }
+
+        if (!CanCreateOrEditPrediction(match))
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["status"] = ["Este partido no admite pronósticos: ya comenzó, no está Programado, o su horario de inicio ya pasó."]
+            });
+        }
+
+        return null;
+    }
+
+    private static async Task<bool> IsMatchWithinLeagueScopeAsync(PlayPredictDbContext db, League league, Round matchRound)
+    {
+        if (league.ScopeType == LeagueScopeType.FullCompetition)
+        {
+            return true;
+        }
+
+        // RoundRange: RoundFromId/RoundToId son obligatorios y ya fueron validados como
+        // coherentes (misma Edición, desde <= hasta) al crear la Liga.
+        var roundFrom = await db.Rounds.FindAsync(league.RoundFromId!.Value);
+        var roundTo = await db.Rounds.FindAsync(league.RoundToId!.Value);
+
+        if (roundFrom is null || roundTo is null || matchRound.EditionId != roundFrom.EditionId)
+        {
+            return false;
+        }
+
+        return matchRound.Order >= roundFrom.Order && matchRound.Order <= roundTo.Order;
     }
 
     // Regla definitiva: un pronóstico solo puede crearse o modificarse si el partido
@@ -200,7 +306,7 @@ public static class PredictionEndpoints
         return errors;
     }
 
-    private static async Task<Dictionary<int, PredictionEvaluation>> GetEvaluationsForPredictionsAsync(
+    internal static async Task<Dictionary<int, PredictionEvaluation>> GetEvaluationsForPredictionsAsync(
         PlayPredictDbContext db, List<Prediction> predictions)
     {
         if (predictions.Count == 0)
@@ -217,14 +323,14 @@ public static class PredictionEndpoints
     }
 
     private static PredictionDto ToDto(Prediction p, PredictionEvaluation? evaluation = null) =>
-        new(p.Id, p.MatchId, p.UserId, p.PredictedHomeScore, p.PredictedAwayScore, p.CreatedAtUtc, p.UpdatedAtUtc,
+        new(p.Id, p.LeagueId, p.MatchId, p.UserId, p.PredictedHomeScore, p.PredictedAwayScore, p.CreatedAtUtc, p.UpdatedAtUtc,
             evaluation?.Points,
             evaluation?.EvaluationType.ToString(),
             evaluation is null ? null : PredictionEvaluationService.GetLabel(evaluation.EvaluationType),
             evaluation?.OfficialHomeScore,
             evaluation?.OfficialAwayScore);
 
-    private static MatchWithPredictionDto ToMatchWithPredictionDto(Match m, Prediction? prediction, PredictionEvaluation? evaluation) =>
+    internal static MatchWithPredictionDto ToMatchWithPredictionDto(Match m, Prediction? prediction, PredictionEvaluation? evaluation) =>
         new(m.Id, m.RoundId, m.ParticipantHome, m.ParticipantAway, m.StartsAtUtc, m.Status.ToString(),
             m.HomeGoals, m.AwayGoals, prediction is null ? null : ToDto(prediction, evaluation), CanCreateOrEditPrediction(m));
 }

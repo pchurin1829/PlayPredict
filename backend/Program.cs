@@ -97,6 +97,7 @@ app.MapRankingEndpoints();
 app.MapAdminPrizeEndpoints();
 app.MapPrizeEndpoints();
 app.MapAdminExperienceEndpoints();
+app.MapLeagueEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -108,7 +109,7 @@ using (var scope = app.Services.CreateScope())
     if (app.Environment.IsDevelopment())
     {
         await DataSeeder.SeedAsync(db);
-        await DataSeeder.SeedAdminUserAsync(db);
+        await DataSeeder.SeedAdminUsersAsync(db, app.Configuration, app.Environment);
     }
 
     // Después de cualquier seed de datos: garantiza que toda Edición (existente o

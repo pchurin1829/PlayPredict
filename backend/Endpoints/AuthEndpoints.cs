@@ -41,10 +41,10 @@ public static class AuthEndpoints
                 return Results.Problem("No hay una empresa configurada.", statusCode: StatusCodes.Status500InternalServerError);
             }
 
-            var userRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == RoleNames.User);
+            var userRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == RoleNames.Player);
             if (userRole is null)
             {
-                return Results.Problem("No se encontró el rol USER.", statusCode: StatusCodes.Status500InternalServerError);
+                return Results.Problem("No se encontró el rol PLAYER.", statusCode: StatusCodes.Status500InternalServerError);
             }
 
             var user = new User
@@ -64,7 +64,7 @@ public static class AuthEndpoints
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
-            var roles = new[] { RoleNames.User };
+            var roles = new[] { RoleNames.Player };
             var token = jwt.GenerateToken(user, roles);
 
             return Results.Created($"/api/users/me", new AuthResponseDto(token, ToUserDto(user, roles)));

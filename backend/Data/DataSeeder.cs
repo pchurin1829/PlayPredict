@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Domain.Enums;
@@ -15,9 +17,19 @@ public static class DataSeeder
     private const string FaseDeGruposEditionName = "Fase de Grupos 2026";
     private const string RoundName = "Fecha 1";
     private const string DefaultCompanyName = "PlayPredict";
-    private const string AdminEmail = "admin@playpredict.local";
-    private const string AdminPassword = "admin123";
     private const string DemoExperienceName = "PlayPredict Demo";
+    private const string DemoLeagueName = "Liga General - Liga Profesional (demo)";
+
+    // Fallback usado únicamente si no hay contraseña configurada (ver SeedAdminUsersAsync).
+    // Nunca reutilizar en un entorno real: el método se niega a correr fuera de Development.
+    private const string DefaultDevAdminPassword = "admin123";
+
+    private static readonly (string Email, string FirstName, string LastName)[] DevAdminUsers =
+    {
+        ("admin@playpredict.local", "Administrador", "General"),
+        ("admin2@playpredict.local", "Administradora", "Dos"),
+        ("admin3@playpredict.local", "Administrador", "Tres"),
+    };
 
     private const string RankingDemoPassword = "demo123";
 
@@ -60,7 +72,7 @@ public static class DataSeeder
             });
         }
 
-        foreach (var roleName in new[] { RoleNames.Admin, RoleNames.User })
+        foreach (var roleName in new[] { RoleNames.Admin, RoleNames.Player })
         {
             if (!await db.Roles.AnyAsync(r => r.Name == roleName))
             {
@@ -108,32 +120,53 @@ public static class DataSeeder
         await db.SaveChangesAsync();
     }
 
-    // Sólo en Development: usuario administrador inicial para poder entrar al panel sin registro previo.
-    public static async Task SeedAdminUserAsync(PlayPredictDbContext db)
+    // Sólo en Development: 3 usuarios ADMIN de ejemplo para poder entrar al panel sin
+    // registro previo (Sprint 8.5, decisión 2: la instalación inicial contiene 3 ADMIN).
+    // Contraseña tomada de configuración/variable de entorno (DevSeed:AdminPassword);
+    // solo cae al valor por defecto si no hay ninguna configurada. Guarda explícita
+    // además del gate por entorno que ya aplica el llamador (Program.cs): este método
+    // se niega a ejecutarse si, por error, se lo invocara fuera de Development.
+    public static async Task SeedAdminUsersAsync(PlayPredictDbContext db, IConfiguration configuration, IHostEnvironment environment)
     {
-        if (await db.Users.AnyAsync(u => u.Email == AdminEmail))
+        if (!environment.IsDevelopment())
         {
-            return;
+            throw new InvalidOperationException(
+                "SeedAdminUsersAsync crea usuarios ADMIN de desarrollo con contraseñas conocidas: nunca debe ejecutarse fuera de Development.");
+        }
+
+        var password = configuration["DevSeed:AdminPassword"];
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            password = DefaultDevAdminPassword;
         }
 
         var company = await db.Companies.FirstAsync(c => c.Name == DefaultCompanyName);
         var adminRole = await db.Roles.FirstAsync(r => r.Name == RoleNames.Admin);
-
-        var admin = new User
-        {
-            CompanyId = company.Id,
-            FirstName = "Administrador",
-            LastName = "General",
-            Email = AdminEmail,
-            IsActive = true,
-            CreatedAtUtc = DateTime.UtcNow
-        };
-
         var hasher = new PasswordHasher<User>();
-        admin.PasswordHash = hasher.HashPassword(admin, AdminPassword);
-        admin.UserRoles.Add(new UserRole { Role = adminRole });
 
-        db.Users.Add(admin);
+        foreach (var (email, firstName, lastName) in DevAdminUsers)
+        {
+            if (await db.Users.AnyAsync(u => u.Email == email))
+            {
+                continue;
+            }
+
+            var admin = new User
+            {
+                CompanyId = company.Id,
+                FirstName = firstName,
+                LastName = lastName,
+                Email = email,
+                IsActive = true,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            admin.PasswordHash = hasher.HashPassword(admin, password);
+            admin.UserRoles.Add(new UserRole { Role = adminRole });
+
+            db.Users.Add(admin);
+        }
+
         await db.SaveChangesAsync();
     }
 
@@ -166,6 +199,38 @@ public static class DataSeeder
         await db.SaveChangesAsync();
 
         return experience;
+    }
+
+    // Sólo en Development: Liga de demostración para que los Pronósticos sembrados
+    // (Sprint 8.5) tengan un LeagueId válido. Reutiliza cualquier Liga que ya exista
+    // para esta Competencia (por ejemplo, la Liga técnica creada por el backfill de la
+    // migración `AddLeagues` en una base con datos previos) para no crear una Liga
+    // redundante ni duplicar los Pronósticos de demostración; si no existe ninguna
+    // (base de datos nueva, sin datos previos al Sprint 8.5), crea la de demostración.
+    private static async Task<League> GetOrCreateDemoLeagueAsync(PlayPredictDbContext db, int competitionId, int ownerUserId)
+    {
+        var league = await db.Leagues.FirstOrDefaultAsync(l => l.CompetitionId == competitionId);
+        if (league is not null)
+        {
+            return league;
+        }
+
+        var now = DateTime.UtcNow;
+        league = new League
+        {
+            Name = DemoLeagueName,
+            CompetitionId = competitionId,
+            ScopeType = LeagueScopeType.FullCompetition,
+            InviteCode = "DEMO-LIGA-01",
+            IsActive = true,
+            CreatedByUserId = ownerUserId,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+        db.Leagues.Add(league);
+        await db.SaveChangesAsync();
+
+        return league;
     }
 
     public static async Task SeedAsync(PlayPredictDbContext db)
@@ -278,7 +343,7 @@ public static class DataSeeder
         await db.SaveChangesAsync();
 
         var company = await db.Companies.FirstAsync(c => c.Name == DefaultCompanyName);
-        var userRole = await db.Roles.FirstAsync(r => r.Name == RoleNames.User);
+        var playerRole = await db.Roles.FirstAsync(r => r.Name == RoleNames.Player);
         var hasher = new PasswordHasher<User>();
 
         var users = new Dictionary<string, User>();
@@ -297,7 +362,7 @@ public static class DataSeeder
                     CreatedAtUtc = DateTime.UtcNow
                 };
                 user.PasswordHash = hasher.HashPassword(user, RankingDemoPassword);
-                user.UserRoles.Add(new UserRole { Role = userRole });
+                user.UserRoles.Add(new UserRole { Role = playerRole });
                 db.Users.Add(user);
                 await db.SaveChangesAsync();
             }
@@ -305,16 +370,43 @@ public static class DataSeeder
             users[email] = user;
         }
 
+        // Sprint 8.5: el Pronóstico pertenece a una Liga. Se reutiliza/crea una Liga de
+        // demostración sobre la misma Competencia (Liga Profesional) y se incorpora a los
+        // 4 usuarios demo como Participantes antes de sembrar sus Pronósticos.
+        var competitionId = await db.Editions
+            .Where(e => e.Id == round.EditionId)
+            .Select(e => e.CompetitionId)
+            .FirstAsync();
+        var demoLeague = await GetOrCreateDemoLeagueAsync(db, competitionId, users[RankingDemoUsers[0].Email].Id);
+
+        foreach (var (email, _, _) in RankingDemoUsers)
+        {
+            var user = users[email];
+            var isParticipant = await db.LeagueParticipants.AnyAsync(lp => lp.LeagueId == demoLeague.Id && lp.UserId == user.Id);
+            if (!isParticipant)
+            {
+                db.LeagueParticipants.Add(new LeagueParticipant
+                {
+                    LeagueId = demoLeague.Id,
+                    UserId = user.Id,
+                    JoinedAtUtc = DateTime.UtcNow
+                });
+            }
+        }
+
+        await db.SaveChangesAsync();
+
         foreach (var (email, scores) in RankingDemoPredictions)
         {
             var user = users[email];
             for (var i = 0; i < matches.Count && i < scores.Length; i++)
             {
-                var exists = await db.Predictions.AnyAsync(p => p.UserId == user.Id && p.MatchId == matches[i].Id);
+                var exists = await db.Predictions.AnyAsync(p => p.LeagueId == demoLeague.Id && p.UserId == user.Id && p.MatchId == matches[i].Id);
                 if (!exists)
                 {
                     db.Predictions.Add(new Prediction
                     {
+                        LeagueId = demoLeague.Id,
                         MatchId = matches[i].Id,
                         UserId = user.Id,
                         PredictedHomeScore = scores[i].Home,

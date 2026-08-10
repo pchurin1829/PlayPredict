@@ -33,5 +33,17 @@ public static class RankingEndpoints
             var ranking = await rankingService.GetRoundRankingAsync(db, roundId);
             return Results.Ok(ranking);
         });
+
+        group.MapGet("/leagues/{leagueId:int}", async (int leagueId, PlayPredictDbContext db, RankingService rankingService) =>
+        {
+            var leagueExists = await db.Leagues.AnyAsync(l => l.Id == leagueId);
+            if (!leagueExists)
+            {
+                return Results.NotFound();
+            }
+
+            var ranking = await rankingService.GetLeagueRankingAsync(db, leagueId);
+            return Results.Ok(ranking);
+        });
     }
 }

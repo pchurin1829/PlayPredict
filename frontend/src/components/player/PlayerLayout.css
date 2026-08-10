@@ -1,0 +1,24 @@
+.playout {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.playout__body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.playout__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: var(--color-bg);
+}
+
+@media (max-width: 768px) {
+  .playout__content {
+    padding: 1rem;
+  }
+}

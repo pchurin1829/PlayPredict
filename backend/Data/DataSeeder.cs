@@ -15,7 +15,8 @@ public static class DataSeeder
     private const string ClausuraEditionName = "Clausura 2026";
     private const string CopaLibertadoresName = "Copa Libertadores";
     private const string FaseDeGruposEditionName = "Fase de Grupos 2026";
-    private const string RoundName = "Fecha 1";
+
+    private static readonly string[] RoundNames = { "Fecha 1", "Fecha 2", "Fecha 3", "Fecha 4", "Fecha 5" };
     private const string DefaultCompanyName = "PlayPredict";
     private const string DemoExperienceName = "PlayPredict Demo";
     private const string DemoLeagueName = "Liga General - Liga Profesional (demo)";
@@ -41,22 +42,48 @@ public static class DataSeeder
         ("pedro.gomez@playpredict.local", "Pedro", "Gómez"),
     };
 
-    // (ParticipantHome, ParticipantAway, HomeGoals, AwayGoals) de la Fecha 1 de Clausura 2026,
-    // en el mismo orden que los partidos sembrados por SeedAsync (ordenados por StartsAtUtc).
+    // Partidos de las 5 Fechas de Clausura 2026.
+    // Cada sub-array es una Fecha, cada tupla es (Local, Visitante).
+    private static readonly (string Home, string Away)[][] ClausuraMatchups =
+    {
+        // Fecha 1
+        new[] { ("Boca Juniors", "River Plate"), ("Racing Club", "Independiente"), ("Estudiantes", "Gimnasia") },
+        // Fecha 2
+        new[] { ("River Plate", "Racing Club"), ("Independiente", "Estudiantes"), ("Gimnasia", "Boca Juniors") },
+        // Fecha 3
+        new[] { ("Boca Juniors", "Independiente"), ("Racing Club", "Gimnasia"), ("Estudiantes", "River Plate") },
+        // Fecha 4
+        new[] { ("River Plate", "Gimnasia"), ("Independiente", "Boca Juniors"), ("Estudiantes", "Racing Club") },
+        // Fecha 5
+        new[] { ("Boca Juniors", "Estudiantes"), ("Racing Club", "River Plate"), ("Gimnasia", "Independiente") },
+    };
+
+    // Resultados oficiales de las Fechas 1-3 (ya finalizadas).
+    // Las Fechas 4-5 no tienen resultado (partidos futuros/pronosticables).
     private static readonly (string Home, string Away, int HomeGoals, int AwayGoals)[] RankingDemoMatches =
     {
+        // Fecha 1
         ("Boca Juniors", "River Plate", 2, 1),
         ("Racing Club", "Independiente", 1, 1),
         ("Estudiantes", "Gimnasia", 0, 2),
+        // Fecha 2
+        ("River Plate", "Racing Club", 3, 0),
+        ("Independiente", "Estudiantes", 1, 1),
+        ("Gimnasia", "Boca Juniors", 0, 1),
+        // Fecha 3
+        ("Boca Juniors", "Independiente", 2, 0),
+        ("Racing Club", "Gimnasia", 1, 2),
+        ("Estudiantes", "River Plate", 2, 2),
     };
 
-    // Pronósticos de demostración por usuario, en el mismo orden que RankingDemoMatches.
+    // Pronósticos de demostración por usuario para las Fechas 1-3 (9 partidos evaluados).
+    // Las Fechas 4-5 no tienen pronósticos demo (el usuario los carga en vivo).
     private static readonly Dictionary<string, (int Home, int Away)[]> RankingDemoPredictions = new()
     {
-        ["ana.torres@playpredict.local"] = new[] { (2, 1), (0, 0), (1, 2) },
-        ["juan.perez@playpredict.local"] = new[] { (1, 0), (1, 1), (0, 2) },
-        ["maria.lopez@playpredict.local"] = new[] { (1, 2), (1, 1), (0, 1) },
-        ["pedro.gomez@playpredict.local"] = new[] { (2, 1), (2, 0), (1, 0) },
+        ["ana.torres@playpredict.local"] = new[] { (2, 1), (0, 0), (1, 2), (3, 1), (1, 0), (0, 1), (2, 0), (0, 1), (1, 1) },
+        ["juan.perez@playpredict.local"] = new[] { (1, 0), (1, 1), (0, 2), (2, 0), (1, 1), (1, 2), (1, 0), (1, 2), (2, 1) },
+        ["maria.lopez@playpredict.local"] = new[] { (1, 2), (1, 1), (0, 1), (1, 1), (0, 1), (2, 0), (0, 1), (2, 1), (1, 2) },
+        ["pedro.gomez@playpredict.local"] = new[] { (2, 1), (2, 0), (1, 0), (3, 0), (2, 1), (1, 0), (2, 1), (0, 0), (3, 1) },
     };
 
     // Corre en todos los entornos: Registro/Login necesitan la Empresa y los Roles ya existentes.
@@ -243,15 +270,22 @@ public static class DataSeeder
             LigaProfesionalName,
             "Competencia de demostración generada por el seed de desarrollo.",
             ClausuraEditionName,
-            RankingDemoMatches.Select(m => (m.Home, m.Away)).ToArray());
+            ClausuraMatchups);
 
+        // Copa Libertadores: 5 Fechas con equipos sudamericanos (no participa en el circuito jugable demo).
         await SeedCompetitionAsync(
             db,
             demoExperience.Id,
             CopaLibertadoresName,
             "Competencia de demostración generada por el seed de desarrollo.",
             FaseDeGruposEditionName,
-            new[] { ("Equipo G", "Equipo H"), ("Equipo I", "Equipo J"), ("Equipo K", "Equipo L") });
+            new[] {
+                new[] { ("River Plate", "Flamengo"), ("Palmeiras", "Boca Juniors"), ("Atlético Nacional", "Peñarol") },
+                new[] { ("Flamengo", "Atlético Nacional"), ("Boca Juniors", "River Plate"), ("Peñarol", "Palmeiras") },
+                new[] { ("Palmeiras", "Peñarol"), ("River Plate", "Boca Juniors"), ("Atlético Nacional", "Flamengo") },
+                new[] { ("Flamengo", "Palmeiras"), ("Boca Juniors", "Atlético Nacional"), ("Peñarol", "River Plate") },
+                new[] { ("Palmeiras", "River Plate"), ("Atlético Nacional", "Peñarol"), ("Flamengo", "Boca Juniors") },
+            });
     }
 
     private static async Task SeedCompetitionAsync(
@@ -260,7 +294,7 @@ public static class DataSeeder
         string competitionName,
         string description,
         string editionName,
-        (string Home, string Away)[] matchups)
+        (string Home, string Away)[][] roundMatchups)
     {
         if (await db.Competitions.AnyAsync(c => c.Name == competitionName))
         {
@@ -288,28 +322,37 @@ public static class DataSeeder
             CreatedAtUtc = now
         };
 
-        var round = new Round
+        for (var roundIndex = 0; roundIndex < roundMatchups.Length; roundIndex++)
         {
-            Edition = edition,
-            Name = RoundName,
-            Order = 1,
-            StartDateUtc = now
-        };
+            var matchups = roundMatchups[roundIndex];
+            var round = new Round
+            {
+                Edition = edition,
+                Name = RoundNames.Length > roundIndex ? RoundNames[roundIndex] : $"Fecha {roundIndex + 1}",
+                Order = roundIndex + 1,
+                StartDateUtc = now.AddDays(roundIndex * 7)
+            };
 
-        var matches = matchups.Select((m, i) => new Match
-        {
-            Round = round,
-            ParticipantHome = m.Home,
-            ParticipantAway = m.Away,
-            StartsAtUtc = now.AddDays(1).AddHours(i * 2),
-            Status = MatchStatus.Scheduled,
-            CreatedAtUtc = now
-        });
+            for (var i = 0; i < matchups.Length; i++)
+            {
+                db.Matches.Add(new Match
+                {
+                    Round = round,
+                    ParticipantHome = matchups[i].Home,
+                    ParticipantAway = matchups[i].Away,
+                    // Fechas 1-3: partidos pasados (pronóstico cerrado, resultado cargado).
+                    // Fechas 4-5: partidos futuros (pronosticables).
+                    StartsAtUtc = roundIndex < 3
+                        ? now.AddDays(-7 * (3 - roundIndex)).AddHours(i * 2)
+                        : now.AddDays(7 * (roundIndex - 2) + 1).AddHours(i * 2),
+                    Status = MatchStatus.Scheduled,
+                    CreatedAtUtc = now
+                });
+            }
+        }
 
         db.Competitions.Add(competition);
         db.Editions.Add(edition);
-        db.Rounds.Add(round);
-        db.Matches.AddRange(matches);
 
         await db.SaveChangesAsync();
     }
@@ -320,24 +363,40 @@ public static class DataSeeder
     // este método varias veces (reinicios del contenedor) nunca duplica nada.
     public static async Task SeedRankingDemoAsync(PlayPredictDbContext db, PredictionEvaluationService evaluationService)
     {
-        var round = await db.Rounds
-            .Include(r => r.Matches)
-            .FirstOrDefaultAsync(r => r.Name == RoundName && r.Edition.Name == ClausuraEditionName);
+        var edition = await db.Editions
+            .FirstOrDefaultAsync(e => e.Name == ClausuraEditionName);
 
-        if (round is null || round.Matches.Count < RankingDemoMatches.Length)
+        if (edition is null)
         {
-            // El seed base (SeedAsync) todavía no corrió; nada que hacer todavía.
             return;
         }
 
-        var matches = round.Matches.OrderBy(m => m.StartsAtUtc).ToList();
+        var rounds = await db.Rounds
+            .Include(r => r.Matches)
+            .Where(r => r.EditionId == edition.Id)
+            .OrderBy(r => r.Order)
+            .ToListAsync();
 
-        // Nombres reales de equipos, por si la Fecha ya existía con los nombres genéricos
-        // de una base de datos sembrada antes de este Sprint.
-        for (var i = 0; i < RankingDemoMatches.Length; i++)
+        if (rounds.Count == 0)
         {
-            matches[i].ParticipantHome = RankingDemoMatches[i].Home;
-            matches[i].ParticipantAway = RankingDemoMatches[i].Away;
+            return;
+        }
+
+        // Recolectar todos los partidos ordenados por fecha y hora (mismo orden que RankingDemoMatches).
+        var allMatches = rounds
+            .SelectMany(r => r.Matches)
+            .OrderBy(m => m.StartsAtUtc)
+            .ToList();
+
+        // Solo sembrar resultados para los partidos que coincidan con RankingDemoMatches.
+        // Las Fechas 4-5 (partidos futuros) no reciben resultado.
+        var finishedMatches = allMatches.Take(RankingDemoMatches.Length).ToList();
+
+        // Actualizar nombres de equipos para coincidir con RankingDemoMatches.
+        for (var i = 0; i < finishedMatches.Count; i++)
+        {
+            finishedMatches[i].ParticipantHome = RankingDemoMatches[i].Home;
+            finishedMatches[i].ParticipantAway = RankingDemoMatches[i].Away;
         }
 
         await db.SaveChangesAsync();
@@ -374,7 +433,7 @@ public static class DataSeeder
         // demostración sobre la misma Competencia (Liga Profesional) y se incorpora a los
         // 4 usuarios demo como Participantes antes de sembrar sus Pronósticos.
         var competitionId = await db.Editions
-            .Where(e => e.Id == round.EditionId)
+            .Where(e => e.Id == edition.Id)
             .Select(e => e.CompetitionId)
             .FirstAsync();
         var demoLeague = await GetOrCreateDemoLeagueAsync(db, competitionId, users[RankingDemoUsers[0].Email].Id);
@@ -399,15 +458,15 @@ public static class DataSeeder
         foreach (var (email, scores) in RankingDemoPredictions)
         {
             var user = users[email];
-            for (var i = 0; i < matches.Count && i < scores.Length; i++)
+            for (var i = 0; i < finishedMatches.Count && i < scores.Length; i++)
             {
-                var exists = await db.Predictions.AnyAsync(p => p.LeagueId == demoLeague.Id && p.UserId == user.Id && p.MatchId == matches[i].Id);
+                var exists = await db.Predictions.AnyAsync(p => p.LeagueId == demoLeague.Id && p.UserId == user.Id && p.MatchId == finishedMatches[i].Id);
                 if (!exists)
                 {
                     db.Predictions.Add(new Prediction
                     {
                         LeagueId = demoLeague.Id,
-                        MatchId = matches[i].Id,
+                        MatchId = finishedMatches[i].Id,
                         UserId = user.Id,
                         PredictedHomeScore = scores[i].Home,
                         PredictedAwayScore = scores[i].Away,
@@ -424,7 +483,7 @@ public static class DataSeeder
         // usaría un Administrador cargando el Resultado Oficial desde el panel).
         for (var i = 0; i < RankingDemoMatches.Length; i++)
         {
-            var match = matches[i];
+            var match = finishedMatches[i];
             if (match.Status != MatchStatus.Finished)
             {
                 match.HomeGoals = RankingDemoMatches[i].HomeGoals;
@@ -478,7 +537,7 @@ public static class DataSeeder
             return;
         }
 
-        var round = await db.Rounds.FirstOrDefaultAsync(r => r.Name == RoundName && r.EditionId == edition.Id);
+        var round = await db.Rounds.FirstOrDefaultAsync(r => r.EditionId == edition.Id && r.Order == 1);
 
         var now = DateTime.UtcNow;
         foreach (var d in PrizeDemoData)

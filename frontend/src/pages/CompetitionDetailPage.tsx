@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import type { Competition, Edition, LeagueSummary, Round } from '../api/types'
+import { LEAGUE_SCOPE_LABELS, type Competition, type Edition, type LeagueSummary, type Round } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import './PlayerPages.css'
 
 export default function CompetitionDetailPage() {
   const { competitionId } = useParams()
@@ -47,9 +48,7 @@ export default function CompetitionDetailPage() {
   if (error) {
     return (
       <div>
-        <div className="breadcrumb">
-          <Link to="/competitions/explore">← Explorar Competencias</Link>
-        </div>
+        <Link to="/competitions/explore" className="pp-back">← Explorar Competencias</Link>
         <StatusMessage kind="error" message={error} />
       </div>
     )
@@ -61,77 +60,77 @@ export default function CompetitionDetailPage() {
 
   return (
     <div>
-      <div className="breadcrumb">
-        <Link to="/competitions/explore">← Explorar Competencias</Link>
-      </div>
-      <div className="admin-header">
-        <h1>{competition.name}</h1>
-        <Link to={`/leagues/new?competitionId=${competition.id}`} className="btn btn-primary">
-          + Crear nueva Liga
-        </Link>
-      </div>
+      <Link to="/competitions/explore" className="pp-back">← Explorar Competencias</Link>
 
-      <div className="form-card">
+      <div className="pp-info-card">
+        <h1 className="pp-info-card__title" style={{ fontSize: '1.4rem' }}>🏆 {competition.name}</h1>
         {competition.description && (
-          <div className="form-field">
-            <label>Descripción</label>
-            <span>{competition.description}</span>
-          </div>
+          <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+            {competition.description}
+          </p>
         )}
-
-        <div className="form-field">
-          <label>Deporte</label>
-          <span>{competition.sport}</span>
+        <div className="pp-info-card__meta" style={{ marginTop: '0.75rem' }}>
+          <span className="pp-info-card__meta-item">🏅 {competition.sport}</span>
+          {activeEdition && (
+            <span className="pp-info-card__meta-item">📍 {activeEdition.name}</span>
+          )}
+          {roundsCount > 0 && (
+            <span className="pp-info-card__meta-item">📅 {roundsCount} fecha{roundsCount !== 1 ? 's' : ''}</span>
+          )}
         </div>
-
-        <div className="form-field">
-          <label>Edición activa</label>
-          <span>{activeEdition ? activeEdition.name : 'Sin edición activa'}</span>
-        </div>
-
-        <div className="form-field">
-          <label>Fechas</label>
-          <span>{roundsCount}</span>
+        <div className="pp-info-card__cta">
+          <Link to={`/leagues/new?competitionId=${competition.id}`} className="pp-btn pp-btn--primary">
+            + Crear nueva Liga
+          </Link>
         </div>
       </div>
 
-      <h2>Mis Ligas en esta Competencia</h2>
+      <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem', fontWeight: 700 }}>
+        Mis Ligas en esta Competencia
+      </h2>
 
       {!myLeagues && <StatusMessage kind="loading" message="Cargando tus Ligas..." />}
 
       {myLeagues && myLeagues.length === 0 && (
-        <div className="empty-state">Todavía no participás en ninguna Liga de esta Competencia.</div>
+        <div className="pp-empty">
+          <span className="pp-empty__icon">🏆</span>
+          <p className="pp-empty__text">
+            Todavía no participás en ninguna Liga de esta Competencia.
+          </p>
+          <div className="pp-empty__actions">
+            <Link to={`/leagues/new?competitionId=${competition.id}`} className="pp-btn pp-btn--primary">
+              + Crear Liga
+            </Link>
+          </div>
+        </div>
       )}
 
       {myLeagues && myLeagues.length > 0 && (
-        <div className="table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Liga</th>
-                <th>Participantes</th>
-                <th>Estado</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {myLeagues.map((l) => (
-                <tr key={l.id}>
-                  <td>
-                    {l.name}
-                    {l.isCreator && <span> (creador)</span>}
-                  </td>
-                  <td>{l.participantsCount}</td>
-                  <td>{l.isActive ? 'Activa' : 'Inactiva'}</td>
-                  <td>
-                    <Link to={`/leagues/${l.id}`} className="btn btn-secondary">
-                      Abrir
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="pp-grid">
+          {myLeagues.map((l) => (
+            <div key={l.id} className="pp-league-card">
+              <h3 className="pp-league-card__name">
+                {l.name}
+                {l.isCreator && <span style={{ fontWeight: 400, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}> — creador</span>}
+              </h3>
+              <div className="pp-league-card__meta">
+                <span>📋 {LEAGUE_SCOPE_LABELS[l.scopeType]}
+                  {l.scopeType === 'RoundRange' && l.roundFromName && l.roundToName && (
+                    <> ({l.roundFromName} → {l.roundToName})</>
+                  )}
+                </span>
+                <span>👥 {l.participantsCount} participante{l.participantsCount !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="pp-league-card__footer">
+                <span className={`pp-league-card__status ${l.isActive ? 'pp-league-card__status--active' : 'pp-league-card__status--inactive'}`}>
+                  {l.isActive ? 'Activa' : 'Inactiva'}
+                </span>
+                <Link to={`/leagues/${l.id}`} className="pp-league-card__action">
+                  Entrar
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

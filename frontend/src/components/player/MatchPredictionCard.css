@@ -1,0 +1,194 @@
+.mpcard {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--color-border);
+  transition: border-color 0.15s;
+}
+
+.mpcard--pending {
+  border-left: 3px solid var(--color-primary);
+}
+
+.mpcard--saved {
+  border-left: 3px solid var(--color-success);
+}
+
+.mpcard--finished {
+  border-left: 3px solid var(--color-text-muted);
+  opacity: 0.75;
+}
+
+.mpcard--cancelled {
+  border-left: 3px solid var(--color-danger);
+  opacity: 0.5;
+}
+
+.mpcard__teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.mpcard__team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 80px;
+}
+
+.mpcard__team-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.mpcard__vs {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.1em;
+  padding: 0 0.25rem;
+}
+
+.mpcard__info {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.mpcard__date,
+.mpcard__time {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.mpcard__prediction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mpcard__prediction-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.mpcard__inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.mpcard__input {
+  width: 2.5rem;
+  height: 2.25rem;
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.mpcard__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.mpcard__separator {
+  font-weight: 700;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.mpcard__save-btn {
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.mpcard__save-btn:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.mpcard__save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mpcard__result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.mpcard__result-label {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mpcard__result-score {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.mpcard__result-points {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.mpcard__cancelled-text,
+.mpcard__closed-text {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.mpcard__official {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.mpcard__error {
+  font-size: 0.75rem;
+  color: var(--color-danger);
+  text-align: center;
+}
+
+.mpcard__saved {
+  font-size: 0.75rem;
+  color: var(--color-success);
+  font-weight: 600;
+  text-align: center;
+}

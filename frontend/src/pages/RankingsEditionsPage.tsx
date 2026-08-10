@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { EDITION_STATUS_LABELS, type Competition, type Edition } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import './PlayerPages.css'
 
 export default function RankingsEditionsPage() {
   const { competitionId } = useParams()
-  const navigate = useNavigate()
 
   const [competition, setCompetition] = useState<Competition | null>(null)
   const [editions, setEditions] = useState<Edition[] | null>(null)
@@ -35,56 +35,40 @@ export default function RankingsEditionsPage() {
 
   return (
     <div>
-      <div className="breadcrumb">
-        <Link to="/rankings">← Competencias</Link>
-      </div>
-      <div className="admin-header">
-        <h1>Rankings — Ediciones {competition ? `— ${competition.name}` : ''}</h1>
+      <Link to="/rankings" className="pp-back">← Ranking</Link>
+      <div className="pp-header">
+        <h1>Ranking — {competition?.name ?? 'Ediciones'}</h1>
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}
       {!editions && !error && <StatusMessage kind="loading" message="Cargando ediciones..." />}
 
       {editions && editions.length === 0 && (
-        <div className="empty-state">Esta competencia todavía no tiene ediciones.</div>
+        <div className="pp-empty">
+          <span className="pp-empty__icon">📊</span>
+          <p className="pp-empty__text">Esta competencia todavía no tiene ediciones.</p>
+        </div>
       )}
 
       {editions && editions.length > 0 && (
-        <div className="table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Inicio</th>
-                <th>Estado</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {editions.map((ed) => (
-                <tr
-                  key={ed.id}
-                  className="is-clickable"
-                  onClick={() => navigate(`/rankings/editions/${ed.id}`)}
-                >
-                  <td>{ed.name}</td>
-                  <td>{new Date(ed.startDateUtc).toLocaleDateString()}</td>
-                  <td>
-                    <span className={`badge badge--${ed.status}`}>{EDITION_STATUS_LABELS[ed.status]}</span>
-                  </td>
-                  <td>
-                    <Link
-                      to={`/rankings/editions/${ed.id}/rounds`}
-                      className="btn btn-secondary"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Ranking por Fecha
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="pp-grid">
+          {editions.map((ed) => (
+            <div key={ed.id} className="pp-comp-card">
+              <h3 className="pp-comp-card__name">{ed.name}</h3>
+              <div className="pp-comp-card__details">
+                <span>📅 {new Date(ed.startDateUtc).toLocaleDateString()}</span>
+                <span className={`badge badge--${ed.status}`}>{EDITION_STATUS_LABELS[ed.status]}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
+                <Link to={`/rankings/editions/${ed.id}`} className="pp-comp-card__action">
+                  Ver Ranking
+                </Link>
+                <Link to={`/rankings/editions/${ed.id}/rounds`} className="pp-btn pp-btn--secondary" style={{ fontSize: '0.8rem' }}>
+                  Por Fecha
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

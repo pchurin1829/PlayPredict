@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { Competition, Edition, LeagueScopeType, LeagueSummary, Round } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import './PlayerPages.css'
 
 export default function LeagueCreatePage() {
   const navigate = useNavigate()
@@ -30,8 +31,6 @@ export default function LeagueCreatePage() {
 
   const cancelTo = preselectedCompetitionId ? `/competitions/${preselectedCompetitionId}` : '/leagues'
 
-  // La Competencia llega preseleccionada (desde el detalle de una Competencia): no se vuelve
-  // a pedir, solo se muestra como texto. Si no llega, se mantiene el selector como respaldo.
   useEffect(() => {
     if (preselectedCompetitionId) {
       api
@@ -108,10 +107,9 @@ export default function LeagueCreatePage() {
 
   return (
     <div>
-      <div className="breadcrumb">
-        <Link to={cancelTo}>← Volver</Link>
-      </div>
-      <div className="admin-header">
+      <Link to={cancelTo} className="pp-back">← Volver</Link>
+
+      <div className="pp-header">
         <h1>Crear Liga</h1>
       </div>
 
@@ -119,115 +117,144 @@ export default function LeagueCreatePage() {
       {!ready && !error && <StatusMessage kind="loading" message="Cargando..." />}
 
       {ready && (
-        <form className="form-card" onSubmit={handleSubmit}>
-          <div className="form-field">
-            <label>Competencia</label>
+        <form className="pp-form" onSubmit={handleSubmit}>
+          {/* Competition */}
+          <div className="pp-form__field">
+            <label className="pp-form__label">Competencia</label>
             {preselectedCompetition ? (
-              <span>{preselectedCompetition.name}</span>
+              <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>⚽ {preselectedCompetition.name}</span>
             ) : (
               <select
-                id="competitionId"
+                className="pp-form__select"
                 value={competitionId}
                 onChange={(e) => setCompetitionId(e.target.value ? Number(e.target.value) : '')}
               >
                 <option value="">Seleccionar...</option>
                 {competitions?.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             )}
-            {fieldErrors.competitionId && <span className="form-field-error">{fieldErrors.competitionId[0]}</span>}
+            {fieldErrors.competitionId && <span className="pp-form__error">{fieldErrors.competitionId[0]}</span>}
           </div>
 
-          <div className="form-field">
-            <label htmlFor="name">Nombre</label>
-            <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
-            {fieldErrors.name && <span className="form-field-error">{fieldErrors.name[0]}</span>}
+          {/* Name */}
+          <div className="pp-form__field">
+            <label className="pp-form__label" htmlFor="name">Nombre de la Liga</label>
+            <input
+              id="name"
+              className="pp-form__input"
+              type="text"
+              placeholder="Ej: Liga de los viernes"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            {fieldErrors.name && <span className="pp-form__error">{fieldErrors.name[0]}</span>}
           </div>
 
-          <div className="form-field">
-            <label htmlFor="description">Descripción (opcional)</label>
-            <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
-            {fieldErrors.description && <span className="form-field-error">{fieldErrors.description[0]}</span>}
+          {/* Description */}
+          <div className="pp-form__field">
+            <label className="pp-form__label" htmlFor="description">Descripción (opcional)</label>
+            <textarea
+              id="description"
+              className="pp-form__textarea"
+              placeholder="Contale a tus amigos de qué trata esta Liga..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            {fieldErrors.description && <span className="pp-form__error">{fieldErrors.description[0]}</span>}
           </div>
 
-          <div className="form-field">
-            <label htmlFor="scopeType">Alcance</label>
-            <select
-              id="scopeType"
-              value={scopeType}
-              onChange={(e) => setScopeType(e.target.value as LeagueScopeType)}
+          {/* Scope selector — visual cards */}
+          <div className="pp-form__field">
+            <label className="pp-form__label">Alcance de la Liga</label>
+          </div>
+          <div className="pp-scope-selector">
+            <button
+              type="button"
+              className={`pp-scope-option ${scopeType === 'FullCompetition' ? 'pp-scope-option--selected' : ''}`}
+              onClick={() => setScopeType('FullCompetition')}
             >
-              <option value="FullCompetition">Toda la Competencia</option>
-              <option value="RoundRange">Rango de Fechas</option>
-            </select>
+              <span className="pp-scope-option__icon">🏆</span>
+              <p className="pp-scope-option__title">Toda la Competencia</p>
+              <p className="pp-scope-option__desc">Los jugadores pronostican todos los partidos de la edición</p>
+            </button>
+            <button
+              type="button"
+              className={`pp-scope-option ${scopeType === 'RoundRange' ? 'pp-scope-option--selected' : ''}`}
+              onClick={() => setScopeType('RoundRange')}
+            >
+              <span className="pp-scope-option__icon">📅</span>
+              <p className="pp-scope-option__title">Rango de Fechas</p>
+              <p className="pp-scope-option__desc">Elegí una o más fechas específicas de la edición</p>
+            </button>
           </div>
 
+          {/* Round range fields */}
           {scopeType === 'RoundRange' && (
             <>
-              <div className="form-field">
-                <label htmlFor="editionId">Edición</label>
+              <div className="pp-form__field">
+                <label className="pp-form__label" htmlFor="editionId">Torneo / Edición</label>
                 <select
                   id="editionId"
+                  className="pp-form__select"
                   value={editionId}
                   onChange={(e) => setEditionId(e.target.value ? Number(e.target.value) : '')}
                   disabled={competitionId === ''}
                 >
                   <option value="">Seleccionar...</option>
                   {editions.map((ed) => (
-                    <option key={ed.id} value={ed.id}>
-                      {ed.name}
-                    </option>
+                    <option key={ed.id} value={ed.id}>{ed.name}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="form-row">
-                <div className="form-field">
-                  <label htmlFor="roundFromId">Fecha inicial</label>
+              <div className="pp-form__row">
+                <div className="pp-form__field">
+                  <label className="pp-form__label" htmlFor="roundFromId">Fecha inicial</label>
                   <select
                     id="roundFromId"
+                    className="pp-form__select"
                     value={roundFromId}
                     onChange={(e) => setRoundFromId(e.target.value ? Number(e.target.value) : '')}
                     disabled={editionId === ''}
                   >
                     <option value="">Seleccionar...</option>
                     {rounds.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
+                      <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
                   </select>
-                  {fieldErrors.roundFromId && <span className="form-field-error">{fieldErrors.roundFromId[0]}</span>}
+                  {fieldErrors.roundFromId && <span className="pp-form__error">{fieldErrors.roundFromId[0]}</span>}
                 </div>
 
-                <div className="form-field">
-                  <label htmlFor="roundToId">Fecha final</label>
+                <div className="pp-form__field">
+                  <label className="pp-form__label" htmlFor="roundToId">Fecha final</label>
                   <select
                     id="roundToId"
+                    className="pp-form__select"
                     value={roundToId}
                     onChange={(e) => setRoundToId(e.target.value ? Number(e.target.value) : '')}
                     disabled={editionId === ''}
                   >
                     <option value="">Seleccionar...</option>
                     {rounds.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
+                      <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
                   </select>
                 </div>
               </div>
+
+              <p className="pp-form__hint">
+                Podés elegir la misma fecha como inicial y final para crear una Liga de una sola fecha.
+              </p>
             </>
           )}
 
-          <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={saving}>
+          <div className="pp-form__actions">
+            <button type="submit" className="pp-btn pp-btn--primary" disabled={saving}>
               {saving ? 'Creando...' : 'Crear Liga'}
             </button>
-            <Link to={cancelTo} className="btn btn-secondary">
+            <Link to={cancelTo} className="pp-btn pp-btn--secondary">
               Cancelar
             </Link>
           </div>

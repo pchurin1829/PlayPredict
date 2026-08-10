@@ -37,6 +37,20 @@ public class RankingService
         return BuildRankingAsync(rows);
     }
 
+    public Task<List<RankingEntryDto>> GetLeagueRankingAsync(PlayPredictDbContext db, int leagueId)
+    {
+        var rows = db.PredictionEvaluations
+            .Where(e => e.Prediction.LeagueId == leagueId)
+            .Select(e => new EvaluationRow(
+                e.Prediction.UserId,
+                e.Prediction.User.FirstName,
+                e.Prediction.User.LastName,
+                e.Points,
+                e.EvaluationType));
+
+        return BuildRankingAsync(rows);
+    }
+
     private static async Task<List<RankingEntryDto>> BuildRankingAsync(IQueryable<EvaluationRow> rows)
     {
         var list = await rows.ToListAsync();

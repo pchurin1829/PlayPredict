@@ -1,111 +1,123 @@
 # SESSION
 
-## Proyecto
+##2 Proyecto
 PlayPredict
 
 ## Rama actual
-main (sincronizada con origin/main)
+prueba-glm-ui
 
 ## Último commit
-1708be5 — docs: sync session after Sprint 8 (Sprint 8.5 completo y Sprint 8.6 de hardening siguen sin commitear — ver más abajo)
+21dac5c — feat: add Leagues as the new core concept, simplify roles to ADMIN/PLAYER
 
 ## Estado del entorno
-- Git: rama `main`, sincronizada con `origin/main`. Sprint 8 (Gestión de Experiencias — MVP) commiteado y pusheado (`c950d19` + `1708be5`). Sprint 8.5 (Ligas y Experiencia de Usuario) **completo**: Fase 1 aprobada; Etapa 1 (Roles y base del modelo) aprobada; Etapa 2 (Gestión básica de Ligas) aprobada; Etapa 2.5 (Experiencia del Jugador) **implementada y verificada** — sin commit todavía, pendiente de aprobación explícita del usuario para cerrar todo el Sprint 8.5.
-- Docker (`docker compose ps`): los 3 servicios levantados y healthy.
+- Git: rama `prueba-glm-ui`, basada en `main` (último commit `21dac5c`). **Working tree con cambios NO commiteados**.
+- Docker: 3 servicios levantados y healthy.
   - `playpredict_db` (PostgreSQL 18) — Up, healthy
   - `playpredict_backend` — Up, healthy
-  - `playpredict_frontend` — Up
+  - `4predict_frontend` — Up
 - URLs:
   - Frontend: http://localhost:5175
   - Backend Swagger: http://localhost:8006/swagger
   - Backend health: http://localhost:8006/api/health
-- Usuarios administradores de desarrollo (Sprint 8.5, decisión 2 — 3 ADMIN de ejemplo, contraseña por variable de entorno `DEV_ADMIN_PASSWORD` en `.env`, nunca en `appsettings.*.json`; fallback `admin123` solo si falta): `admin@playpredict.local`, `admin2@playpredict.local`, `admin3@playpredict.local`.
-- Nota de entorno: el watcher de archivos de `dotnet watch` y de Vite no detecta de forma confiable cambios hechos desde el host Windows a través del bind mount — tras editar backend o frontend durante esta sesión hizo falta `docker compose restart backend` / `docker compose restart frontend` para que el cambio se sirviera realmente. Tenerlo en cuenta en próximas sesiones si algo "no se actualiza" pese a estar guardado en disco.
-- Usuarios de demostración del Ranking, ahora rol `PLAYER` (solo Development, contraseña `demo123`): `ana.torres@playpredict.local`, `juan.perez@playpredict.local`, `maria.lopez@playpredict.local`, `pedro.gomez@playpredict.local` — los 4 son Participantes de la Liga de demostración/migración sobre "Liga Profesional".
+- **IMPORTANTE — Docker/Windows**: Vite y `dotnet watch` NO detectan cambios hechos desde el host Windows a través del bind mount. **Siempre ejecutar `docker compose restart frontend`** (y/o `backend`) después de editar archivos. Ctrl+F5 solo refresca el navegador, no el cache de módulos de Vite.
+- Credenciales ADMIN: `admin@playpredict.local` / `admin123`
+- Credenciales PLAYER (demo, en Liga): `juan.perez@playpredict.local`, `ana.torres@playpredict.local`, `maria.lopez@playpredict.local`, `pedro.gomez@playpredict.local` — password: `demo123`
 
-## Último trabajo completado
+---
 
-**Sprint 8.6 — Hardening y Preparación para Commit (auditoría completa, sin cambios de código)**: a pedido explícito del usuario, tras una interrupción de sesión por corte de energía, se hizo primero una auditoría de estado (Fase 0, sin tocar nada) que confirmó que el working tree, la base de datos y las migraciones del Sprint 8.5 quedaron intactos y consistentes pese al corte. Sobre esa base se ejecutó el Sprint 8.6 en 7 fases, **sin modificar ningún archivo del repositorio** (auditoría de solo lectura + pruebas funcionales sobre datos efímeros, todos revertidos):
+## Cambios realizados en ESTA sesión
 
-- **Fase 1 (migraciones)**: se confirmó que `AddLeagues` y `AddLeagueDescription` son necesarias y no redundantes (la segunda agrega `Description` en una etapa posterior a la primera); no se consolidaron porque no aporta valor y agregaría riesgo de reescribir el backfill. Riesgo verificado bajo tanto para bases nuevas como existentes; se identificó y descartó un riesgo teórico (el `UPDATE` de Roles `USER`→`PLAYER` podría chocar con el índice único de `Roles.Name` si ya existiera un `PLAYER` duplicado) confirmando que `Program.cs` siempre aplica migraciones antes de cualquier seed, por lo que no puede ocurrir.
-- **Fase 2 (configuración/secretos)**: revisados `appsettings.Development.json`, `.env.example`, `docker-compose.yml`, `Program.cs` — todos limpios, sin secretos reales (la limpieza ya se había hecho en la sesión de la Etapa 2). Se detectó pero **no se tocó** (fuera del diff de este Sprint) que `appsettings.json` base tiene un `Jwt:Key` y una contraseña de PostgreSQL en texto plano como *fallback* — pendiente de un hardening de seguridad aparte.
-- **Fase 3 (limpieza)**: sin TODO/FIXME/HACK/DEBUG reales, sin `console.log`/`Console.WriteLine`, sin código comentado, `oxlint` en 0 errores (43 archivos), sin imports ni DTOs/endpoints huérfanos.
-- **Fase 4 (nomenclatura)**: `League`/`LeagueParticipant`/`RoleNames.Player` consistentes con el resto del modelo; sin mezcla `USER`/`Member`/`LeagueUser`. Único hallazgo cosmético: el nombre de Liga de demostración en `DataSeeder.cs` usa un estilo de guion/mayúscula distinto al de la Liga técnica generada por el backfill de la migración (raya/minúscula) — sin efecto funcional, no se corrigió.
-- **Fase 5 (validaciones)**: `dotnet build` y `npm run build`/`tsc --noEmit` OK (0 errores, corridos 2 veces cada uno); migraciones sobre base existente confirmadas (8/8 aplicadas, 0 `Predictions.LeagueId` nulos); **seeder confirmado idempotente en 3 ejecuciones reales consecutivas** (2 restarts del backend real + 1 corrida aislada sin `dotnet watch`), con conteos idénticos las 3 veces. La prueba de migración sobre base vacía se inició en un contenedor aislado pero se abortó por contención de recursos frente al backend real (se prefirió proteger el entorno del usuario); queda sin re-verificar en vivo en esta sesión, respaldada por el análisis de código (backfill dinámico sin IDs hardcodeados) y por la verificación ya documentada de la sesión anterior sobre una base vacía nueva.
-- **Fase 6 (recorrido manual)**: la extensión Claude in Chrome no estaba conectada, así que se sustituyó por un recorrido funcional equivalente vía API — login ADMIN/PLAYER, competencias, experiencias, usuarios, premios, mis ligas, explorar competencias, crear Liga, unirse por código (normalizado), abrir Liga, rechazo controlado (400) de un pronóstico sobre partido Finalizado, participantes sin datos sensibles — todo correcto. Se detectó (sin ser un bug: comportamiento HTTP esperado) que un reintento de `POST /api/leagues` tras un timeout de cliente puede crear una Liga duplicada porque no hay protección de reintento — mejora de UX no bloqueante para un sprint futuro. Todos los datos de prueba (2 Ligas, sus Participantes) fueron revertidos; conteos finales verificados idénticos al baseline.
-- **Fase 7 (git final)**: `git status --short`/`git diff --stat` idénticos a los de la Fase 0 — el hardening no modificó código.
-- **Hallazgo de entorno (no de código)**: tras los restarts consecutivos de esta auditoría bajo carga concurrente, el backend real quedó temporalmente inestable (`dotnet watch` con ciclos de reinicio espurios del *polling file watcher*, típico de bind mounts de Docker Desktop en Windows — ya documentado como "no confiable" en sesiones anteriores). Se aisló la causa lanzando el mismo código con `dotnet run` (sin `watch`): arrancó limpio y quedó `healthy` de inmediato, confirmando que el código, el build, las migraciones y el seeder están correctos. Al cierre de esta sesión el contenedor estándar ya se había estabilizado solo (confirmado `healthy` nuevamente).
-- **Evaluación final**: Arquitectura 9/10, Backend 9/10, Frontend 9/10, Base de Datos 9/10, UX 8/10, Riesgo para commit 9/10. **Recomendación: A) El proyecto está listo para Commit y Push** — ningún hallazgo requirió tocar código. Pendiente de autorización explícita del usuario para el commit.
+### 1. Correcciones post-prueba manual (v4)
 
-**Fase 2, Etapa 2.5 — Experiencia del Jugador (implementada — sin commitear)**: reorganización pura de navegación para el `PLAYER`, sin backend nuevo, sin modelo de datos nuevo, sin migraciones — construida enteramente sobre endpoints ya existentes.
+- **Liga tabs visibles**: CSS de `.pp-tabs` mejorado con fondo, borde, indicador activo prominente
+- **Pronósticos**: botón "Guardar cambios" (era "Actualizar"), help text "Podés modificar tu pronóstico hasta el cierre del partido", feedback diferenciado "Pronóstico guardado/actualizado correctamente."
+- **Rankings**: badge "(Vos)" como pill blanco sobre primary, fila bold para usuario autenticado
+- **Inicio**: competencia tomada de la Liga del usuario (no global), fix currentRoundIndex
+- **Crear Liga CTA**: botón "+ Crear Liga" prominente en Mis Ligas (header + empty state)
+- **Explorar Competencias**: botón "+ Crear Liga" por competencia
+- **Invitaciones**: estado documentado (5 — backend COMPLETO, frontend parcial)
 
-Pantallas nuevas: `ExploreCompetitionsPage` (`/competitions/explore`, solo Competencias activas) y `CompetitionDetailPage` (`/competitions/:competitionId`, vista del Jugador con "Mis Ligas en esta Competencia" + botón "Crear nueva Liga" con la Competencia preseleccionada). `LeagueCreatePage` acepta `?competitionId=` y oculta el selector cuando llega preseleccionado. `LeaguesMinePage`: "+ Crear Liga" reemplazado por "Explorar Competencias" (toda creación de Liga arranca desde una Competencia). Menú `PLAYER` simplificado a: Mis Ligas / Explorar Competencias / Unirse por código / Rankings / Perfil — "Fixture" y "Premios" pasaron a admin-only (siguen existiendo, solo dejaron de mostrarse al Jugador). Login y ruta raíz redirigen según rol (`ADMIN`→`/competitions`, `PLAYER`→`/leagues`).
+### 2. Separar Pronósticos de Resultados + Agrupar por Fecha
 
-**Validado en el navegador con 3 usuarios**: PLAYER nuevo sin Ligas (estado vacío correcto con botones "Explorar Competencias"/"Unirse mediante código"), 2 Ligas distintas creadas desde el detalle de la misma Competencia, un segundo usuario uniéndose por código desde esa misma pantalla, vuelta al detalle de Competencia mostrando la Liga ya creada, login ADMIN con panel completo intacto. Sin errores de consola. Datos de prueba (2 usuarios, 2 Ligas) creados y eliminados durante la sesión.
+- **LeagueDetailPage.tsx** reescrito: tabs ahora son Resumen | Pronósticos | Resultados | Ranking | Premios (PRÓXIMAMENTE) | Participantes
+- **Pronósticos**: solo partidos pronosticables, agrupados por Fecha/Jornada de competencia, con filtro (chips ≤3 fechas, dropdown >3)
+- **Resultados**: solo partidos finalizados con resultado/pronóstico/puntos/motivo, agrupados por Fecha/Jornada, con filtro
+- **Eliminada** la navegación intermedia "Ver partidos y pronosticar" — el tab va directo
+- **"Pronost4ar ahora"** del Resumen sigue como CTA hacia el tab Pronósticos
+- **Copy-to-clipboard** del código de invitación con feedback "✓ Copiado"
 
-Sin Ranking de Liga, sin Premios, sin dashboard definitivo, sin rediseño visual, sin administración avanzada, sin eliminación de Ligas — explícitamente fuera de esta etapa. Sin commit — pendiente de aprobación.
+### 3. Datos demo Copa Libertadores
 
-Con esto **el Sprint 8.5 (Ligas y Experiencia de Usuario) queda completo** en sus 4 partes (Fase 1 + Etapas 1, 2 y 2.5), todas aprobadas o pendientes de aprobación final, sin commit todavía.
+- **DataSeeder.cs**: Copa Libertadores de 1 Fecha genérica → 5 Fechas con equipos sudamericanos reales (River Plate, Flamengo, Palmeiras, Boca Juniors, Atlético Nacional, Peñarol)
+- **NO se destruyeron** datos existentes de Liga Profesional
 
-**Fase 2, Etapa 2 — Gestión básica de Ligas (aprobada)**: antes de empezar se corrigió `backend/appsettings.Development.json` (trackeado por Git, a diferencia de `.env`) que tenía la contraseña de los 3 ADMIN en texto plano — eliminada, ahora viaja como variable de entorno `DevSeed__AdminPassword` en `docker-compose.yml` desde `.env` (gitignored).
+### 4. Crear Liga — label "Torneo / Edición"
 
-Backend: `backend/Endpoints/LeagueEndpoints.cs` (nuevo) con 7 endpoints (`POST/GET /api/leagues`, `GET /mine`, `GET/PUT /{id}`, `POST /join`, `GET /{id}/participants`, `GET /{id}/matches`), validación completa (Competencia habilitada, coherencia FullCompetition/RoundRange según la Edición, `InviteCode` único de 8 caracteres, pertenencia, creador), reutiliza helpers de `PredictionEndpoints` (expuestos como `internal`) sin duplicar lógica. Columna nueva `League.Description` (migración `AddLeagueDescription`, aditiva, sin backfill).
+- **LeagueCreatePage.tsx**: label "Edición" → "'Torneo / Edición"
+- Fecha 1→1 ya funcionaba (hint existente, selectores lo permiten)
 
-Frontend: `LeaguesMinePage`, `LeagueCreatePage` (con cascada Competencia→Edición→Fecha), `LeagueJoinPage`, `LeagueDetailPage` (nuevas); `PredictionsMatchesPage.tsx` adaptada para trabajar por `leagueId` en vez de `roundId`. Se retiraron `PredictionsCompetitionsPage`/`PredictionsEditionsPage`/`PredictionsRoundsPage` (sin ruta válida posible bajo el nuevo modelo) y el link "Pronósticos" del menú, reemplazado por "Mis Ligas"/"Crear Liga"/"Unirse por código".
+---
 
-**Validado en el navegador real (Chrome, dos usuarios distintos, Juan y Ana)**: crear Liga completa (incluida la cascada RoundRange), unirse por código en minúsculas (normalizado), Juan pronosticó 2-1 en una Liga y 0-0 en otra sobre el mismo partido temporal — ambos persistieron independientes tras recargar; Ana pronosticó 3-2 en una tercera Liga sobre el mismo partido; acceso a Liga ajena → mensaje 403 controlado en pantalla; código de invitación inválido → mensaje controlado en pantalla; código de invitación nunca visible para quien no es creador. Regresión en el navegador: login ADMIN, panel Usuarios (roles ya como `PLAYER`), Experiencias, Ranking General de Clausura 2026 (15/12/9/6) — todo intacto. Sin errores de consola en ningún momento.
+## Archivos modificados en esta sesión
 
-**Nota de entorno encontrada durante las pruebas**: tanto `dotnet watch` (backend) como Vite (frontend) dejaron de detectar cambios de archivos hechos desde el host Windows a través del bind mount de Docker (comportamiento conocido de Docker Desktop en Windows); hubo que reiniciar ambos contenedores manualmente para que sirvieran el código actualizado. No es un bug de la aplicación.
+| Archivo | Cambio |
+|---|---|
+| `frontend/src/pages/LeagueDetailPage.tsx` | Tabs Pronósticos/Resultados separados, agrupación por Fecha, filtro, copy código invitación |
+| `frontend/src/pages/PredictionsMatchesPage.tsx` | Botón "Guardar cambios", help text, feedback diferenciado |
+| `frontend/src/pages/PlayerPages.css` | Tabs visibles, ranking badge, match-card hint/saved, round heading/chips/filter, invite section |
+| `frontend/src/pages/LeaguesMinePage.tsx` |E CTA "+ Crear Liga" prominente |
+| `frontend/src/pages/ExploreCompetitionsPage.tsx` | Botón "+ Crear Liga" por competencia |
+| `frontend/src/pages/PlayerDashboardPage.tsx` | Competencia de la Liga del usuario, fix currentRoundIndex |
+| `frontend/src/pages/RankingGeneralPage.tsx` | "(Vos)" ya existía (sin cambios) |
+| `frontend/src/pages/LeagueCreatePage.tsx` | Label "Torneo / Edición" |
+| `backend/Data/DataSeeder.cs` | Copa Libertadores: 5 Fechas con equipos sudamericanos |
 
-Todos los datos de prueba (3 Ligas, sus Participantes y Pronósticos, 1 Partido temporal, 1 usuario de registro de prueba) fueron creados y eliminados durante la sesión; estado final idéntico al de cierre de la Etapa 1.
+**Informes generados** (untracked):
+- `GLM_CIRCUITO_JUGABLE_PLAYPREDICT.md`
+- `GLM_REDISENO_VISUAL_PLAYPREDICT_v3.md`
+- `GLM_REDISENO_VISUAL_PLAYPREDICT_v4.md`
 
-Sin Ranking de Liga, sin Premios de Liga, sin edición de participantes, sin eliminación de Ligas — explícitamente fuera de esta etapa. Sin commit — pendiente de aprobación.
+---
 
-**Sprint 8.5 — Ligas y Experiencia de Usuario (Fase 1: modelo conceptual, aprobada)**: a pedido explícito del usuario, se documentó — sin tocar código — la nueva arquitectura funcional del MVP: roles simplificados a `ADMIN`/`PLAYER`, y nuevo concepto principal **Liga** (creada libremente por cualquier `PLAYER` sobre una Competencia Oficial existente, sin duplicar Fixture ni Resultados). Documento nuevo: `docs/arquitectura/PLAYPREDICT_MODELO_CONCEPTUAL_v2.0.md` (no reemplaza los documentos conceptuales anteriores, que se conservan como historial). `PROJECT_STATUS.md` y `docs/products/ROADMAP_PRONOSTICOS_v1.0.md` actualizados en consecuencia.
+## Validaciones ejecutadas
 
-**Corrección aprobada por el usuario tras revisar la Fase 1** (ya reflejada en toda la documentación): el Pronóstico **no** es global por Usuario+Partido. Cada Pronóstico pertenece a una Liga concreta — identidad lógica `LeagueId + UserId + MatchId` —, de modo que un mismo Jugador puede pronosticar resultados distintos para el mismo Partido en Ligas distintas. Los Partidos y Resultados Oficiales sí se comparten entre Ligas sin duplicarse; los Pronósticos nunca se comparten entre Ligas. Corregido en `docs/arquitectura/PLAYPREDICT_MODELO_CONCEPTUAL_v2.0.md` (Secciones 0, 3, 4, 6, 7, 9, 10, 12) y en `PROJECT_STATUS.md`.
+| Check | Resultado |
+|---|---|
+| `npx tsc --noEmit` | ✅ 08 errores |
+| `npx vite build` | ✅ 89 módulos, ~550ms |
+| `dotnet build --no-restore` | ✅ 0 errores, 1 warning (NU1510) |
+| League ranking API (`GET /api/rankings/leagues/1`) | ✅ 4 posiciones con scoring correcto |
+| League matches API (`GET /api/leagues/1/matches`) | ✅ 15 partidos, 9 finished + 6 canPredict |
 
-**Fase 2, Etapa 1 — Roles y base del modelo (implementada — sin commitear)**: con plan de migración aprobado por el usuario, se implementó completa:
+---
 
-- Rol `USER`→`PLAYER` en `RoleNames`, `AuthEndpoints`, seeds. **Corrección real encontrada durante la implementación**: el rol `USER` preexistente en la base no se renombraba solo (el seeder solo agrega roles faltantes, nunca renombra) — quedaba un rol `PLAYER` nuevo y vacío mientras los 10 usuarios existentes seguían apuntando a `USER`. Corregido con un `UPDATE "Roles" SET "Name" = 'PLAYER' WHERE "Name" = 'USER'` dentro de la propia migración `AddLeagues` (preserva el `Id` del Rol y todas las `UserRoles` existentes, sin insertar un rol duplicado).
-- 3 usuarios `ADMIN` de desarrollo (`SeedAdminUsersAsync`, reemplaza a `SeedAdminUserAsync`): contraseña desde `IConfiguration` (`DevSeed:AdminPassword`), guarda explícita que lanza excepción si se invocara fuera de `Development` (además del gate ya existente en `Program.cs`).
-- Entidades nuevas `League` (`CompetitionId`, `ScopeType` FullCompetition/RoundRange, `RoundFromId`/`RoundToId`, `InviteCode` único, `IsActive`, `CreatedByUserId`) y `LeagueParticipant` (único por Liga+Usuario).
-- `Prediction.LeagueId` obligatorio; identidad lógica `LeagueId+UserId+MatchId` (índice único nuevo, reemplaza el viejo `UserId+MatchId`).
-- Migración `AddLeagues` (`backend/Migrations/20260805022700_AddLeagues.cs`, hand-editada sobre el scaffold de `dotnet ef migrations add`): backfill 100% dinámico (sin IDs hardcodeados) — por cada Competencia con Pronósticos existentes crea una Liga técnica `[Migración] Liga general — {Competencia}`, incorpora como Participantes a todos los usuarios que ya pronosticaron ahí, asigna sus Pronósticos existentes, y solo entonces (tras un `DO $$ ... RAISE EXCEPTION` de seguridad si quedara algún `LeagueId` nulo) exige `NOT NULL`. Idempotente (guardas `NOT EXISTS`).
-- `PredictionEndpoints.cs`/`PredictionDtos.cs` reescritos: `CreatePredictionDto` exige `leagueId`; validación completa antes de guardar (Liga existe → 404, pertenencia → 403, Liga activa/Competencia/alcance de Fechas/horario → 400, duplicado → 409) — **nunca 500**. `GET /api/predictions/rounds/{roundId}` ahora exige `leagueId` explícito (400 si falta; no se elige ninguna Liga por defecto ni en nombre del usuario — la pantalla actual de Pronósticos queda temporalmente inhabilitada hasta la etapa de frontend, tal como se acordó).
-- `SeedRankingDemoAsync` actualizado: reutiliza cualquier Liga ya existente para la Competencia (evita crear una Liga de demostración redundante cuando ya existe la de backfill) y asigna los 4 usuarios demo como Participantes antes de sembrar sus Pronósticos.
+## Cambios NO commiteados
 
-**Validaciones ejecutadas** (todas con resultado correcto): `dotnet build` sin errores; migración aplicada sobre la base real sin pérdida de datos; 0 `Predictions` con `LeagueId` nulo; índice único `LeagueId+UserId+MatchId` confirmado; los 12 Pronósticos históricos y sus 12 Evaluaciones conservados; 4 Participantes históricos incorporados a la Liga de migración; Ranking General de Clausura 2026 verificado exacto por API (15/12/9/6) tras la migración; migración probada de punta a punta sobre una base vacía nueva (16 tablas, 7 migraciones, sin errores, luego eliminada); seeder ejecutado en 2 reinicios sucesivos sin duplicar roles/admins/Liga/participantes/pronósticos; pruebas por API con Ligas y Partidos temporales (creados y eliminados por SQL, sin endpoints de Liga todavía): pronóstico distinto del mismo partido en 2 Ligas distintas (201/201), rechazo por no pertenecer a la Liga (403), rechazo por partido fuera del alcance de Fechas de una Liga RoundRange (400) con control positivo dentro de alcance (201), rechazo de duplicado en la misma Liga (409), rechazo de Liga inexistente (404), rechazo por `leagueId` faltante en el listado (400). Todos los datos de prueba revertidos; estado final idéntico al esperado (12 Predictions, 1 League, 4 LeagueParticipants, 6 Matches, 2 Rounds, 3 ADMIN, 2 Roles).
+**Todo el working tree está sin commitear.** Incluye:
+- Rediseño visual PLAYER (todas las sesiones previas)
+- Circuito jugable mínimo (RankingService, RankingEndpoints, DataSeeder)
+- Correcciones post-prueba manual (v4)
+- Separación Pronósticos/Resultados + agrupación por Fecha
+- Copa Libertadores 5 Fechas
+- Informes GLM (untracked)
 
-Sin frontend, sin Premios de Liga, sin endpoints de administración de Liga (crear/editar/unirse) — explícitamente fuera de esta etapa. Sin commit — pendiente de aprobación.
+---
 
-**Sprint 8 — Gestión de Experiencias (MVP)** (sesión anterior, ya commiteado y pusheado): se incorporó `Experience` como entidad principal de PlayPredict (docs/arquitectura/MODELO_CONCEPTUAL_EXPERIENCIA_v1.0.md), de forma incremental y sin romper ninguna funcionalidad de los Sprints 1 a 7.
+## Pendiente
 
-- Backend: entidad `Experience` (datos generales + puntuación por defecto: ExactScorePoints/CorrectOutcomePoints/IncorrectPoints, sin "Motor" ni plantillas) + enum `ExperienceStatus` (Draft/Published/Archived). `Competition` ahora pertenece obligatoriamente a una `Experience` (`ExperienceId`). Migración `AddExperiences`: crea la tabla, agrega `ExperienceId` a `Competitions` (nullable → backfill vía SQL a una Experience "PlayPredict Demo" creada en la propia migración → NOT NULL + FK) y `UseExperienceDefaults` a `EditionScoringConfigurations` (default `false`) — **sin pérdida de datos**, verificado que las 2 Competencias existentes quedaron asociadas automáticamente.
-- Endpoints administrativos `/api/admin/experiences` (solo ADMIN): listar, obtener, crear (siempre Borrador), editar (bloqueado si Archivada), publicar (Borrador → Publicada), archivar (no reversible en este MVP). Sin eliminación física.
-- `CompetitionEndpoints`: `POST` acepta `experienceId` opcional (si se omite, se asocia a "PlayPredict Demo" — compatibilidad total con el formulario existente, que no envía este campo); `PUT` solo cambia la Experience si se envía explícitamente (nunca la resetea).
-- `EditionScoringConfigurationEndpoints` y `PredictionEvaluationService`: nuevo concepto "Usar configuración de la Experience" vs "Configuración propia" (`UseExperienceDefaults`). La herencia es **completa** (no hay mezcla parcial): si está activada, el Motor de Puntuación usa íntegramente los valores por defecto de la Experience de la Competencia; si no, usa los valores propios de la Edición exactamente como en los Sprints 1 a 7. El DTO expone además los valores "efectivos" (los realmente aplicados) para que el frontend nunca tenga que calcularlos.
-- Frontend administrativo: nueva entrada "Experiencias" en el menú (solo ADMIN) con pantallas Listado (acciones Publicar/Archivar), Nueva y Editar (dos secciones: "Datos generales" — Nombre, Descripción, Color primario, Color secundario, Pública — y "Configuración" — puntuación por defecto). La pantalla "Configurar puntuación" de Edición ahora tiene un checkbox "Usar configuración de la Experience" que deshabilita los campos propios y muestra los valores heredados que se van a aplicar.
-- Datos de demostración (todos los entornos para la Experience "PlayPredict Demo" vía migración, por compatibilidad; asociación de Competencias demo reforzada en Development vía seed idempotente): Experience "PlayPredict Demo" (Publicada, pública, 6/3/0), Liga Profesional y Copa Libertadores asociadas a ella.
-- Probado exhaustivamente: migración aplicada sin pérdida de datos (las 2 Competencias existentes quedaron asociadas correctamente a la Experience Demo mediante el backfill); regresión completa de Sprints 1-7 sin cambios (login, Competencias/Ediciones, Ranking 15/12/9/6 sin alteración, 5 Premios intactos, configuración propia de Edición 7 sin cambios); herencia verificada de punta a punta (se cambiaron temporalmente los valores por defecto de la Experience a 10/5/1, se activó "usar configuración de la Experience" en la Edición 8, y una evaluación real de partido aplicó los 10 puntos heredados en vez de los 6 propios — confirmado en la tabla `PredictionEvaluations`); alta de Competencia sin `experienceId` sigue auto-asociándose a la Experience Demo; edición de Competencia sin `experienceId` no resetea la asociación existente. Todo revertido al finalizar. Verificado también visualmente en el navegador (lista y formulario de Experiencias con las dos secciones, checkbox de herencia en Configurar puntuación) sin errores de consola.
+1. **"Agregar participante registrado"** (búsqueda deD usuarios + agregar por creador): requiere endpoint nuevo de búsqueda de usuarios + endpoint de agregar participante por creador. Backend de invitaciones/unirse ya funciona completo. Dejado pendiente por instrucción explícita del usuario.
+2. **Datos demo Copa Libertadores no visibles hasta DB reset**: DataSeeder es idempotente por nombre — si la competencia ya existe con 1 Fecha, no la recrea. Necesita `docker compose down -v && docker compose up -d` para ver las 5 Fechas nuevas.
+3. **Login Page**: rediseño visual pendiente (documentado desde v2).
+4. **Tab Premios**: sigue PRÓXIMAMENTE (sin backend de premios publicados).
+(5. **Escudos reales de clubes**: explícitamente fuera de scope (tarea posterior separada).
 
-No se implementó (fuera de alcance): Wizard, Sponsors, Branding avanzado, dominios, idiomas, plantillas, biblioteca de configuraciones/motores, White Label, campañas, dashboard ejecutivo, estadísticas, auditoría, mezcla parcial de configuración.
+---
 
-**Revisión visual final previa al commit**: en "PlayPredict Demo" se modificaron temporalmente nombre, descripción, color primario y color secundario, se guardó, se recargó la página y se confirmó la persistencia de los 4 campos; luego se restauraron los valores originales (con acentos correctos) y se verificó la restauración tras recargar. En la configuración de puntuación de la Edición "Fase de Grupos 2026" se probaron ambas fuentes con valores distinguibles (propia 8/4/2 vs. Experience 6/3/0): se confirmó visualmente que los valores efectivos mostrados cambian según la fuente elegida, y se restauró el estado original (6/3/0, configuración propia). Sin errores de consola. Verificado en PostgreSQL que no quedó ningún dato temporal residual.
+## Instrucciones para retomar
 
-Detalle completo en PROJECT_STATUS.md.
-
-## Pendiente inmediato
-Autorización explícita del usuario para el commit único del Sprint 8.5 completo (Fase 1 + Etapas 1, 2 y 2.5). El Sprint 8.6 (hardening) ya confirmó que el código está listo (recomendación A, sin correcciones pendientes) — no queda ninguna validación técnica bloqueante, solo falta la aprobación para ejecutar `git add`/`git commit`/`git push`.
-
-## Próximo paso exacto
-Commit del Sprint 8.5 completo (solo tras aprobación explícita) y, recién después, definir el alcance de un próximo Sprint/Etapa 3 — Ranking de Liga y Premios de Liga.
-
-## Comandos para retomar
-```bash
-git status
-git log -5 --oneline
-docker compose ps
-docker compose up -d        # si los servicios no están corriendo
-docker compose logs -f backend
-```
+1. `docker compose ps` — verificar que los 3 servicios están healthy
+2. Si se editó código del host: `docker compose restart frontend` (y/o `backend`) **siempre** — Vite no detecta cambios por inotify en Docker/Windows
+3. Para ver datos demo de Copa Libertadores actualizados: `docker compose down -v && docker compose up -d` (resetea la DB)
+4. Login como PLAYER: `juan.perez@playpredict.local` / `demo123`
+5. Verificar: Mis Ligas → Liga → tabs (Resumen/Pronósticos/Resultados/Ranking/Participantes) → Pronósticos agrupados por Fecha → Resultados agrupados por Fecha
+6. **NO hacer commit/push/merge** hasta aprobación explícita

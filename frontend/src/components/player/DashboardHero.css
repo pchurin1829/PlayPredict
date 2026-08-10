@@ -1,0 +1,93 @@
+.dhero {
+  background: linear-gradient(135deg, var(--color-primary-gradient-start), var(--color-primary-gradient-end));
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  color: #fff;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-md);
+}
+
+.dhero__main {
+  flex: 1;
+}
+
+.dhero__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.dhero__subtitle {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.dhero__cta {
+  display: inline-block;
+  padding: 0.6rem 1.5rem;
+  background: #fff;
+  color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.dhero__cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.dhero__stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-shrink: 0;
+}
+
+.dhero__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(255,255,255,0.12);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.25rem;
+  min-width: 100px;
+}
+
+.dhero__stat-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dhero__stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .dhero {
+    flex-direction: column;
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+
+  .dhero__stats {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dhero__title {
+    font-size: 1.25rem;
+  }
+}

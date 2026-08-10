@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { LEAGUE_SCOPE_LABELS, type LeagueSummary } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import './PlayerPages.css'
 
 export default function LeaguesMinePage() {
   const [leagues, setLeagues] = useState<LeagueSummary[] | null>(null)
@@ -26,14 +27,17 @@ export default function LeaguesMinePage() {
 
   return (
     <div>
-      <div className="admin-header">
+      <div className="pp-header">
         <h1>Mis Ligas</h1>
-        <div className="match-row-actions">
-          <Link to="/competitions/explore" className="btn btn-primary">
-            Explorar Competencias
+        <div className="pp-header__actions">
+          <Link to="/leagues/new" className="pp-btn pp-btn--primary" style={{ fontSize: '1rem', padding: '0.6rem 1.5rem' }}>
+            + Crear Liga
           </Link>
-          <Link to="/leagues/join" className="btn btn-secondary">
-            Unirse por código
+          <Link to="/competitions/explore" className="pp-btn pp-btn--secondary">
+            🔍 Explorar Competencias
+          </Link>
+          <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
+            ✋ Unirse por código
           </Link>
         </div>
       </div>
@@ -42,60 +46,55 @@ export default function LeaguesMinePage() {
       {!leagues && !error && <StatusMessage kind="loading" message="Cargando tus Ligas..." />}
 
       {leagues && leagues.length === 0 && (
-        <div className="empty-state">
-          No participás en ninguna Liga todavía.
-          <div className="match-row-actions" style={{ marginTop: '0.75rem' }}>
-            <Link to="/competitions/explore" className="btn btn-primary">
+        <div className="pp-empty">
+          <span className="pp-empty__icon">🏆</span>
+          <p className="pp-empty__text">
+            No participás en ninguna Liga todavía.
+            <br />
+            Explorá competencias o unite con un código de invitación.
+          </p>
+          <div className="pp-empty__actions">
+            <Link to="/leagues/new" className="pp-btn pp-btn--primary">
+              + Crear Liga
+            </Link>
+            <Link to="/competitions/explore" className="pp-btn pp-btn--secondary">
               Explorar Competencias
             </Link>
-            <Link to="/leagues/join" className="btn btn-secondary">
-              Unirse mediante código
+            <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
+              Unirse por código
             </Link>
           </div>
         </div>
       )}
 
       {leagues && leagues.length > 0 && (
-        <div className="table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Liga</th>
-                <th>Competencia</th>
-                <th>Alcance</th>
-                <th>Participantes</th>
-                <th>Estado</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {leagues.map((l) => (
-                <tr key={l.id}>
-                  <td>
-                    {l.name}
-                    {l.isCreator && <span> (creador)</span>}
-                  </td>
-                  <td>{l.competitionName}</td>
-                  <td>
-                    {LEAGUE_SCOPE_LABELS[l.scopeType]}
-                    {l.scopeType === 'RoundRange' && l.roundFromName && l.roundToName && (
-                      <span>
-                        {' '}
-                        ({l.roundFromName} → {l.roundToName})
-                      </span>
-                    )}
-                  </td>
-                  <td>{l.participantsCount}</td>
-                  <td>{l.isActive ? 'Activa' : 'Inactiva'}</td>
-                  <td>
-                    <Link to={`/leagues/${l.id}`} className="btn btn-secondary">
-                      Abrir
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="pp-grid">
+          {leagues.map((l) => (
+            <div key={l.id} className="pp-league-card">
+              <h3 className="pp-league-card__name">
+                {l.name}
+                {l.isCreator && <span style={{ fontWeight: 400, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}> — creador</span>}
+              </h3>
+              <span className="pp-league-card__comp">⚽ {l.competitionName}</span>
+              <div className="pp-league-card__meta">
+                <span>
+                  📋 {LEAGUE_SCOPE_LABELS[l.scopeType]}
+                  {l.scopeType === 'RoundRange' && l.roundFromName && l.roundToName && (
+                    <> ({l.roundFromName} → {l.roundToName})</>
+                  )}
+                </span>
+                <span>👥 {l.participantsCount} participante{l.participantsCount !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="pp-league-card__footer">
+                <span className={`pp-league-card__status ${l.isActive ? 'pp-league-card__status--active' : 'pp-league-card__status--inactive'}`}>
+                  {l.isActive ? 'Activa' : 'Inactiva'}
+                </span>
+                <Link to={`/leagues/${l.id}`} className="pp-league-card__action">
+                  Entrar
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

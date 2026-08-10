@@ -1,0 +1,1170 @@
+/* ──────────────────────────────────────────────────────────────
+   Player Pages — Shared visual language for PLAYER experience
+   Extends (never replaces) the existing design-system variables.
+   ────────────────────────────────────────────────────────────── */
+
+/* ── Page header ────────────────────────────────────────────── */
+.pp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.pp-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.pp-header__subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.pp-header__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Back link (replaces admin breadcrumb for PLAYER) ────── */
+.pp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.pp-back:hover {
+  color: var(--color-primary);
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.pp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.pp-btn:hover {
+  transform: translateY(-1px);
+}
+
+.pp-btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.pp-btn--primary:hover {
+  background: var(--color-primary-dark);
+}
+
+.pp-btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.pp-btn--secondary:hover {
+  background: var(--color-bg);
+}
+
+.pp-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Card grid ─────────────────────────────────────────────── */
+.pp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* ── League card ───────────────────────────────────────────── */
+.pp-league-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.pp-league-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-light);
+}
+
+.pp-league-card__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.pp-league-card__comp {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pp-league-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.pp-league-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.pp-league-card__status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.pp-league-card__status--active {
+  background: var(--color-success-light);
+  color: #155724;
+}
+
+.pp-league-card__status--inactive {
+  background: var(--color-danger-light);
+  color: #721c24;
+}
+
+.pp-league-card__action {
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.pp-league-card__action:hover {
+  background: var(--color-primary-dark);
+  color: #fff;
+}
+
+/* ── Competition card ──────────────────────────────────────── */
+.pp-comp-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.pp-comp-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-light);
+}
+
+.pp-comp-card__name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.pp-comp-card__edition {
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.pp-comp-card__details {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.pp-comp-card__action {
+  margin-top: auto;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  transition: background 0.15s;
+}
+
+.pp-comp-card__action:hover {
+  background: var(--color-primary-dark);
+  color: #fff;
+}
+
+.pp-comp-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.pp-comp-card__action--secondary {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.pp-comp-card__action--secondary:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* ── Empty state ───────────────────────────────────────────── */
+.pp-empty {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+}
+
+.pp-empty__icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.pp-empty__text {
+  font-size: 0.95rem;
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.pp-empty__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── Tabs (league workspace) ──────────────────────────────── */
+.pp-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border: 1px solid var(--color-border);
+  border-bottom: 2px solid var(--color-primary);
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+}
+
+.pp-tab {
+  padding: 0.75rem 1.35rem;
+  border: none;
+  background: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  position: relative;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.pp-tab:hover {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.pp-tab--active {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  font-weight: 700;
+}
+
+.pp-tab--active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 3px 3px 0 0;
+}
+
+.pp-tab--soon {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+/* ── League workspace header ──────────────────────────────── */
+.pp-workspace__header {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.pp-workspace__title {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.pp-workspace__subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.pp-workspace__meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.pp-workspace__meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pp-workspace__invite-code {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.pp-workspace__invite-code strong {
+  font-size: 1.1rem;
+  color: var(--color-primary);
+  letter-spacing: 0.05em;
+}
+
+/* ── Participant list ─────────────────────────────────────── */
+.pp-participants {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.pp-participant {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-light);
+}
+
+.pp-participant__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pp-participant__name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.pp-participant__badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* ── Predictions page grid ────────────────────────────────── */
+.pp-matches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+/* ── Ranking table (player-friendly) ──────────────────────── */
+.pp-ranking {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.pp-ranking__header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pp-ranking__header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.pp-ranking table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pp-ranking th,
+.pp-ranking td {
+  text-align: left;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.pp-ranking th {
+  background: var(--color-bg);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pp-ranking tr:last-child td {
+  border-bottom: none;
+}
+
+.pp-ranking tr:hover {
+  background: var(--color-bg);
+}
+
+.pp-ranking tr.pp-ranking__me {
+  background: var(--color-primary-light);
+  font-weight: 700;
+}
+
+.pp-ranking tr.pp-ranking__me:hover {
+  background: var(--color-primary-light);
+}
+
+.pp-ranking tr.pp-ranking__me td {
+  font-weight: 700;
+}
+
+.pp-ranking__pos {
+  font-weight: 700;
+  min-width: 2rem;
+}
+
+.pp-ranking__pos--1 { color: var(--color-gold); }
+.pp-ranking__pos--2 { color: var(--color-silver); }
+.pp-ranking__pos--3 { color: var(--color-bronze); }
+
+.pp-ranking__me-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--color-primary);
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+}
+
+.pp-ranking__points {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* ── Prize card (player-friendly) ─────────────────────────── */
+.pp-prize-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.pp-prize-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pp-prize-card__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.pp-prize-card__badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.pp-prize-card__badge--published {
+  background: var(--color-success-light);
+  color: #155724;
+}
+
+.pp-prize-card__badge--other {
+  background: var(--color-border-light);
+  color: var(--color-text-secondary);
+}
+
+.pp-prize-card__description {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.pp-prize-card__details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  font-size: 0.85rem;
+}
+
+.pp-prize-card__dt {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.pp-prize-card__dd {
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.pp-prize-card__winner {
+  border-top: 1px solid var(--color-border-light);
+  padding-top: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.pp-prize-card__winner-label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.pp-prize-card__winner-name {
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+.pp-prize-card__no-winner {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* ── Form (player-friendly) ───────────────────────────────── */
+.pp-form {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 1.5rem;
+  max-width: 560px;
+}
+
+.pp-form__field {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pp-form__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.pp-form__input,
+.pp-form__select,
+.pp-form__textarea {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pp-form__input:focus,
+.pp-form__select:focus,
+.pp-form__textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.pp-form__textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+.pp-form__error {
+  color: var(--color-danger);
+  font-size: 0.8rem;
+}
+
+.pp-form__row {
+  display: flex;
+  gap: 1rem;
+}
+
+.pp-form__row > .pp-form__field {
+  flex: 1;
+}
+
+.pp-form__actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.pp-form__hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 0.15rem;
+}
+
+/* ── Scope selector (Crear Liga) ──────────────────────────── */
+.pp-scope-selector {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.pp-scope-option {
+  flex: 1;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+
+.pp-scope-option:hover {
+  border-color: var(--color-primary-light);
+}
+
+.pp-scope-option--selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.pp-scope-option__icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.pp-scope-option__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.pp-scope-option__desc {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 0.25rem 0 0;
+}
+
+/* ── Profile page ─────────────────────────────────────────── */
+.pp-profile__card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 1.5rem;
+  max-width: 480px;
+}
+
+.pp-profile__avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.pp-profile__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-gradient-start), var(--color-primary));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pp-profile__name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.pp-profile__email {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+/* ── Edition selector (Rankings/Premios smart landing) ───── */
+.pp-edition-select {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.pp-edition-select__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.pp-edition-select__select {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+/* ── Info card (generic) ──────────────────────────────────── */
+.pp-info-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.pp-info-card__title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0 0 0.5rem;
+}
+
+.pp-info-card__meta {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.pp-info-card__meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pp-info-card__cta {
+  margin-top: 1rem;
+}
+
+/* ── Match card (PredictionsMatchesPage) ──────────────────── */
+.pp-match-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pp-match-card--pending {
+  border-left: 4px solid var(--color-primary);
+}
+
+.pp-match-card--saved {
+  border-left: 4px solid var(--color-success);
+}
+
+.pp-match-card--finished {
+  border-left: 4px solid var(--color-text-muted);
+  opacity: 0.8;
+}
+
+.pp-match-card--closed {
+  border-left: 4px solid var(--color-border);
+  opacity: 0.65;
+}
+
+.pp-match-card__teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.pp-match-card__team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 80px;
+}
+
+.pp-match-card__team-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.pp-match-card__vs {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.1em;
+  padding: 0 0.25rem;
+}
+
+.pp-match-card__info {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.pp-match-card__prediction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pp-match-card__prediction-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.pp-match-card__inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pp-match-card__input {
+  width: 2.75rem;
+  height: 2.25rem;
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.pp-match-card__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.pp-match-card__separator {
+  font-weight: 700;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.pp-match-card__error {
+  font-size: 0.8rem;
+  color: var(--color-danger);
+  text-align: center;
+}
+
+.pp-match-card__saved {
+  font-size: 0.82rem;
+  color: var(--color-success);
+  font-weight: 600;
+  text-align: center;
+  padding: 0.35rem 0.75rem;
+  background: var(--color-success-light);
+  border-radius: var(--radius-sm);
+}
+
+.pp-match-card__hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-style: italic;
+}
+
+.pp-match-card__closed-text {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  padding: 0.5rem 0;
+}
+
+.pp-match-card__result-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.pp-match-card__result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.pp-match-card__result-label {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.pp-match-card__result-score {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.pp-match-card__result-value {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.pp-match-card__result-points {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.pp-match-card__result-points--positive {
+  color: var(--color-success);
+}
+
+.pp-match-card__no-prediction {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* ── Round heading (group by Fecha) ─────────────────────── */
+.pp-round-heading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 1.25rem 0 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+/* ── Round filter (chips for ≤3, dropdown for >3) ──────── */
+.pp-round-chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.pp-round-chip {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.pp-round-chip:hover {
+  border-color: var(--color-primary-light);
+  color: var(--color-text);
+}
+
+.pp-round-chip--active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.pp-round-filter {
+  margin-bottom: 1rem;
+}
+
+.pp-round-filter__select {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+/* ── Invite section (Resumen) ──────────────────────────── */
+.pp-workspace__invite-section {
+  padding: 0.85rem 1rem;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+}
+
+.pp-workspace__invite-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 0.5rem;
+}
+
+.pp-workspace__invite-code-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pp-workspace__invite-code-row strong {
+  font-size: 1.15rem;
+  color: var(--color-primary);
+  letter-spacing: 0.05em;
+}
+
+.pp-workspace__invite-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 0.35rem 0 0;
+}
+
+.pp-btn--sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.75rem;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .pp-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pp-form__row {
+    flex-direction: column;
+  }
+
+  .pp-scope-selector {
+    flex-direction: column;
+  }
+
+  .pp-matches {
+    grid-template-columns: 1fr;
+  }
+
+  .pp-participants {
+    grid-template-columns: 1fr;
+  }
+}

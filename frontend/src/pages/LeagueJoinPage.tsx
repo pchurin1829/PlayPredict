@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { LeagueSummary } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import './PlayerPages.css'
 
 export default function LeagueJoinPage() {
   const navigate = useNavigate()
@@ -33,37 +34,40 @@ export default function LeagueJoinPage() {
 
   return (
     <div>
-      <div className="breadcrumb">
-        <Link to="/leagues">← Mis Ligas</Link>
-      </div>
-      <div className="admin-header">
+      <Link to="/leagues" className="pp-back">← Mis Ligas</Link>
+
+      <div className="pp-header">
         <h1>Unirse a una Liga</h1>
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}
 
-      <form className="form-card" onSubmit={handleSubmit}>
-        <div className="form-field">
-          <label htmlFor="inviteCode">Código de invitación</label>
-          <input
-            id="inviteCode"
-            type="text"
-            placeholder="Ej: 9JT3UMS4"
-            value={inviteCode}
-            onChange={(e) => setInviteCode(e.target.value)}
-          />
-          {fieldErrors.inviteCode && <span className="form-field-error">{fieldErrors.inviteCode[0]}</span>}
-        </div>
+      <div className="pp-form" style={{ maxWidth: '420px' }}>
+        <form onSubmit={handleSubmit}>
+          <div className="pp-form__field">
+            <label className="pp-form__label" htmlFor="inviteCode">Código de invitación</label>
+            <input
+              id="inviteCode"
+              className="pp-form__input"
+              type="text"
+              placeholder="Ej: 9JT3UMS4"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              style={{ textAlign: 'center', fontSize: '1.1rem', letterSpacing: '0.1em', fontWeight: 700 }}
+            />
+            {fieldErrors.inviteCode && <span className="pp-form__error">{fieldErrors.inviteCode[0]}</span>}
+          </div>
 
-        <div className="form-actions">
-          <button type="submit" className="btn btn-primary" disabled={saving || !inviteCode.trim()}>
-            {saving ? 'Uniéndome...' : 'Unirme'}
-          </button>
-          <Link to="/leagues" className="btn btn-secondary">
-            Cancelar
-          </Link>
-        </div>
-      </form>
+          <div className="pp-form__actions">
+            <button type="submit" className="pp-btn pp-btn--primary" disabled={saving || !inviteCode.trim()} style={{ flex: 1 }}>
+              {saving ? 'Uniéndome...' : '✋ Unirme'}
+            </button>
+            <Link to="/leagues" className="pp-btn pp-btn--secondary">
+              Cancelar
+            </Link>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

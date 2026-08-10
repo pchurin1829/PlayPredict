@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Edition, Prize } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import './PlayerPages.css'
 
 export default function PrizesListPage() {
   const { editionId } = useParams()
@@ -32,66 +33,79 @@ export default function PrizesListPage() {
     }
   }, [editionId])
 
+  if (error) {
+    return (
+      <div>
+        <Link to="/prizes" className="pp-back">← Premios</Link>
+        <StatusMessage kind="error" message={error} />
+      </div>
+    )
+  }
+
   return (
     <div>
-      <div className="breadcrumb">
-        {edition && (
-          <Link to={`/prizes/competitions/${edition.competitionId}/editions`}>← Ediciones</Link>
-        )}
-      </div>
-      <div className="admin-header">
-        <h1>Premios {edition ? `— ${edition.name}` : ''}</h1>
+      <Link to={edition ? `/prizes/competitions/${edition.competitionId}/editions` : '/prizes'} className="pp-back">
+        ← {edition ? 'Ediciones' : 'Premios'}
+      </Link>
+
+      <div className="pp-header">
+        <div>
+          <h1>Premios</h1>
+          {edition && <p className="pp-header__subtitle">{edition.name}</p>}
+        </div>
       </div>
 
-      {error && <StatusMessage kind="error" message={error} />}
-      {!prizes && !error && <StatusMessage kind="loading" message="Cargando premios..." />}
+      {!prizes && <StatusMessage kind="loading" message="Cargando premios..." />}
 
       {prizes && prizes.length === 0 && (
-        <div className="empty-state">Todavía no hay premios publicados para esta Edición.</div>
+        <div className="pp-empty">
+          <span className="pp-empty__icon">🎁</span>
+          <p className="pp-empty__text">Todavía no hay premios publicados para esta edición.</p>
+        </div>
       )}
 
       {prizes && prizes.length > 0 && (
-        <div className="prize-cards">
+        <div className="pp-grid">
           {prizes.map((p) => (
-            <div key={p.id} className="prize-card">
-              <div className="prize-card__header">
-                <h2>{p.name}</h2>
-                <span className={`badge badge--${p.status}`}>{p.statusLabel}</span>
+            <div key={p.id} className="pp-prize-card">
+              <div className="pp-prize-card__header">
+                <h3 className="pp-prize-card__name">🎁 {p.name}</h3>
+                <span className={`pp-prize-card__badge ${p.status === 'Published' ? 'pp-prize-card__badge--published' : 'pp-prize-card__badge--other'}`}>
+                  {p.statusLabel}
+                </span>
               </div>
 
-              {p.description && <p className="prize-card__description">{p.description}</p>}
+              {p.description && <p className="pp-prize-card__description">{p.description}</p>}
 
-              <dl className="prize-card__details">
-                <div>
-                  <dt>Tipo</dt>
-                  <dd>{p.prizeTypeLabel}</dd>
-                </div>
+              <div className="pp-prize-card__details">
                 {p.referenceValue && (
-                  <div>
-                    <dt>Valor de referencia</dt>
-                    <dd>{p.referenceValue}</dd>
-                  </div>
+                  <>
+                    <dt className="pp-prize-card__dt">Valor</dt>
+                    <dd className="pp-prize-card__dd">{p.referenceValue}</dd>
+                  </>
                 )}
+                <dt className="pp-prize-card__dt">Tipo</dt>
+                <dd className="pp-prize-card__dd">{p.prizeTypeLabel}</dd>
                 {p.sponsorName && (
-                  <div>
-                    <dt>Sponsor</dt>
-                    <dd>{p.sponsorName}</dd>
-                  </div>
+                  <>
+                    <dt className="pp-prize-card__dt">Sponsor</dt>
+                    <dd className="pp-prize-card__dd">{p.sponsorName}</dd>
+                  </>
                 )}
-                <div>
-                  <dt>Para quién es</dt>
-                  <dd>{p.forLabel}</dd>
-                </div>
-              </dl>
+                <dt className="pp-prize-card__dt">Para</dt>
+                <dd className="pp-prize-card__dd">{p.forLabel}</dd>
+              </div>
 
-              <div className="prize-card__winner">
+              <div className="pp-prize-card__winner">
                 {p.hasProvisionalWinner ? (
                   <>
-                    <strong>Ganador actual (provisional):</strong>{' '}
-                    {p.currentWinners.map((w) => `${w.firstName} ${w.lastName}`).join(', ')}
+                    <span className="pp-prize-card__winner-label">Líder actual: </span>
+                    <span className="pp-prize-card__winner-name">
+                      {p.currentWinners.map((w) => `${w.firstName} ${w.lastName}`).join(', ')}
+                    </span>
                   </>
                 ) : (
-                  <span className="prize-card__no-winner">Todavía no hay ganador provisional.</span>
+                  <span className="pp-prize-card__no-winner">Todavía no hay líder provisional</span>
                 )}
               </div>
             </div>

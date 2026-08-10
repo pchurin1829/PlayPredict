@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Edition, Round } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import './PlayerPages.css'
 
 export default function RankingsRoundsPage() {
   const { editionId } = useParams()
@@ -35,44 +36,44 @@ export default function RankingsRoundsPage() {
 
   return (
     <div>
-      <div className="breadcrumb">
-        {edition && (
-          <Link to={`/rankings/competitions/${edition.competitionId}/editions`}>← Ediciones</Link>
-        )}
-      </div>
-      <div className="admin-header">
-        <h1>Rankings — Fechas {edition ? `— ${edition.name}` : ''}</h1>
+      <Link to={edition ? `/rankings/competitions/${edition.competitionId}/editions` : '/rankings'} className="pp-back">
+        ← {edition ? 'Ediciones' : 'Ranking'}
+      </Link>
+      <div className="pp-header">
+        <div>
+          <h1>Ranking por Fecha</h1>
+          {edition && <p className="pp-header__subtitle">{edition.name}</p>}
+        </div>
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}
       {!rounds && !error && <StatusMessage kind="loading" message="Cargando fechas..." />}
 
       {rounds && rounds.length === 0 && (
-        <div className="empty-state">Esta edición todavía no tiene fechas.</div>
+        <div className="pp-empty">
+          <span className="pp-empty__icon">📅</span>
+          <p className="pp-empty__text">Esta edición todavía no tiene fechas.</p>
+        </div>
       )}
 
       {rounds && rounds.length > 0 && (
-        <div className="table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Orden</th>
-                <th>Nombre</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rounds.map((r) => (
-                <tr
-                  key={r.id}
-                  className="is-clickable"
-                  onClick={() => navigate(`/rankings/rounds/${r.id}`)}
-                >
-                  <td>{r.order}</td>
-                  <td>{r.name}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="pp-grid">
+          {rounds.map((r) => (
+            <div
+              key={r.id}
+              className="pp-comp-card"
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate(`/rankings/rounds/${r.id}`)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/rankings/rounds/${r.id}`) }}
+            >
+              <h3 className="pp-comp-card__name">📅 {r.name}</h3>
+              <span className="pp-comp-card__action" style={{ marginTop: 'auto' }}>
+                Ver Ranking
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>

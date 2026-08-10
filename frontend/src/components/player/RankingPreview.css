@@ -1,0 +1,78 @@
+.rpreview {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+}
+
+.rpreview__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.rpreview__empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.rpreview__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rpreview__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+
+.rpreview__row--me {
+  background: var(--color-primary-light);
+  font-weight: 600;
+}
+
+.rpreview__pos {
+  font-weight: 800;
+  font-size: 0.8rem;
+  min-width: 2rem;
+  color: var(--color-text-secondary);
+}
+
+.rpreview__pos--gold {
+  color: var(--color-gold);
+}
+
+.rpreview__pos--silver {
+  color: var(--color-silver);
+}
+
+.rpreview__pos--bronze {
+  color: var(--color-bronze);
+}
+
+.rpreview__name {
+  flex: 1;
+  color: var(--color-text);
+}
+
+.rpreview__me-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-left: 0.25rem;
+}
+
+.rpreview__points {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+}

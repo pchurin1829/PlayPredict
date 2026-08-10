@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Competition, Edition, Round } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import './PlayerPages.css'
 
 interface ExploreItem {
   competition: Competition
@@ -51,10 +52,7 @@ export default function ExploreCompetitionsPage() {
 
   return (
     <div>
-      <div className="breadcrumb">
-        <Link to="/leagues">← Mis Ligas</Link>
-      </div>
-      <div className="admin-header">
+      <div className="pp-header">
         <h1>Explorar Competencias</h1>
       </div>
 
@@ -62,39 +60,38 @@ export default function ExploreCompetitionsPage() {
       {!items && !error && <StatusMessage kind="loading" message="Cargando Competencias..." />}
 
       {items && items.length === 0 && (
-        <div className="empty-state">No hay Competencias activas todavía.</div>
+        <div className="pp-empty">
+          <span className="pp-empty__icon">⚽</span>
+          <p className="pp-empty__text">No hay competencias activas todavía.</p>
+        </div>
       )}
 
       {items && items.length > 0 && (
-        <div className="table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Deporte</th>
-                <th>Edición activa</th>
-                <th>Fechas</th>
-                <th>Estado</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map(({ competition, activeEdition, roundsCount }) => (
-                <tr key={competition.id}>
-                  <td>{competition.name}</td>
-                  <td>{competition.sport}</td>
-                  <td>{activeEdition ? activeEdition.name : 'Sin edición activa'}</td>
-                  <td>{roundsCount}</td>
-                  <td>{competition.isActive ? 'Activa' : 'Inactiva'}</td>
-                  <td>
-                    <Link to={`/competitions/${competition.id}`} className="btn btn-secondary">
-                      Ver
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="pp-grid">
+          {items.map(({ competition, activeEdition, roundsCount }) => (
+            <div key={competition.id} className="pp-comp-card">
+              <h3 className="pp-comp-card__name">🏆 {competition.name}</h3>
+              {activeEdition ? (
+                <span className="pp-comp-card__edition">📍 {activeEdition.name}</span>
+              ) : (
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                  Sin edición activa
+                </span>
+              )}
+              <div className="pp-comp-card__details">
+                <span>🏅 {competition.sport}</span>
+                {roundsCount > 0 && <span>📅 {roundsCount} fecha{roundsCount !== 1 ? 's' : ''}</span>}
+              </div>
+              <div className="pp-comp-card__actions">
+                <Link to={`/competitions/${competition.id}`} className="pp-comp-card__action">
+                  Ver competencia
+                </Link>
+                <Link to={`/leagues/new?competitionId=${competition.id}`} className="pp-comp-card__action pp-comp-card__action--secondary">
+                  + Crear Liga
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

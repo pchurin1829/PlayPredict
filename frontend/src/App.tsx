@@ -33,12 +33,14 @@ import PrizesEditionsPage from './pages/PrizesEditionsPage'
 import PrizesListPage from './pages/PrizesListPage'
 import AdminExperiencesListPage from './pages/AdminExperiencesListPage'
 import AdminExperienceFormPage from './pages/AdminExperienceFormPage'
+import PlayerDashboardPage from './pages/PlayerDashboardPage'
 import './components/admin.css'
+import './components/player/ComingSoonBadge.css'
 
 function HomeRedirect() {
   const { user } = useAuth()
   const isAdmin = user?.roles.includes('ADMIN') ?? false
-  return <Navigate to={isAdmin ? '/competitions' : '/leagues'} replace />
+  return <Navigate to={isAdmin ? '/competitions' : '/'} replace />
 }
 
 function App() {
@@ -54,122 +56,49 @@ function App() {
           </RequireAuth>
         }
       >
-        <Route path="/" element={<HomeRedirect />} />
-
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route
-          path="/admin/users"
-          element={
-            <RequireAdmin>
-              <AdminUsersPage />
-            </RequireAdmin>
-          }
-        />
-
-        <Route path="/competitions/explore" element={<ExploreCompetitionsPage />} />
-        <Route path="/competitions/:competitionId" element={<CompetitionDetailPage />} />
-
-        <Route path="/competitions" element={<CompetitionsListPage />} />
-        <Route path="/competitions/new" element={<CompetitionFormPage />} />
-        <Route path="/competitions/:competitionId/edit" element={<CompetitionFormPage />} />
-        <Route path="/competitions/:competitionId/editions" element={<EditionsListPage />} />
-        <Route
-          path="/competitions/:competitionId/editions/new"
-          element={<EditionFormPage />}
-        />
-
-        <Route path="/editions/:editionId/edit" element={<EditionFormPage />} />
-        <Route
-          path="/editions/:editionId/scoring-configuration"
-          element={
-            <RequireAdmin>
-              <EditionScoringConfigurationPage />
-            </RequireAdmin>
-          }
-        />
-        <Route path="/editions/:editionId/rounds" element={<RoundsListPage />} />
-        <Route path="/editions/:editionId/rounds/new" element={<RoundFormPage />} />
-
-        <Route path="/rounds/:roundId/edit" element={<RoundFormPage />} />
-        <Route path="/rounds/:roundId/matches" element={<MatchesListPage />} />
-        <Route path="/rounds/:roundId/matches/new" element={<MatchFormPage />} />
-
-        <Route path="/matches/:matchId/edit" element={<MatchFormPage />} />
-
+        {/* PLAYER ROUTES */}
+        <Route path="/" element={<PlayerDashboardPage />} />
         <Route path="/leagues" element={<LeaguesMinePage />} />
         <Route path="/leagues/new" element={<LeagueCreatePage />} />
         <Route path="/leagues/join" element={<LeagueJoinPage />} />
         <Route path="/leagues/:leagueId" element={<LeagueDetailPage />} />
         <Route path="/leagues/:leagueId/matches" element={<PredictionsMatchesPage />} />
-
+        <Route path="/competitions/explore" element={<ExploreCompetitionsPage />} />
+        <Route path="/competitions/:competitionId" element={<CompetitionDetailPage />} />
         <Route path="/rankings" element={<RankingsCompetitionsPage />} />
-        <Route
-          path="/rankings/competitions/:competitionId/editions"
-          element={<RankingsEditionsPage />}
-        />
+        <Route path="/rankings/competitions/:competitionId/editions" element={<RankingsEditionsPage />} />
         <Route path="/rankings/editions/:editionId" element={<RankingGeneralPage />} />
         <Route path="/rankings/editions/:editionId/rounds" element={<RankingsRoundsPage />} />
         <Route path="/rankings/rounds/:roundId" element={<RankingRoundPage />} />
-
         <Route path="/prizes" element={<PrizesCompetitionsPage />} />
-        <Route
-          path="/prizes/competitions/:competitionId/editions"
-          element={<PrizesEditionsPage />}
-        />
+        <Route path="/prizes/competitions/:competitionId/editions" element={<PrizesEditionsPage />} />
         <Route path="/prizes/editions/:editionId" element={<PrizesListPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
-        <Route
-          path="/admin/prizes"
-          element={
-            <RequireAdmin>
-              <AdminPrizesListPage />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/prizes/new"
-          element={
-            <RequireAdmin>
-              <AdminPrizeFormPage />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/prizes/:prizeId/edit"
-          element={
-            <RequireAdmin>
-              <AdminPrizeFormPage />
-            </RequireAdmin>
-          }
-        />
-
-        <Route
-          path="/admin/experiences"
-          element={
-            <RequireAdmin>
-              <AdminExperiencesListPage />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/experiences/new"
-          element={
-            <RequireAdmin>
-              <AdminExperienceFormPage />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/experiences/:experienceId/edit"
-          element={
-            <RequireAdmin>
-              <AdminExperienceFormPage />
-            </RequireAdmin>
-          }
-        />
-
-        <Route path="*" element={<HomeRedirect />} />
+        {/* ADMIN ROUTES */}
+        <Route path="/admin/users" element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} />
+        <Route path="/competitions" element={<CompetitionsListPage />} />
+        <Route path="/competitions/new" element={<CompetitionFormPage />} />
+        <Route path="/competitions/:competitionId/edit" element={<CompetitionFormPage />} />
+        <Route path="/competitions/:competitionId/editions" element={<EditionsListPage />} />
+        <Route path="/competitions/:competitionId/editions/new" element={<EditionFormPage />} />
+        <Route path="/editions/:editionId/edit" element={<EditionFormPage />} />
+        <Route path="/editions/:editionId/scoring-configuration" element={<RequireAdmin><EditionScoringConfigurationPage /></RequireAdmin>} />
+        <Route path="/editions/:editionId/rounds" element={<RoundsListPage />} />
+        <Route path="/editions/:editionId/rounds/new" element={<RoundFormPage />} />
+        <Route path="/rounds/:roundId/edit" element={<RoundFormPage />} />
+        <Route path="/rounds/:roundId/matches" element={<MatchesListPage />} />
+        <Route path="/rounds/:roundId/matches/new" element={<MatchFormPage />} />
+        <Route path="/matches/:matchId/edit" element={<MatchFormPage />} />
+        <Route path="/admin/prizes" element={<RequireAdmin><AdminPrizesListPage /></RequireAdmin>} />
+        <Route path="/admin/prizes/new" element={<RequireAdmin><AdminPrizeFormPage /></RequireAdmin>} />
+        <Route path="/admin/prizes/:prizeId/edit" element={<RequireAdmin><AdminPrizeFormPage /></RequireAdmin>} />
+        <Route path="/admin/experiences" element={<RequireAdmin><AdminExperiencesListPage /></RequireAdmin>} />
+        <Route path="/admin/experiences/new" element={<RequireAdmin><AdminExperienceFormPage /></RequireAdmin>} />
+        <Route path="/admin/experiences/:experienceId/edit" element={<RequireAdmin><AdminExperienceFormPage /></RequireAdmin>} />
       </Route>
+
+      <Route path="*" element={<HomeRedirect />} />
     </Routes>
   )
 }

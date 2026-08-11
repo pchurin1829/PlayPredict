@@ -481,7 +481,10 @@ public static class DataSeeder
 
         // Resultados oficiales + evaluación automática de los pronósticos (misma vía que
         // usaría un Administrador cargando el Resultado Oficial desde el panel).
-        for (var i = 0; i < RankingDemoMatches.Length; i++)
+        // Acotado a finishedMatches.Count (igual que el loop de pronósticos de arriba): si la
+        // Competencia ya existía en la base con menos partidos que RankingDemoMatches (idempotencia
+        // por nombre en SeedCompetitionAsync), finishedMatches puede ser más chico que RankingDemoMatches.
+        for (var i = 0; i < finishedMatches.Count && i < RankingDemoMatches.Length; i++)
         {
             var match = finishedMatches[i];
             if (match.Status != MatchStatus.Finished)

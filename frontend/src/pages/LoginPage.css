@@ -1,0 +1,360 @@
+/* ──────────────────────────────────────────────────────────────
+   Login — dark sports direction. Self-contained: does not touch
+   .auth-page / .form-card (still used by RegisterPage).
+   ────────────────────────────────────────────────────────────── */
+
+.pp-login {
+  --pp-login-primary: #8676ff;
+  --pp-login-primary-dark: #6a5aeb;
+  --pp-login-surface: #15151f;
+  --pp-login-surface-2: #1c1c29;
+  --pp-login-border: #2c2c40;
+  --pp-login-text: #f5f5fa;
+  --pp-login-text-secondary: #a3a3c2;
+  --pp-login-text-muted: #74748f;
+
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  background: #08080d;
+  font-family: var(--font-sans);
+}
+
+/* ── Stage (photo + brand copy + form) ─────────────────────── */
+.pp-login__stage {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  min-height: 100svh;
+  padding: 3rem 3.5rem;
+  box-sizing: border-box;
+}
+
+.pp-login__scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pp-login__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 3.5rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+/* ── Intro copy ─────────────────────────────────────────────── */
+.pp-login__intro {
+  flex: 1 1 320px;
+  min-width: 280px;
+  color: var(--pp-login-text);
+}
+
+.pp-login__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.6rem;
+}
+
+.pp-login__brand strong {
+  font-weight: 800;
+}
+
+.pp-login__logo-mark {
+  color: var(--pp-login-primary);
+  filter: drop-shadow(0 0 10px rgba(134, 118, 255, 0.55));
+}
+
+.pp-login__tagline {
+  margin: 0 0 1.75rem;
+  font-size: 1.05rem;
+  color: var(--pp-login-text-secondary);
+  max-width: 380px;
+  line-height: 1.5;
+}
+
+.pp-login__features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  max-width: 360px;
+}
+
+.pp-login__features li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--pp-login-text-secondary);
+}
+
+.pp-login__features strong {
+  color: var(--pp-login-text);
+  font-weight: 700;
+}
+
+.pp-login__feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(134, 118, 255, 0.14);
+  font-size: 1rem;
+}
+
+/* ── Form panel ─────────────────────────────────────────────── */
+.pp-login__form {
+  flex: 0 1 380px;
+  min-width: 300px;
+  background: var(--pp-login-surface);
+  border: 1px solid var(--pp-login-border);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.pp-login__form h1 {
+  margin: 0 0 1.5rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--pp-login-text);
+}
+
+.pp-login__form .status-message--error {
+  background: rgba(239, 68, 68, 0.14);
+  color: #ff8f8f;
+}
+
+.pp-login__field {
+  margin-bottom: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pp-login__field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pp-login-text-secondary);
+}
+
+.pp-login__input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--pp-login-surface-2);
+  border: 1px solid var(--pp-login-border);
+  border-radius: 10px;
+  padding: 0 0.75rem;
+  transition: border-color 0.15s;
+}
+
+.pp-login__input-wrap:focus-within {
+  border-color: var(--pp-login-primary);
+}
+
+.pp-login__input-wrap svg {
+  color: var(--pp-login-text-muted);
+  flex-shrink: 0;
+}
+
+.pp-login__input-wrap input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.7rem 0.6rem;
+  font-size: 0.92rem;
+  font-family: inherit;
+  color: var(--pp-login-text);
+  outline: none;
+}
+
+.pp-login__input-wrap input::placeholder {
+  color: var(--pp-login-text-muted);
+}
+
+.pp-login__eye {
+  border: none;
+  background: transparent;
+  color: var(--pp-login-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.3rem;
+}
+
+.pp-login__eye:hover {
+  color: var(--pp-login-text-secondary);
+}
+
+.pp-login__actions {
+  margin-top: 1.5rem;
+}
+
+.pp-login__submit {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--pp-login-primary), var(--pp-login-primary-dark));
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+  box-shadow: 0 10px 24px rgba(134, 118, 255, 0.3);
+}
+
+.pp-login__submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.pp-login__submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.pp-login__alt {
+  margin: 1.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--pp-login-text-secondary);
+  text-align: center;
+}
+
+.pp-login__alt a {
+  color: var(--pp-login-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pp-login__alt a:hover {
+  text-decoration: underline;
+}
+
+.pp-login__footer {
+  margin: 1.25rem 0 0;
+  font-size: 0.7rem;
+  color: var(--pp-login-text-muted);
+  text-align: center;
+}
+
+/* ── Sponsor rail ───────────────────────────────────────────── */
+.pp-login__ads {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--pp-login-border);
+  border-left: 1px solid var(--pp-login-border);
+}
+
+.pp-login__ad {
+  flex: 1;
+  background: var(--pp-login-surface-2);
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.pp-login__ad::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 100% 100%, rgba(134, 118, 255, 0.16), transparent 60%);
+  pointer-events: none;
+}
+
+.pp-login__ad-eyebrow {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--pp-login-text-muted);
+}
+
+.pp-login__ad-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--pp-login-text);
+  line-height: 1.25;
+}
+
+.pp-login__ad-text {
+  font-size: 0.82rem;
+  color: var(--pp-login-text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.pp-login__ad-cta {
+  align-self: flex-start;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--pp-login-text);
+  background: var(--pp-login-border);
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+}
+
+@media (max-width: 1080px) {
+  .pp-login {
+    grid-template-columns: 1fr;
+  }
+
+  .pp-login__ads {
+    flex-direction: row;
+    border-left: none;
+    border-top: 1px solid var(--pp-login-border);
+    overflow-x: auto;
+  }
+
+  .pp-login__ad {
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 720px) {
+  .pp-login__stage {
+    padding: 2rem 1.25rem;
+  }
+
+  .pp-login__content {
+    gap: 2rem;
+  }
+
+  .pp-login__intro {
+    text-align: center;
+    margin: 0 auto;
+  }
+
+  .pp-login__features {
+    margin: 0 auto;
+  }
+
+  .pp-login__form {
+    flex: 1 1 100%;
+    margin: 0 auto;
+  }
+
+  .pp-login__ads {
+    display: none;
+  }
+}

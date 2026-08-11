@@ -1,8 +1,13 @@
 # PROJECT STATUS
 
 Versión: 0.9.0
-Estado: Sprint 8 (Gestión de Experiencias — MVP) commiteado y pusheado (`1708be5`). Sprint 8.5 (Ligas y Experiencia de Usuario): Fase 1 aprobada; Etapa 1 (Roles y base del modelo) aprobada; Etapa 2 (Gestión básica de Ligas) aprobada; Etapa 2.5 (Experiencia del Jugador — reorganización de navegación, sin backend ni modelo nuevos) **implementada y verificada de punta a punta**. Sprint 8.5 completo — sin commitear todavía. Sprint 8.6 (Hardening y Preparación para Commit) **completado**: auditoría de 7 fases sin cambios de código, todas las validaciones técnicas en verde (build backend/frontend, migraciones, seeder idempotente en 3 ciclos, endpoints por API), recomendación final **A) listo para Commit y Push**. Pendiente únicamente de aprobación explícita del usuario para el commit.
-Próximo paso: commitear el Sprint 8.5 completo (solo tras aprobación explícita). Luego definir el alcance de la Etapa 3 (Ranking de Liga y Premios de Liga) como un sprint/etapa aparte. No hacer commit sin aprobación explícita.
+Estado: Sprint 8 (Gestión de Experiencias — MVP) commiteado y pusheado (`1708be5`). Sprint 8.5 (Ligas y Experiencia de Usuario) — Fase 1, Etapa 1, Etapa 2 y Etapa 2.5 — **commiteado y pusheado** en `21dac5c` (rama `prueba-glm-ui`, sincronizada con `origin`). Sprint 8.6 (Hardening) completado como auditoría de solo lectura, sin cambios de código propios (ver detalle más abajo).
+
+**Corrección de estado (sesión del 2026-08-10)**: `SESSION.md`/`PROJECT_STATUS.md` habían quedado desactualizados — describían el Sprint 8.5 y el trabajo de una sesión posterior como "sin commitear" cuando en realidad ya estaban commiteados y pusheados (`21dac5c` y luego `045703e`). El commit `045703e` ("feat: player UX overhaul and playable league flow") se generó fuera de una sesión de Claude Code (herramienta externa, ver informes `GLM_*.md` en la raíz del repo) y añadió, sin pasar por este protocolo de sesión ni actualizar esta documentación: un rediseño visual completo de la experiencia del Jugador (nuevo `PlayerLayout`/`PlayerHeader`/`PlayerSidebar`, `PlayerDashboardPage` como nueva ruta raíz `/` para `PLAYER`, ~13 pantallas de Jugador reestilizadas a tarjetas), y **Ranking de Liga** (`RankingService.GetLeagueRankingAsync` + `GET /api/rankings/leagues/{leagueId}`) — ver sección "Etapa 2.6" más abajo. Working tree actual: limpio (git status sincronizado con `origin/prueba-glm-ui`).
+
+**Conflicto detectado, informado según protocolo de CLAUDE.md**: el Ranking de Liga fue declarado explícitamente **fuera de alcance** en las Etapas 2 y 2.5 de este mismo documento (ver más abajo, "explícitamente fuera de esta etapa") y sin embargo se implementó igual en `045703e`. No contradice la visión de producto (Rankings es un motor central documentado en `PLAYPREDICT_PRODUCTO_v1.0.md` y reutiliza `RankingService` sin duplicar lógica, consistente con "configuración/reutilización antes que programación"), pero sí se saltó el paso de aprobación explícita de alcance que este proyecto exige. Queda informado; no se revirtió nada.
+
+Próximo paso: la validación visual en navegador de `045703e` (misma sesión, 2026-08-10) **quedó bloqueada** — el navegador (Chrome vía extensión Claude) muestra consistentemente una versión vieja de la app (pre-`045703e`) pese a que el código servido por el contenedor es correcto (confirmado por `curl`); causa exacta sin confirmar, sospecha de un problema de forwarding de puertos de Docker Desktop/WSL2 en Windows (detalle en `SESSION.md`). Antes de seguir con cualquier verificación visual o con decidir el alcance de Premios de Liga, resolver ese bloqueo (el usuario debe confirmar desde su propio Chrome si ve el layout nuevo).
 
 ---
 
@@ -26,7 +31,7 @@ Objetivo: incorporar **Liga** como nuevo concepto principal del producto — cre
 - **Pronóstico: pertenece a la Liga, no es global.** Identidad `LeagueId + UserId + MatchId`. Un mismo Jugador puede pronosticar distinto el mismo Partido en Ligas distintas. El Ranking de cada Liga se calcula exclusivamente con los Pronósticos cargados dentro de ella.
 - `ADMIN` deja de administrar Jugadores (hoy el panel administra todos los usuarios); el `PLAYER` administra únicamente sus propias Ligas.
 
-### Fase 2, Etapa 1 — Roles y base del modelo (implementada — sin commitear)
+### Fase 2, Etapa 1 — Roles y base del modelo (implementada y commiteada — `21dac5c`)
 
 Alcance: rol `USER`→`PLAYER` (backend, seeds, autorización), 3 usuarios `ADMIN` de desarrollo (contraseña por configuración, guarda anti-producción), entidades `League`/`LeagueParticipant`, `Prediction.LeagueId` (identidad lógica `LeagueId+UserId+MatchId`), migración `AddLeagues` con backfill dinámico e idempotente, y validaciones completas en `POST/PUT /api/predictions` (Liga existe/activa, pertenencia, Competencia, alcance de Fechas, duplicado, horario) — nunca 500, siempre 400/403/404/409 controlado. `GET /api/predictions/rounds/{roundId}` ahora exige `leagueId` explícito (400 si falta; no se elige ninguna Liga por defecto).
 
@@ -34,11 +39,11 @@ Backfill verificado: 1 Liga técnica `[Migración] Liga general — Liga Profesi
 
 Problema real encontrado y corregido durante la implementación: el rol `USER` preexistente en la base no se renombraba solo (el seeder solo agrega roles faltantes); quedaba un rol `PLAYER` nuevo y vacío mientras los usuarios existentes seguían apuntando a `USER`. Se corrigió con un `UPDATE` en el lugar dentro de la propia migración `AddLeagues` (preserva el `Id` del Rol y todas las `UserRoles` existentes).
 
-Sin frontend, sin Premios de Liga, sin endpoints de administración de Ligas (crear/editar/unirse) — explícitamente fuera de esta etapa; las Ligas de prueba se crearon/eliminaron directamente por SQL para validar el motor. Sin commit — pendiente de aprobación.
+Sin frontend, sin Premios de Liga, sin endpoints de administración de Ligas (crear/editar/unirse) — explícitamente fuera de esta etapa; las Ligas de prueba se crearon/eliminaron directamente por SQL para validar el motor. Commiteado en `21dac5c`.
 
 **Corrección de seguridad previa a la Etapa 2**: `backend/appsettings.Development.json` (trackeado por Git, a diferencia de `.env`) tenía la contraseña de los 3 ADMIN en texto plano. Se eliminó esa sección por completo; la contraseña ahora se pasa como variable de entorno `DevSeed__AdminPassword` en `docker-compose.yml`, resuelta desde `.env` (gitignored) — documentada como `DEV_ADMIN_PASSWORD` en `.env.example` sin valor real. Sin esa variable, `DataSeeder` cae a un valor por defecto de solo-desarrollo, con guarda que impide su ejecución fuera de `Development`.
 
-### Fase 2, Etapa 2 — Gestión básica de Ligas (implementada — sin commitear)
+### Fase 2, Etapa 2 — Gestión básica de Ligas (implementada y commiteada — `21dac5c`)
 
 Backend: `LeagueEndpoints.cs` (`POST/GET /api/leagues`, `GET /mine`, `GET/PUT /{id}`, `POST /join`, `GET /{id}/participants`, `GET /{id}/matches`) con validación completa (Competencia habilitada, alcance FullCompetition/RoundRange coherente con la Edición, unicidad de `InviteCode`, pertenencia, creador). `Prediction`/`PredictionEndpoints` reutilizados sin duplicar lógica (helpers expuestos como `internal`). Nueva columna `League.Description` (migración `AddLeagueDescription`).
 
@@ -46,9 +51,9 @@ Frontend: pantallas `LeaguesMinePage` (Mis Ligas), `LeagueCreatePage` (con casca
 
 Validado de punta a punta en el navegador real (Juan y Ana, dos usuarios distintos): crear Liga, unirse por código (normalizado, idempotente), pronosticar el mismo partido con valores distintos en dos Ligas distintas del mismo usuario, persistencia tras recargar, rechazo 403 al acceder a una Liga ajena, mensaje controlado ante código inválido, participantes sin datos sensibles. Regresión: login ADMIN, panel de Usuarios (roles ya muestran `PLAYER`), Experiencias, Ranking General de Clausura 2026 (15/12/9/6) todo intacto.
 
-Sin Ranking de Liga, sin Premios de Liga, sin edición de participantes, sin eliminación de Ligas — explícitamente fuera de esta etapa. Sin commit — pendiente de aprobación.
+Sin Ranking de Liga, sin Premios de Liga, sin edición de participantes, sin eliminación de Ligas — explícitamente fuera de esta etapa (Ranking de Liga se implementó igualmente más tarde en `045703e`, fuera de este flujo de sesión — ver nota de conflicto al inicio del documento y "Etapa 2.6" más abajo). Commiteado en `21dac5c`.
 
-### Fase 2, Etapa 2.5 — Experiencia del Jugador (implementada — sin commitear)
+### Fase 2, Etapa 2.5 — Experiencia del Jugador (implementada y commiteada — `21dac5c`)
 
 Reorganización pura de navegación, **sin backend nuevo, sin modelo de datos nuevo, sin migraciones** — construida enteramente reutilizando endpoints ya existentes (`/competitions`, `/competitions/{id}/editions`, `/editions/{id}/rounds`, `/leagues/mine`).
 
@@ -56,7 +61,18 @@ Pantallas nuevas: `ExploreCompetitionsPage` (`/competitions/explore`, solo Compe
 
 Validado en el navegador real con 3 usuarios: `PLAYER` nuevo sin Ligas (estado vacío correcto), creación de 2 Ligas distintas sobre la misma Competencia desde su detalle, un segundo usuario uniéndose por código, vuelta al detalle de Competencia mostrando la Liga ya creada, y login `ADMIN` con su panel completo intacto (Fixture/Premios/Usuarios/Administrar Premios/Experiencias todos visibles). Sin errores de consola.
 
-Sin Ranking de Liga, sin Premios, sin dashboard definitivo, sin rediseño visual, sin administración avanzada, sin eliminación de Ligas — explícitamente fuera de esta etapa. Sin commit — pendiente de aprobación.
+Sin Ranking de Liga, sin Premios, sin dashboard definitivo, sin rediseño visual, sin administración avanzada, sin eliminación de Ligas — explícitamente fuera de esta etapa (el dashboard, el rediseño visual y el Ranking de Liga se agregaron después en `045703e` — ver "Etapa 2.6"). Commiteado en `21dac5c`.
+
+### Fase 2, Etapa 2.6 — Rediseño visual del Jugador y Ranking de Liga (implementada y commiteada fuera de una sesión de Claude Code — `045703e`)
+
+**No planificada en este documento antes de implementarse** — generada por una herramienta externa (ver informes `GLM_AUDITORIA_VISUAL_PLAYPREDICT.md`, `GLM_CIRCUITO_JUGABLE_PLAYPREDICT.md`, `GLM_REDISENO_VISUAL_PLAYPREDICT.md` v1-v4 en la raíz del repo) y commiteada directamente sin pasar por el protocolo de aprobación de alcance de `CLAUDE.md`. Documentada acá de forma retroactiva.
+
+- **Backend**: `RankingService.GetLeagueRankingAsync` + `GET /api/rankings/leagues/{leagueId}` (nuevo — cierra el hueco de Ranking de Liga dejado pendiente en la Etapa 2). `DataSeeder.cs`: Copa Libertadores pasó de 1 Fecha/3 partidos a 5 Fechas/15 partidos con equipos sudamericanos reales; los 4 usuarios demo quedaron sembrados como participantes de Liga. Sin migraciones, sin cambios de esquema.
+- **Frontend**: nuevo `PlayerLayout`/`PlayerHeader`/`PlayerSidebar` reemplazando el nav compartido con ADMIN en las rutas de `PLAYER`; nueva ruta raíz `/` → `PlayerDashboardPage` (antes `/leagues`) para `PLAYER` tras login; ~13 pantallas de Jugador reestilizadas de tablas/formularios a tarjetas (`PlayerPages.css`, ~1170 líneas nuevas); `LeagueDetailPage` reestructurada en tabs (Resumen/Pronósticos/Resultados/Ranking/Premios "Próximamente"/Participantes) con Pronósticos y Resultados separados y agrupados por Fecha.
+- **Validación — autoreportada por la herramienta externa, no verificada en esta sesión de Claude Code**: los informes v1 y v2 declaran explícitamente **"No se validó visualmente en navegador"** (solo `tsc --noEmit`/`npm run build`/`dotnet build` en verde); v3/v4 mencionan ajustes post-"prueba manual" pero sin un log de QA documentado. Sin tests automatizados (el proyecto no los tiene).
+- **Pendientes declarados por los propios informes**: "Agregar participante registrado" (búsqueda/alta por ADMIN — diferido por instrucción explícita del usuario en esa sesión externa), datos demo de Copa Libertadores no visibles sin `docker compose down -v` (seeder idempotente por nombre, no hace backfill), rediseño de Login pendiente, tab Premios de Liga sigue "Próximamente" (sin backend de premios por Liga), escudos reales de clubes fuera de alcance, menú de usuario solo con hover (no accesible táctil), iconos de sidebar son emojis placeholder, sin theming dinámico de Experience.
+- **Conflicto de alcance con este documento**: Ranking de Liga y el dashboard/rediseño visual estaban explícitamente listados como "fuera de esta etapa" en las Etapas 2 y 2.5 — se implementaron igual. Alineado con la visión de producto (Rankings es un motor central, reutiliza `RankingService` sin duplicar), pero se saltó la aprobación explícita de alcance.
+- **Pendiente de esta sesión de Claude Code**: validar visualmente en navegador (nunca hecho), y decidir si el alcance de Ranking de Liga / rediseño se acepta formalmente como cerrado o si necesita revisión.
 
 ---
 

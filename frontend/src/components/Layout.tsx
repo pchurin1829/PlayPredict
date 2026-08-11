@@ -7,6 +7,7 @@ import './Layout.css'
 import './player/PlayerHeader.css'
 import './player/PlayerSidebar.css'
 import './player/PlayerLayout.css'
+import './player/PlayerTheme.css'
 
 const ADMIN_PATHS = ['/competitions', '/admin', '/editions', '/rounds', '/matches']
 

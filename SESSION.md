@@ -1,20 +1,20 @@
 # SESSION
 
-##2 Proyecto
+## Proyecto
 PlayPredict
 
 ## Rama actual
-prueba-glm-ui
+prueba-glm-ui (sincronizada con `origin/prueba-glm-ui`)
 
 ## Último commit
-21dac5c — feat: add Leagues as the new core concept, simplify roles to ADMIN/PLAYER
+045703e — feat: player UX overhaul and playable league flow (commiteado y pusheado; commiteado fuera de una sesión de Claude Code, ver nota abajo)
 
-## Estado del entorno
-- Git: rama `prueba-glm-ui`, basada en `main` (último commit `21dac5c`). **Working tree con cambios NO commiteados**.
-- Docker: 3 servicios levantados y healthy.
+## Estado del entorno (verificado 2026-08-10, sesión Claude Code)
+- Git: rama `prueba-glm-ui`, **working tree limpio**. Único ítem: `Nuevo Documento de texto.txt` (0 bytes, sin trackear, no forma parte del proyecto).
+- Docker: 3 servicios levantados y healthy (2 días de uptime).
   - `playpredict_db` (PostgreSQL 18) — Up, healthy
   - `playpredict_backend` — Up, healthy
-  - `4predict_frontend` — Up
+  - `playpredict_frontend` — Up
 - URLs:
   - Frontend: http://localhost:5175
   - Backend Swagger: http://localhost:8006/swagger
@@ -25,7 +25,30 @@ prueba-glm-ui
 
 ---
 
-## Cambios realizados en ESTA sesión
+## Sesión 2026-08-10 (Claude Code) — Sincronización de documentación
+
+Este documento (y `PROJECT_STATUS.md`) estaban desactualizados: describían el Sprint 8.5 y el trabajo de la sección "Cambios realizados en ESTA sesión" (más abajo) como **sin commitear**, cuando en realidad ya estaban commiteados y pusheados en dos commits (`21dac5c` y `045703e`) generados fuera de esta sesión de Claude Code. El commit `045703e` en particular fue producido por una herramienta externa (informes `GLM_*.md` en la raíz del repo), sin pasar por el protocolo de aprobación de alcance de `CLAUDE.md`, y sin actualizar esta documentación después de commitear.
+
+- Se corrigió `PROJECT_STATUS.md`: estado real de cada Etapa del Sprint 8.5 (todas commiteadas en `21dac5c`), y se documentó retroactivamente el contenido de `045703e` como nueva "Etapa 2.6" — incluye Ranking de Liga (backend+frontend) y un rediseño visual completo de la experiencia del Jugador. Se informó explícitamente un conflicto: el Ranking de Liga estaba declarado "fuera de alcance" en las Etapas 2 y 2.5, pero se implementó igual.
+- Se corrigió este archivo (`SESSION.md`) para reflejar el commit/estado real de Git y Docker.
+- **Sin cambios de código en esta sesión.**
+
+### Intento de verificación funcional/visual del flujo PLAYER (`045703e`) — BLOQUEADO
+
+Se intentó validar en navegador (login PLAYER, Mis Ligas, Detalle de Liga, Pronosticar, Pronósticos/Resultados, Ranking de Liga con "VOS", disponibilidad de partidos). **No se pudo completar**: el navegador (Chrome vía extensión Claude) muestra consistentemente una versión **vieja** de la app (nav "Panel administrativo", tabla plana de Ligas — layout anterior a `045703e`), pese a que:
+- El código en el working tree y en el contenedor Docker es correcto (confirmado repetidas veces por `curl` a `http://localhost:5175/src/components/Layout.tsx`, que sí trae `PlayerHeader`/`PlayerSidebar`).
+- Se descartaron: Service Worker (ninguno registrado), caché de módulos de Vite en el contenedor, caché HTTP del navegador (probado con hard-reload, pestaña nueva, `fetch({cache:'no-store'})`, cache-busting por query param).
+- Se descartó también la hipótesis inicial de IPv4 (`curl`, ve lo nuevo) vs IPv6 (Chrome, ve lo viejo): forzar el navegador a `http://127.0.0.1:5175` explícito **no cambió el resultado** — siguió viendo la versión vieja.
+- Se identificaron dos procesos Windows escuchando el puerto 5175 (`com.docker.backend.exe` y `wslrelay.exe`, ambos legítimos de Docker Desktop/WSL2, no huérfanos), pero no se llegó a confirmar si son la causa real antes de que el usuario pidiera detener la investigación.
+- Se hizo `docker compose restart frontend` como paso de diagnóstico (documentado en este archivo) — no resolvió el problema.
+
+**Causa exacta sin confirmar.** Sospecha principal: algo en el forwarding de puertos de Docker Desktop/WSL2 sobre Windows enruta las conexiones del navegador hacia una instancia vieja del proceso Vite. Pendiente que el usuario verifique desde su propio Chrome (no vía extensión) y, si persiste, reinicie Docker Desktop completo (no solo el contenedor).
+
+**Consecuencia**: ninguno de los puntos 3-9 pedidos (Detalle de Liga, Pronosticar, tabs Pronósticos/Resultados, Ranking de Liga + "VOS", partidos disponibles, causa de "no hay partidos") se pudo verificar esta sesión — lo que se vio en el navegador no reflejaba el código real.
+
+---
+
+## Cambios realizados en la sesión anterior (externa, no Claude Code — ya commiteados en `045703e`)
 
 ### 1. Correcciones post-prueba manual (v4)
 
@@ -91,15 +114,15 @@ prueba-glm-ui
 
 ---
 
-## Cambios NO commiteados
+## Estado de commit (corregido 2026-08-10)
 
-**Todo el working tree está sin commitear.** Incluye:
+**Todo lo listado abajo ya está commiteado y pusheado en `045703e`** (working tree limpio, verificado con `git status`). La lista se conserva como registro de qué incluyó ese commit:
 - Rediseño visual PLAYER (todas las sesiones previas)
 - Circuito jugable mínimo (RankingService, RankingEndpoints, DataSeeder)
 - Correcciones post-prueba manual (v4)
 - Separación Pronósticos/Resultados + agrupación por Fecha
 - Copa Libertadores 5 Fechas
-- Informes GLM (untracked)
+- Informes GLM (trackeados desde `045703e`)
 
 ---
 

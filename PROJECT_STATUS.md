@@ -7,7 +7,9 @@ Estado: Sprint 8 (Gestión de Experiencias — MVP) commiteado y pusheado (`1708
 
 **Conflicto detectado, informado según protocolo de CLAUDE.md**: el Ranking de Liga fue declarado explícitamente **fuera de alcance** en las Etapas 2 y 2.5 de este mismo documento (ver más abajo, "explícitamente fuera de esta etapa") y sin embargo se implementó igual en `045703e`. No contradice la visión de producto (Rankings es un motor central documentado en `PLAYPREDICT_PRODUCTO_v1.0.md` y reutiliza `RankingService` sin duplicar lógica, consistente con "configuración/reutilización antes que programación"), pero sí se saltó el paso de aprobación explícita de alcance que este proyecto exige. Queda informado; no se revirtió nada.
 
-Próximo paso: la validación visual en navegador de `045703e` (misma sesión, 2026-08-10) **quedó bloqueada** — el navegador (Chrome vía extensión Claude) muestra consistentemente una versión vieja de la app (pre-`045703e`) pese a que el código servido por el contenedor es correcto (confirmado por `curl`); causa exacta sin confirmar, sospecha de un problema de forwarding de puertos de Docker Desktop/WSL2 en Windows (detalle en `SESSION.md`). Antes de seguir con cualquier verificación visual o con decidir el alcance de Premios de Liga, resolver ese bloqueo (el usuario debe confirmar desde su propio Chrome si ve el layout nuevo).
+**Corrección de estado adicional (sesión del 2026-08-12)**: se detectó un commit posterior no documentado, `27895d7` ("WIP: demo visual player y login", 11/08/2026, fuera de una sesión de Claude Code, ya pusheado). Documentado retroactivamente como "Etapa 2.7" más abajo. Working tree sigue limpio.
+
+Próximo paso: la validación visual en navegador de `045703e` y `27895d7` (nunca hecha, ver bloqueo documentado en `SESSION.md` sesión 2026-08-10) sigue pendiente. Antes de seguir con cualquier verificación visual o con decidir el alcance de Premios de Liga / Sponsors en Login / escudos de clubes, resolver ese bloqueo (el usuario debe confirmar desde su propio Chrome si ve el layout nuevo).
 
 ---
 
@@ -73,6 +75,19 @@ Sin Ranking de Liga, sin Premios, sin dashboard definitivo, sin rediseño visual
 - **Pendientes declarados por los propios informes**: "Agregar participante registrado" (búsqueda/alta por ADMIN — diferido por instrucción explícita del usuario en esa sesión externa), datos demo de Copa Libertadores no visibles sin `docker compose down -v` (seeder idempotente por nombre, no hace backfill), rediseño de Login pendiente, tab Premios de Liga sigue "Próximamente" (sin backend de premios por Liga), escudos reales de clubes fuera de alcance, menú de usuario solo con hover (no accesible táctil), iconos de sidebar son emojis placeholder, sin theming dinámico de Experience.
 - **Conflicto de alcance con este documento**: Ranking de Liga y el dashboard/rediseño visual estaban explícitamente listados como "fuera de esta etapa" en las Etapas 2 y 2.5 — se implementaron igual. Alineado con la visión de producto (Rankings es un motor central, reutiliza `RankingService` sin duplicar), pero se saltó la aprobación explícita de alcance.
 - **Pendiente de esta sesión de Claude Code**: validar visualmente en navegador (nunca hecho), y decidir si el alcance de Ranking de Liga / rediseño se acepta formalmente como cerrado o si necesita revisión.
+
+### Fase 2, Etapa 2.7 — Rediseño de Login, escudos de clubes y fix de seed (implementada y commiteada fuera de una sesión de Claude Code — `27895d7`)
+
+**No planificada en este documento antes de implementarse** — commit `27895d7` ("WIP: demo visual player y login", 11/08/2026), fuera de una sesión de Claude Code, ya pusheado. Detectado y documentado retroactivamente al inicio de la sesión de Claude Code del 2026-08-12.
+
+- **Frontend**: rediseño visual completo de `LoginPage.tsx`/`LoginPage.css` (nuevo, 360 líneas) — escena de estadio en SVG, 4 "features" (Competí/Sumá puntos/Ganá premios/Jugá con amigos), formulario con iconos inline y toggle mostrar/ocultar contraseña, y un panel lateral con **3 slots de "PUBLICIDAD" (sponsors) hardcodeados**, sin backend ni configuración. Nuevo sistema de escudos genéricos por club (`data/clubBadges.ts`, `components/player/TeamBadge.tsx`): SVG con patrón de colores (franjas/sash/mitades) para 10 clubes reales cableados, con fallback por hash de color/iniciales para el resto. Nuevo `player/PlayerTheme.css` referenciado desde `Layout.tsx`.
+- **Backend**: fix de un bug de índice en `DataSeeder.cs` — el loop de resultados oficiales de la demo de Ranking usaba `RankingDemoMatches.Length` sin acotarse también a `finishedMatches.Count`, lo que podía fallar si una Competencia demo ya existía en la base con menos partidos que el seed nuevo. Sin migraciones, sin cambios de esquema.
+- **Validación**: no hay evidencia de validación visual en navegador (mismo patrón que `045703e`). Sin tests automatizados.
+- **Conflicto de alcance con este documento**:
+  - El rediseño de Login estaba listado como "pendiente" en `SESSION.md` — se implementó sin pasar por aprobación explícita.
+  - Los 3 slots de sponsors/publicidad introducen visualmente el concepto de **Sponsors**, declarado explícitamente **fuera de alcance en el Sprint 8** ("Wizard, Sponsors, Branding avanzado... explícitamente fuera de este sprint"). Son estáticos, sin entidad ni persistencia nueva, pero instalan la idea sin aprobación.
+  - Los escudos de clubes reintroducen algo que la Etapa 2.6 había declarado **explícitamente fuera de alcance** ("Escudos reales de clubes... tarea posterior separada"). Son colores/patrones genéricos, no escudos oficiales con licencia, pero es el mismo tema diferido.
+- **Pendiente**: validar visualmente en navegador (nunca hecho, bloqueo de sesión previa sin resolver), y decidir si los sponsors placeholder y los escudos genéricos se aceptan como alcance o se revisan/revierten.
 
 ---
 

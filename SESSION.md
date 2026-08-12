@@ -7,11 +7,11 @@ PlayPredict
 prueba-glm-ui (sincronizada con `origin/prueba-glm-ui`)
 
 ## Último commit
-045703e — feat: player UX overhaul and playable league flow (commiteado y pusheado; commiteado fuera de una sesión de Claude Code, ver nota abajo)
+27895d7 — WIP: demo visual player y login (commiteado y pusheado; commiteado fuera de una sesión de Claude Code, ver nota abajo)
 
-## Estado del entorno (verificado 2026-08-10, sesión Claude Code)
+## Estado del entorno (verificado 2026-08-12, sesión Claude Code)
 - Git: rama `prueba-glm-ui`, **working tree limpio**. Único ítem: `Nuevo Documento de texto.txt` (0 bytes, sin trackear, no forma parte del proyecto).
-- Docker: 3 servicios levantados y healthy (2 días de uptime).
+- Docker: 3 servicios levantados y healthy.
   - `playpredict_db` (PostgreSQL 18) — Up, healthy
   - `playpredict_backend` — Up, healthy
   - `playpredict_frontend` — Up
@@ -45,6 +45,29 @@ Se intentó validar en navegador (login PLAYER, Mis Ligas, Detalle de Liga, Pron
 **Causa exacta sin confirmar.** Sospecha principal: algo en el forwarding de puertos de Docker Desktop/WSL2 sobre Windows enruta las conexiones del navegador hacia una instancia vieja del proceso Vite. Pendiente que el usuario verifique desde su propio Chrome (no vía extensión) y, si persiste, reinicie Docker Desktop completo (no solo el contenedor).
 
 **Consecuencia**: ninguno de los puntos 3-9 pedidos (Detalle de Liga, Pronosticar, tabs Pronósticos/Resultados, Ranking de Liga + "VOS", partidos disponibles, causa de "no hay partidos") se pudo verificar esta sesión — lo que se vio en el navegador no reflejaba el código real.
+
+---
+
+## Sesión 2026-08-12 (Claude Code) — Documentación retroactiva del commit `27895d7`
+
+Al iniciar sesión se detectó un commit adicional no documentado, posterior al último commit conocido por esta documentación (`045703e`):
+
+- **`27895d7` — "WIP: demo visual player y login"** (11/08/2026, autor `pchurin1829`, fuera de una sesión de Claude Code, ya pusheado a `origin/prueba-glm-ui`). Mezcla dos cosas:
+  1. La sincronización de documentación de la sesión 2026-08-10 (la que ya describía este archivo antes de esta edición).
+  2. **Cambios de código nuevos, nunca documentados hasta ahora**:
+     - `frontend/src/pages/LoginPage.tsx` + `LoginPage.css` (nuevo, 360 líneas): rediseño visual completo del Login — escena de estadio en SVG (floodlights, gradería, silueta de jugador), lista de 4 "features" (Competí/Sumá puntos/Ganá premios/Jugá con amigos), formulario con iconos inline y toggle de mostrar/ocultar contraseña, y un panel lateral `pp-login__ads` con **3 slots de "PUBLICIDAD" (sponsor placeholders) hardcodeados** ("Tu marca aquí", "Anunciate en PlayPredict", "Tu empresa puede estar acá").
+     - `frontend/src/data/clubBadges.ts` (nuevo) + `frontend/src/components/player/TeamBadge.tsx`: sistema de escudos genéricos por club (SVG con patrón de colores por equipo — franjas, sash, mitades — y fallback por hash de color/iniciales para equipos no listados). 10 clubes reales cableados (Boca, River, Racing, Independiente, Estudiantes, Gimnasia, Flamengo, Palmeiras, Atlético Nacional, Peñarol).
+     - `frontend/src/components/player/PlayerTheme.css` (nuevo, 34 líneas) + referencia agregada en `Layout.tsx`.
+     - `backend/Data/DataSeeder.cs`: fix de un bug de índice — el loop de resultados oficiales de la demo de Ranking usaba `RankingDemoMatches.Length` en vez de acotarse también a `finishedMatches.Count`, lo que podía romper si una Competencia demo ya existía en la base con menos partidos.
+     - 3 imágenes nuevas en `docs/design/` y `docs/imagenes/` (referencia visual, no código).
+
+**Conflictos con `CLAUDE.md` informados**:
+- Igual que con `045703e`, hubo commit y push fuera del protocolo de sesión, sin pasar por la aprobación explícita de alcance.
+- El rediseño de Login estaba listado como "pendiente" en este mismo documento — ya no lo está, pero **nunca se validó visualmente en navegador** (mismo bloqueo de la sesión anterior, sin confirmar si ya se resolvió).
+- **Los 3 slots de "PUBLICIDAD"/sponsors en el Login introducen el concepto de Sponsors**, que el Sprint 8 (`PROJECT_STATUS.md`) declaró explícitamente **fuera de alcance** ("Wizard, Sponsors, Branding avanzado... explícitamente fuera de este sprint"). Son placeholders estáticos sin backend ni configuración — no hay entidad `Sponsor` nueva ni persistencia — pero visualmente instalan la idea de espacio publicitario sin que el usuario lo haya aprobado.
+- **Los escudos de clubes (`clubBadges.ts`/`TeamBadge.tsx`) reintroducen algo declarado explícitamente fuera de alcance** en la Etapa 2.6: "Escudos reales de clubes: explícitamente fuera de scope (tarea posterior separada)". Son colores/patrones genéricos por club (no escudos oficiales/con licencia), pero es el mismo tema que se había diferido.
+
+**Sin cambios de código propios en esta sesión de Claude Code** — solo documentación.
 
 ---
 
@@ -130,7 +153,7 @@ Se intentó validar en navegador (login PLAYER, Mis Ligas, Detalle de Liga, Pron
 
 1. **"Agregar participante registrado"** (búsqueda deD usuarios + agregar por creador): requiere endpoint nuevo de búsqueda de usuarios + endpoint de agregar participante por creador. Backend de invitaciones/unirse ya funciona completo. Dejado pendiente por instrucción explícita del usuario.
 2. **Datos demo Copa Libertadores no visibles hasta DB reset**: DataSeeder es idempotente por nombre — si la competencia ya existe con 1 Fecha, no la recrea. Necesita `docker compose down -v && docker compose up -d` para ver las 5 Fechas nuevas.
-3. **Login Page**: rediseño visual pendiente (documentado desde v2).
+3. **Login Page**: rediseño visual implementado en `27895d7` (ver sesión 2026-08-12) — pendiente validación visual en navegador (nunca hecha) y decidir si los 3 slots de sponsors/publicidad hardcodeados se aceptan como alcance.
 4. **Tab Premios**: sigue PRÓXIMAMENTE (sin backend de premios publicados).
 (5. **Escudos reales de clubes**: explícitamente fuera de scope (tarea posterior separada).
 

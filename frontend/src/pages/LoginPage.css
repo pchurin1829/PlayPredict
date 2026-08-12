@@ -189,6 +189,24 @@
   color: var(--pp-login-text-muted);
 }
 
+/* Chrome autofill renders its own light background (white/blue) on top of
+   the input regardless of our CSS; the box-shadow inset trick is the only
+   way to override it, since background-color has no effect on :-webkit-autofill. */
+.pp-login__input-wrap input {
+  color-scheme: dark;
+}
+
+.pp-login__input-wrap input:-webkit-autofill,
+.pp-login__input-wrap input:-webkit-autofill:hover,
+.pp-login__input-wrap input:-webkit-autofill:focus,
+.pp-login__input-wrap input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--pp-login-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--pp-login-surface-2) inset;
+  box-shadow: 0 0 0 1000px var(--pp-login-surface-2) inset;
+  caret-color: var(--pp-login-text);
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
+}
+
 .pp-login__eye {
   border: none;
   background: transparent;

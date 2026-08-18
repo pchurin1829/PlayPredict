@@ -12,6 +12,7 @@ public class League
     public int? RoundFromId { get; set; }
     public int? RoundToId { get; set; }
     public string InviteCode { get; set; } = string.Empty;
+    public LeagueType LeagueType { get; set; } = LeagueType.Private;
     public bool IsActive { get; set; } = true;
     public int CreatedByUserId { get; set; }
     public DateTime CreatedAtUtc { get; set; }

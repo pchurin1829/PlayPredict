@@ -248,6 +248,7 @@ public static class DataSeeder
             Name = DemoLeagueName,
             CompetitionId = competitionId,
             ScopeType = LeagueScopeType.FullCompetition,
+            LeagueType = LeagueType.Official,
             InviteCode = "DEMO-LIGA-01",
             IsActive = true,
             CreatedByUserId = ownerUserId,
@@ -296,63 +297,121 @@ public static class DataSeeder
         string editionName,
         (string Home, string Away)[][] roundMatchups)
     {
-        if (await db.Competitions.AnyAsync(c => c.Name == competitionName))
-        {
-            return;
-        }
+        var competition = await db.Competitions
+            .Include(c => c.Editions)
+            .ThenInclude(e => e.Rounds)
+            .ThenInclude(r => r.Matches)
+            .FirstOrDefaultAsync(c => c.Name == competitionName);
 
         var now = DateTime.UtcNow;
 
-        var competition = new Competition
+        if (competition is null)
         {
-            ExperienceId = experienceId,
-            Name = competitionName,
-            Description = description,
-            Sport = "Fútbol",
-            IsActive = true,
-            CreatedAtUtc = now
-        };
-
-        var edition = new Edition
-        {
-            Competition = competition,
-            Name = editionName,
-            StartDateUtc = now,
-            Status = EditionStatus.Active,
-            CreatedAtUtc = now
-        };
-
-        for (var roundIndex = 0; roundIndex < roundMatchups.Length; roundIndex++)
-        {
-            var matchups = roundMatchups[roundIndex];
-            var round = new Round
+            // Competencia no existe: crear todo
+            competition = new Competition
             {
-                Edition = edition,
-                Name = RoundNames.Length > roundIndex ? RoundNames[roundIndex] : $"Fecha {roundIndex + 1}",
-                Order = roundIndex + 1,
-                StartDateUtc = now.AddDays(roundIndex * 7)
+                ExperienceId = experienceId,
+                Name = competitionName,
+                Description = description,
+                Sport = "Fútbol",
+                IsActive = true,
+                CreatedAtUtc = now
             };
 
-            for (var i = 0; i < matchups.Length; i++)
+            var edition = new Edition
             {
-                db.Matches.Add(new Match
+                Competition = competition,
+                Name = editionName,
+                StartDateUtc = now,
+                Status = EditionStatus.Active,
+                CreatedAtUtc = now
+            };
+
+            for (var roundIndex = 0; roundIndex < roundMatchups.Length; roundIndex++)
+            {
+                var matchups = roundMatchups[roundIndex];
+                var round = new Round
                 {
-                    Round = round,
-                    ParticipantHome = matchups[i].Home,
-                    ParticipantAway = matchups[i].Away,
-                    // Fechas 1-3: partidos pasados (pronóstico cerrado, resultado cargado).
-                    // Fechas 4-5: partidos futuros (pronosticables).
-                    StartsAtUtc = roundIndex < 3
-                        ? now.AddDays(-7 * (3 - roundIndex)).AddHours(i * 2)
-                        : now.AddDays(7 * (roundIndex - 2) + 1).AddHours(i * 2),
-                    Status = MatchStatus.Scheduled,
+                    Edition = edition,
+                    Name = RoundNames.Length > roundIndex ? RoundNames[roundIndex] : $"Fecha {roundIndex + 1}",
+                    Order = roundIndex + 1,
+                    StartDateUtc = now.AddDays(roundIndex * 7)
+                };
+
+                for (var i = 0; i < matchups.Length; i++)
+                {
+                    db.Matches.Add(new Match
+                    {
+                        Round = round,
+                        ParticipantHome = matchups[i].Home,
+                        ParticipantAway = matchups[i].Away,
+                        StartsAtUtc = roundIndex < 3
+                            ? now.AddDays(-7 * (3 - roundIndex)).AddHours(i * 2)
+                            : now.AddDays(7 * (roundIndex - 2) + 1).AddHours(i * 2),
+                        Status = MatchStatus.Scheduled,
+                        CreatedAtUtc = now
+                    });
+                }
+            }
+
+            db.Competitions.Add(competition);
+            db.Editions.Add(edition);
+        }
+        else
+        {
+            // Competencia existe: agregar rounds que falten
+            var edition = competition.Editions.FirstOrDefault(e => e.Name == editionName);
+            if (edition is null)
+            {
+                edition = new Edition
+                {
+                    CompetitionId = competition.Id,
+                    Name = editionName,
+                    StartDateUtc = now,
+                    Status = EditionStatus.Active,
                     CreatedAtUtc = now
-                });
+                };
+                db.Editions.Add(edition);
+                await db.SaveChangesAsync();
+            }
+
+            var existingRounds = await db.Rounds
+                .Where(r => r.EditionId == edition.Id)
+                .Select(r => r.Order)
+                .ToListAsync();
+
+            for (var roundIndex = 0; roundIndex < roundMatchups.Length; roundIndex++)
+            {
+                if (existingRounds.Contains(roundIndex + 1))
+                    continue;
+
+                var matchups = roundMatchups[roundIndex];
+                var round = new Round
+                {
+                    EditionId = edition.Id,
+                    Name = RoundNames.Length > roundIndex ? RoundNames[roundIndex] : $"Fecha {roundIndex + 1}",
+                    Order = roundIndex + 1,
+                    StartDateUtc = now.AddDays(roundIndex * 7)
+                };
+                db.Rounds.Add(round);
+                await db.SaveChangesAsync();
+
+                for (var i = 0; i < matchups.Length; i++)
+                {
+                    db.Matches.Add(new Match
+                    {
+                        RoundId = round.Id,
+                        ParticipantHome = matchups[i].Home,
+                        ParticipantAway = matchups[i].Away,
+                        StartsAtUtc = roundIndex < 3
+                            ? now.AddDays(-7 * (3 - roundIndex)).AddHours(i * 2)
+                            : now.AddDays(7 * (roundIndex - 2) + 1).AddHours(i * 2),
+                        Status = MatchStatus.Scheduled,
+                        CreatedAtUtc = now
+                    });
+                }
             }
         }
-
-        db.Competitions.Add(competition);
-        db.Editions.Add(edition);
 
         await db.SaveChangesAsync();
     }

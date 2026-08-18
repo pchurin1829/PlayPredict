@@ -125,3 +125,4 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+// Trigger rebuild for migration

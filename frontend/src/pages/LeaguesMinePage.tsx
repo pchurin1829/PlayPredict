@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
-import { LEAGUE_SCOPE_LABELS, type LeagueSummary } from '../api/types'
+import { LEAGUE_SCOPE_LABELS, LEAGUE_TYPE_LABELS, type LeagueSummary, type LeagueType } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 import './PlayerPages.css'
 
@@ -71,10 +71,22 @@ export default function LeaguesMinePage() {
         <div className="pp-grid">
           {leagues.map((l) => (
             <div key={l.id} className="pp-league-card">
-              <h3 className="pp-league-card__name">
-                {l.name}
-                {l.isCreator && <span style={{ fontWeight: 400, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}> — creador</span>}
-              </h3>
+              <div className="pp-league-card__header">
+                <h3 className="pp-league-card__name">{l.name}</h3>
+                {l.leagueType === 'Official' ? (
+                  <span className="pp-league-card__badge pp-league-card__badge--official">
+                    🏆 {LEAGUE_TYPE_LABELS[l.leagueType]}
+                  </span>
+                ) : l.isCreator ? (
+                  <span className="pp-league-card__badge pp-league-card__badge--mine">
+                    MI LIGA
+                  </span>
+                ) : (
+                  <span className="pp-league-card__badge pp-league-card__badge--private">
+                    {LEAGUE_TYPE_LABELS[l.leagueType]}
+                  </span>
+                )}
+              </div>
               <span className="pp-league-card__comp">⚽ {l.competitionName}</span>
               <div className="pp-league-card__meta">
                 <span>

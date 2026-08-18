@@ -435,7 +435,8 @@ public static class LeagueEndpoints
 
         return new LeagueSummaryDto(
             league.Id, league.Name, league.Description, league.CompetitionId, competitionName,
-            league.ScopeType.ToString(), league.RoundFromId, league.RoundToId, roundFromName, roundToName,
+            league.ScopeType.ToString(), league.LeagueType.ToString(),
+            league.RoundFromId, league.RoundToId, roundFromName, roundToName,
             league.CreatedByUserId, isCreator, participantsCount, league.IsActive,
             isCreator ? league.InviteCode : null);
     }
@@ -452,7 +453,8 @@ public static class LeagueEndpoints
 
         return new LeagueDetailDto(
             league.Id, league.Name, league.Description, league.CompetitionId, competitionName,
-            league.ScopeType.ToString(), league.RoundFromId, league.RoundToId, roundFromName, roundToName,
+            league.ScopeType.ToString(), league.LeagueType.ToString(),
+            league.RoundFromId, league.RoundToId, roundFromName, roundToName,
             league.CreatedByUserId, $"{creator!.FirstName} {creator.LastName}", isCreator, participantsCount, league.IsActive,
             isCreator ? league.InviteCode : null,
             rounds.Select(r => new RoundSummaryDto(r.Id, r.Name, r.Order)).ToList());

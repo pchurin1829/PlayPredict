@@ -220,6 +220,13 @@ export interface RoundSummary {
   order: number
 }
 
+export type LeagueType = 'Official' | 'Private'
+
+export const LEAGUE_TYPE_LABELS: Record<LeagueType, string> = {
+  Official: 'OFICIAL',
+  Private: 'PRIVADA',
+}
+
 export interface LeagueSummary {
   id: number
   name: string
@@ -227,6 +234,7 @@ export interface LeagueSummary {
   competitionId: number
   competitionName: string
   scopeType: LeagueScopeType
+  leagueType: LeagueType
   roundFromId: number | null
   roundToId: number | null
   roundFromName: string | null

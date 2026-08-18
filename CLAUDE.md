@@ -84,3 +84,48 @@ Antes de comenzar cualquier Sprint importante, verificar:
 5. Que mantenga la separación entre los motores del sistema.
 
 Si existe alguna contradicción, informar antes de programar.
+
+## Reglas de Migraciones de Base de Datos (OBLIGATORIO)
+
+Estas reglas aplican a todos los agentes (Claude, Qwen, y cualquier otro). Son de cumplimiento obligatorio.
+
+### Creación de migraciones
+
+1. **Todo cambio persistente del modelo requiere migración EF Core versionada.** Si modificás una entity, agregás una propiedad, o cambiás una relación, generá una migración.
+
+2. **Las migraciones deben generarse mediante EF tooling, nunca manualmente.** Usar:
+   ```
+   NUEVA_MIGRACION.bat <NombreEnPascalCase>
+   ```
+   o equivalente:
+   ```
+   docker compose run --rm --no-deps backend bash -c "dotnet tool restore && dotnet ef migrations add <Nombre> --output-dir Migrations --project PlayPredict.Api.csproj"
+   ```
+
+3. **NUNCA crear solamente el `.cs` manualmente.** Toda migración genera TRES artefactos que deben commitearse juntos:
+   - `<timestamp>_<Nombre>.cs` — operaciones Up/Down
+   - `<timestamp>_<Nombre>.Designer.cs` — modelo objetivo
+   - `PlayPredictDbContextModelSnapshot.cs` — snapshot actualizado
+
+   Si falta cualquiera de los tres, EF Core no detecta la migración y la BD queda desactualizada.
+
+4. **Verificar después de generar**: confirmar que los tres archivos existen antes de commitear.
+
+### Aplicación de migraciones
+
+5. **Las migraciones se aplican automáticamente al arrancar el backend.** `Program.cs` ejecuta `MigrateAsync()` antes de los seeders. Si una migración falla, el backend aborta (fail-fast) y no ejecuta seeders.
+
+6. **Migraciones antes de seeder.** El código garantiza este orden. Nunca modificar `Program.cs` para ejecutar seeders antes de migraciones.
+
+7. **NUNCA usar `docker compose down -v` para resolver desajustes de schema.** Eso destruye datos. Si hay un desajuste, investigar la causa y aplicar la migración correcta.
+
+8. **Cambiar de PC debe conservar datos.** El flujo correcto es: `git pull` → `INICIO_SESION.bat` → migraciones se aplican automáticamente. No se pierde data existente.
+
+### Herramientas
+
+9. **`dotnet-ef` se distribuye vía Tool Manifest local** (`backend/.config/dotnet-tools.json`). Ejecutar `dotnet tool restore` dentro del contenedor. No depende de instalación global.
+
+10. **Scripts versionados**:
+    - `NUEVA_MIGRACION.bat <Nombre>` — genera migración correcta
+    - `ACTUALIZAR_BD.bat` — fuerza actualización de BD
+    - `INICIO_SESION.bat` — levanta entorno completo

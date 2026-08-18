@@ -102,8 +102,38 @@ app.MapLeagueEndpoints();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PlayPredictDbContext>();
-    await db.Database.MigrateAsync();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
+    // --- Migraciones: aplicar antes de cualquier seeder ---
+    // Si una migración falla, el proceso aborta aquí. Nunca se ejecuta
+    // un seeder contra un esquema incompleto.
+    var pendingMigrations = await db.Database.GetPendingMigrationsAsync();
+
+    if (pendingMigrations.Any())
+    {
+        logger.LogInformation("Pending migrations: {Count}", pendingMigrations.Count());
+        foreach (var migration in pendingMigrations)
+        {
+            logger.LogInformation("Applying migration: {Migration}", migration);
+        }
+
+        try
+        {
+            await db.Database.MigrateAsync();
+            logger.LogInformation("All pending migrations applied successfully.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogCritical(ex, "Migration failed. Aborting startup. Seeders will NOT run.");
+            throw;
+        }
+    }
+    else
+    {
+        logger.LogInformation("Database schema is up to date. No pending migrations.");
+    }
+
+    // --- Seeders: solo después de que el schema esté completo ---
     await DataSeeder.SeedCoreDataAsync(db);
 
     if (app.Environment.IsDevelopment())
@@ -112,8 +142,6 @@ using (var scope = app.Services.CreateScope())
         await DataSeeder.SeedAdminUsersAsync(db, app.Configuration, app.Environment);
     }
 
-    // Después de cualquier seed de datos: garantiza que toda Edición (existente o
-    // recién sembrada) tenga configuración de puntuación.
     await DataSeeder.SeedEditionScoringConfigurationsAsync(db);
 
     if (app.Environment.IsDevelopment())
@@ -125,4 +153,3 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
-// Trigger rebuild for migration

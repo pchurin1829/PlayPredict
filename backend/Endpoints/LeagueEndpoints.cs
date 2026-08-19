@@ -61,6 +61,34 @@ public static class LeagueEndpoints
             return Results.Created($"/api/leagues/{league.Id}", await ToSummaryDtoAsync(db, league, user.Id));
         });
 
+        group.MapGet("/officials", async (ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        {
+            var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
+            if (user is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var participatingLeagueIds = await db.LeagueParticipants
+                .Where(lp => lp.UserId == user.Id)
+                .Select(lp => lp.LeagueId)
+                .ToListAsync();
+
+            var leagues = await db.Leagues
+                .Where(l => l.LeagueType == LeagueType.Official && l.IsActive)
+                .OrderBy(l => l.Name)
+                .ToListAsync();
+
+            var dtos = new List<LeagueSummaryDto>();
+            foreach (var league in leagues)
+            {
+                var dto = await ToSummaryDtoAsync(db, league, user.Id);
+                dtos.Add(dto with { IsParticipant = participatingLeagueIds.Contains(league.Id) });
+            }
+
+            return Results.Ok(dtos);
+        });
+
         group.MapGet("/mine", async (ClaimsPrincipal principal, PlayPredictDbContext db) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
@@ -141,6 +169,43 @@ public static class LeagueEndpoints
             league.UpdatedAtUtc = DateTime.UtcNow;
 
             await db.SaveChangesAsync();
+
+            return Results.Ok(await ToSummaryDtoAsync(db, league, user.Id));
+        });
+
+        group.MapPost("/{id:int}/join", async (int id, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        {
+            var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
+            if (user is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var league = await db.Leagues.FindAsync(id);
+            if (league is null)
+            {
+                return Results.NotFound();
+            }
+
+            if (!league.IsActive)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["league"] = ["Esta Liga no está activa."]
+                });
+            }
+
+            var alreadyParticipant = await IsParticipantAsync(db, league.Id, user.Id);
+            if (!alreadyParticipant)
+            {
+                db.LeagueParticipants.Add(new LeagueParticipant
+                {
+                    LeagueId = league.Id,
+                    UserId = user.Id,
+                    JoinedAtUtc = DateTime.UtcNow
+                });
+                await db.SaveChangesAsync();
+            }
 
             return Results.Ok(await ToSummaryDtoAsync(db, league, user.Id));
         });
@@ -438,7 +503,7 @@ public static class LeagueEndpoints
             league.ScopeType.ToString(), league.LeagueType.ToString(),
             league.RoundFromId, league.RoundToId, roundFromName, roundToName,
             league.CreatedByUserId, isCreator, participantsCount, league.IsActive,
-            isCreator ? league.InviteCode : null);
+            isCreator ? league.InviteCode : null, true);
     }
 
     private static async Task<LeagueDetailDto> ToDetailDtoAsync(PlayPredictDbContext db, League league, int currentUserId)

@@ -223,8 +223,8 @@ export interface RoundSummary {
 export type LeagueType = 'Official' | 'Private'
 
 export const LEAGUE_TYPE_LABELS: Record<LeagueType, string> = {
-  Official: 'OFICIAL',
-  Private: 'PRIVADA',
+  Official: 'OFICIAL PLAYPREDICT',
+  Private: 'LIGA DE AMIGOS',
 }
 
 export interface LeagueSummary {
@@ -244,6 +244,7 @@ export interface LeagueSummary {
   participantsCount: number
   isActive: boolean
   inviteCode: string | null
+  isParticipant: boolean
 }
 
 export interface LeagueDetail extends LeagueSummary {

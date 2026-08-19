@@ -33,7 +33,8 @@ public record LeagueSummaryDto(
     bool IsCreator,
     int ParticipantsCount,
     bool IsActive,
-    string? InviteCode);
+    string? InviteCode,
+    bool IsParticipant = false);
 
 public record LeagueDetailDto(
     int Id,

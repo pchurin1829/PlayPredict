@@ -124,6 +124,17 @@ export default function LeagueDetailPage() {
     navigator.clipboard.writeText(league.inviteCode).then(() => {
       setCopiedCode(true)
       setTimeout(() => setCopiedCode(false), 2000)
+    }).catch(() => {
+      const fallback = document.createElement('textarea')
+      fallback.value = league.inviteCode
+      fallback.style.position = 'fixed'
+      fallback.style.opacity = '0'
+      document.body.appendChild(fallback)
+      fallback.select()
+      document.execCommand('copy')
+      document.body.removeChild(fallback)
+      setCopiedCode(true)
+      setTimeout(() => setCopiedCode(false), 2000)
     })
   }, [league?.inviteCode])
 

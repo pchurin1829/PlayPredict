@@ -1,0 +1,223 @@
+/* ──────────────────────────────────────────────────────────────
+   Register — dark sports theme, visually coherent with LoginPage.
+   Reuses --pp-login-* CSS custom properties from LoginPage.css.
+   ────────────────────────────────────────────────────────────── */
+
+.pp-register {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #08080d;
+  padding: 2rem 1.25rem;
+  box-sizing: border-box;
+}
+
+/* ── Card wrapper ───────────────────────────────────────────── */
+.pp-register__card {
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+}
+
+/* ── Brand + subtitle ───────────────────────────────────────── */
+.pp-register__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.4rem;
+  color: var(--pp-login-text);
+}
+
+.pp-register__brand strong {
+  font-weight: 800;
+}
+
+.pp-register__subtitle {
+  margin: 0 0 1.75rem;
+  font-size: 0.92rem;
+  color: var(--pp-login-text-secondary);
+}
+
+/* ── Form panel ─────────────────────────────────────────────── */
+.pp-register__form {
+  background: var(--pp-login-surface);
+  border: 1px solid var(--pp-login-border);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  text-align: left;
+}
+
+.pp-register__form h1 {
+  margin: 0 0 1.5rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--pp-login-text);
+}
+
+.pp-register__form .status-message--error {
+  background: rgba(239, 68, 68, 0.14);
+  color: #ff8f8f;
+}
+
+/* ── Name / surname side-by-side row ────────────────────────── */
+.pp-register__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* ── Field ──────────────────────────────────────────────────── */
+.pp-register__field {
+  margin-bottom: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pp-register__field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pp-login-text-secondary);
+}
+
+/* ── Input with icon ────────────────────────────────────────── */
+.pp-register__input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--pp-login-surface-2);
+  border: 1px solid var(--pp-login-border);
+  border-radius: 10px;
+  padding: 0 0.75rem;
+  transition: border-color 0.15s;
+}
+
+.pp-register__input-wrap:focus-within {
+  border-color: var(--pp-login-primary);
+}
+
+.pp-register__input-wrap svg {
+  color: var(--pp-login-text-muted);
+  flex-shrink: 0;
+}
+
+.pp-register__input-wrap input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.7rem 0.6rem;
+  font-size: 0.92rem;
+  font-family: inherit;
+  color: var(--pp-login-text);
+  outline: none;
+  color-scheme: dark;
+  min-width: 0;
+}
+
+.pp-register__input-wrap input::placeholder {
+  color: var(--pp-login-text-muted);
+}
+
+.pp-register__input-wrap input:-webkit-autofill,
+.pp-register__input-wrap input:-webkit-autofill:hover,
+.pp-register__input-wrap input:-webkit-autofill:focus,
+.pp-register__input-wrap input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--pp-login-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--pp-login-surface-2) inset;
+  box-shadow: 0 0 0 1000px var(--pp-login-surface-2) inset;
+  caret-color: var(--pp-login-text);
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
+}
+
+/* ── Show/hide password toggle ──────────────────────────────── */
+.pp-register__eye {
+  border: none;
+  background: transparent;
+  color: var(--pp-login-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.3rem;
+}
+
+.pp-register__eye:hover {
+  color: var(--pp-login-text-secondary);
+}
+
+/* ── Field error ────────────────────────────────────────────── */
+.pp-register__field-error {
+  font-size: 0.78rem;
+  color: #ff8f8f;
+}
+
+/* ── Submit button ──────────────────────────────────────────── */
+.pp-register__actions {
+  margin-top: 1.5rem;
+}
+
+.pp-register__submit {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--pp-login-primary), var(--pp-login-primary-dark));
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+  box-shadow: 0 10px 24px rgba(134, 118, 255, 0.3);
+}
+
+.pp-register__submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.pp-register__submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ── Footer links ───────────────────────────────────────────── */
+.pp-register__alt {
+  margin: 1.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--pp-login-text-secondary);
+  text-align: center;
+}
+
+.pp-register__alt a {
+  color: var(--pp-login-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pp-register__alt a:hover {
+  text-decoration: underline;
+}
+
+.pp-register__footer {
+  margin: 1.25rem 0 0;
+  font-size: 0.7rem;
+  color: var(--pp-login-text-muted);
+  text-align: center;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .pp-register__row {
+    grid-template-columns: 1fr;
+  }
+
+  .pp-register__form {
+    padding: 1.5rem;
+  }
+}

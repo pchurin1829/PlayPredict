@@ -148,6 +148,7 @@ using (var scope = app.Services.CreateScope())
     {
         var evaluationService = scope.ServiceProvider.GetRequiredService<PredictionEvaluationService>();
         await DataSeeder.SeedRankingDemoAsync(db, evaluationService);
+        await DataSeeder.RefreshDemoScheduleAsync(db);
         await DataSeeder.SeedPrizesDemoAsync(db);
     }
 }

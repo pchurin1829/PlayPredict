@@ -631,4 +631,69 @@ public static class DataSeeder
 
         await db.SaveChangesAsync();
     }
+
+    /// <summary>
+    /// Ajusta las fechas de los partidos demo para que siempre haya partidos
+    /// pronosticables (futuros) y partidos finalizados (con resultados) sin importar
+    /// cuándo se inicializó la base. Corre en cada arranque del backend en Development.
+    /// </summary>
+    public static async Task RefreshDemoScheduleAsync(PlayPredictDbContext db)
+    {
+        var edition = await db.Editions.FirstOrDefaultAsync(e => e.Name == ClausuraEditionName);
+        if (edition is null) return;
+
+        var rounds = await db.Rounds
+            .Include(r => r.Matches)
+            .Where(r => r.EditionId == edition.Id)
+            .OrderBy(r => r.Order)
+            .ToListAsync();
+
+        if (rounds.Count == 0) return;
+
+        var now = DateTime.UtcNow;
+        var changed = false;
+
+        for (var roundIndex = 0; roundIndex < rounds.Count; roundIndex++)
+        {
+            var round = rounds[roundIndex];
+            var baseDate = roundIndex < 3
+                ? now.AddDays(-7 * (3 - roundIndex))
+                : now.AddDays(7 * (roundIndex - 2) + 1);
+
+            if (round.StartDateUtc?.Date != baseDate.Date)
+            {
+                round.StartDateUtc = baseDate;
+                changed = true;
+            }
+
+            for (var i = 0; i < round.Matches.Count; i++)
+            {
+                var match = round.Matches.OrderBy(m => m.StartsAtUtc).ElementAt(i);
+                var newStart = baseDate.AddHours(i * 2);
+                if (match.StartsAtUtc != newStart)
+                {
+                    match.StartsAtUtc = newStart;
+                    changed = true;
+                }
+
+                if (roundIndex < 3 && match.Status != MatchStatus.Finished)
+                {
+                    match.Status = MatchStatus.Finished;
+                    changed = true;
+                }
+                else if (roundIndex >= 3 && match.Status == MatchStatus.Finished)
+                {
+                    match.Status = MatchStatus.Scheduled;
+                    match.HomeGoals = null;
+                    match.AwayGoals = null;
+                    changed = true;
+                }
+            }
+        }
+
+        if (changed)
+        {
+            await db.SaveChangesAsync();
+        }
+    }
 }

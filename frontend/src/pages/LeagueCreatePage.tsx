@@ -80,6 +80,17 @@ export default function LeagueCreatePage() {
     setError(null)
     setFieldErrors({})
 
+    if (scopeType === 'RoundRange' && roundFromId !== '' && roundToId !== '') {
+      const fromRound = rounds.find((r) => r.id === roundFromId)
+      const toRound = rounds.find((r) => r.id === roundToId)
+      if (fromRound && toRound && fromRound.order > toRound.order) {
+        setError('La Fecha inicial no puede ser posterior a la Fecha final.')
+        setFieldErrors({ roundFromId: ['La Fecha inicial no puede ser posterior a la Fecha final.'] })
+        setSaving(false)
+        return
+      }
+    }
+
     const payload = {
       name,
       description: description || null,

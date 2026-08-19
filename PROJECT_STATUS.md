@@ -11,6 +11,8 @@ Estado: Sprint 8 (Gestión de Experiencias — MVP) commiteado y pusheado (`1708
 
 Próximo paso: la validación visual en navegador de `045703e` y `27895d7` (nunca hecha, ver bloqueo documentado en `SESSION.md` sesión 2026-08-10) sigue pendiente. Antes de seguir con cualquier verificación visual o con decidir el alcance de Premios de Liga / Sponsors en Login / escudos de clubes, resolver ese bloqueo (el usuario debe confirmar desde su propio Chrome si ve el layout nuevo).
 
+**Cierre Test Demo 1 (2026-08-19, sin commit):** corregido exclusivamente el contraste del Ranking de Liga y agregada navegación por `Enter` en los marcadores de Pronósticos (local → visitante → siguiente partido, sin submit automático; `Tab` intacto). Se preservaron los mensajes diferenciados de creación/actualización. Backend healthy, frontend operativo y creación → modificación → persistencia verificadas por API. Pendiente prueba manual visual y de teclado del usuario. Informe: `docs/ai/codex/2026-08-19_1352_test-demo1-cierre.md`.
+
 ---
 
 ## Sprint 8.5 — Ligas y Experiencia de Usuario

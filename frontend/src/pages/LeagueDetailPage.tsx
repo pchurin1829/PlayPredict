@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, type KeyboardEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { LEAGUE_SCOPE_LABELS, type LeagueDetail, type LeagueParticipantInfo, type RankingEntry, type MatchWithPrediction } from '../api/types'
@@ -94,6 +94,23 @@ export default function LeagueDetailPage() {
 
   function updateRow(matchId: number, patch: Partial<RowState>) {
     setRows((prev) => ({ ...prev, [matchId]: { ...prev[matchId], ...patch } }))
+  }
+
+  function handlePredictionEnter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter') return
+
+    event.preventDefault()
+    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-prediction-score]'))
+    const currentIndex = inputs.indexOf(event.currentTarget)
+    const nextInput = inputs[currentIndex + 1]
+
+    if (nextInput) {
+      nextInput.focus()
+      nextInput.select()
+      return
+    }
+
+    event.currentTarget.closest('.pp-match-card')?.querySelector<HTMLButtonElement>('button')?.focus()
   }
 
   async function savePrediction(match: MatchWithPrediction) {
@@ -366,9 +383,9 @@ export default function LeagueDetailPage() {
                                   {hasPrediction ? 'TU PRONÓSTICO' : 'INGRESÁ TU PRONÓSTICO'}
                                 </span>
                                 <div className="pp-match-card__inputs">
-                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantHome}`} value={row.homeInput} onChange={(e) => updateRow(m.id, { homeInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} className="pp-match-card__input" />
+                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantHome}`} value={row.homeInput} onChange={(e) => updateRow(m.id, { homeInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={handlePredictionEnter} data-prediction-score className="pp-match-card__input" />
                                   <span className="pp-match-card__separator">-</span>
-                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantAway}`} value={row.awayInput} onChange={(e) => updateRow(m.id, { awayInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} className="pp-match-card__input" />
+                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantAway}`} value={row.awayInput} onChange={(e) => updateRow(m.id, { awayInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={handlePredictionEnter} data-prediction-score className="pp-match-card__input" />
                                 </div>
                                 <button type="button" className="pp-btn pp-btn--primary" style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }} disabled={row.saving} onClick={() => savePrediction(m)}>
                                   {row.saving ? 'Guardando...' : hasPrediction ? 'Guardar cambios' : '¡Pronosticá!'}

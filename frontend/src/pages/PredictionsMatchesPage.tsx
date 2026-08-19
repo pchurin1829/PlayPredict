@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { LeagueDetail, MatchWithPrediction } from '../api/types'
@@ -64,6 +64,23 @@ export default function PredictionsMatchesPage() {
 
   function updateRow(matchId: number, patch: Partial<RowState>) {
     setRows((prev) => ({ ...prev, [matchId]: { ...prev[matchId], ...patch } }))
+  }
+
+  function handlePredictionEnter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter') return
+
+    event.preventDefault()
+    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-prediction-score]'))
+    const currentIndex = inputs.indexOf(event.currentTarget)
+    const nextInput = inputs[currentIndex + 1]
+
+    if (nextInput) {
+      nextInput.focus()
+      nextInput.select()
+      return
+    }
+
+    event.currentTarget.closest('.pp-match-card')?.querySelector<HTMLButtonElement>('button')?.focus()
   }
 
   async function savePrediction(match: MatchWithPrediction) {
@@ -193,6 +210,8 @@ export default function PredictionsMatchesPage() {
                         aria-label={`Goles ${m.participantHome}`}
                         value={row.homeInput}
                         onChange={(e) => updateRow(m.id, { homeInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })}
+                        onKeyDown={handlePredictionEnter}
+                        data-prediction-score
                         className="pp-match-card__input"
                       />
                       <span className="pp-match-card__separator">-</span>
@@ -204,6 +223,8 @@ export default function PredictionsMatchesPage() {
                         aria-label={`Goles ${m.participantAway}`}
                         value={row.awayInput}
                         onChange={(e) => updateRow(m.id, { awayInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })}
+                        onKeyDown={handlePredictionEnter}
+                        data-prediction-score
                         className="pp-match-card__input"
                       />
                     </div>

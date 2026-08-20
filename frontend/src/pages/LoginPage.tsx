@@ -139,9 +139,15 @@ export default function LoginPage() {
       navigate(from ?? home, { replace: true })
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message)
+        if (err.status === 401) {
+          setError('Email o contraseña incorrectos.')
+        } else if (err.status === 0 || err.status >= 500) {
+          setError('No pudimos conectar con PlayPredict. Intentá nuevamente.')
+        } else {
+          setError(err.message)
+        }
       } else {
-        setError('Ocurrió un error inesperado al iniciar sesión.')
+        setError('No pudimos conectar con PlayPredict. Intentá nuevamente.')
       }
     } finally {
       setSaving(false)

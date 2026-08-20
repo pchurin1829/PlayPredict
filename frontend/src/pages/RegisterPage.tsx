@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -22,9 +23,19 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setSaving(true)
     setError(null)
     setFieldErrors({})
+
+    if (!confirmPassword.trim()) {
+      setFieldErrors({ confirmPassword: ['Repetí la contraseña para confirmar.'] })
+      return
+    }
+    if (password !== confirmPassword) {
+      setFieldErrors({ confirmPassword: ['Las contraseñas no coinciden.'] })
+      return
+    }
+
+    setSaving(true)
 
     try {
       const response = await api.post<AuthResponse>('/auth/register', {
@@ -47,6 +58,8 @@ export default function RegisterPage() {
       setSaving(false)
     }
   }
+
+  const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword
 
   return (
     <div className="pp-register">
@@ -173,8 +186,32 @@ export default function RegisterPage() {
             )}
           </div>
 
+          <div className="pp-register__field">
+            <label htmlFor="confirmPassword">Repetir contraseña</label>
+            <div className={`pp-register__input-wrap${passwordMismatch ? ' pp-register__input-wrap--error' : ''}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <rect x="4" y="11" width="16" height="9" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+              </svg>
+              <input
+                id="confirmPassword"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Repetí tu contraseña"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+            {passwordMismatch && (
+              <span className="pp-register__field-error">Las contraseñas no coinciden.</span>
+            )}
+            {fieldErrors.confirmPassword && (
+              <span className="pp-register__field-error">{fieldErrors.confirmPassword[0]}</span>
+            )}
+          </div>
+
           <div className="pp-register__actions">
-            <button type="submit" className="pp-register__submit" disabled={saving}>
+            <button type="submit" className="pp-register__submit" disabled={saving || passwordMismatch}>
               {saving ? 'Creando cuenta...' : 'Crear cuenta'}
             </button>
           </div>

@@ -50,6 +50,41 @@
   border: 1px dashed var(--color-border);
 }
 
+/* ── Full empty state (no leagues at all) ──────────────────── */
+.pdash__empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.pdash__empty-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.pdash__empty-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.pdash__empty-text {
+  margin: 0 0 1.5rem;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.pdash__empty-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 .pdash__future-section {
   margin-top: 1rem;
 }

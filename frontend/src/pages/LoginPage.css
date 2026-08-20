@@ -31,6 +31,34 @@
   box-sizing: border-box;
 }
 
+/* ── Background photo slot ───────────────────────────────────
+   When a real football photo is available, add a <div> or <img>
+   with class pp-login__bg-photo inside .pp-login__stage.
+   The photo renders behind everything as a grayscale image
+   with a dark overlay for legibility.
+   ──────────────────────────────────────────────────────────── */
+.pp-login__bg-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1) brightness(0.45);
+  z-index: 0;
+}
+
+.pp-login__bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 8, 13, 0.55) 0%,
+    rgba(8, 8, 13, 0.75) 50%,
+    rgba(8, 8, 13, 0.92) 100%
+  );
+  z-index: 0;
+}
+
 .pp-login__scene {
   position: absolute;
   inset: 0;

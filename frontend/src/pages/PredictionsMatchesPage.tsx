@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { LeagueDetail, MatchWithPrediction } from '../api/types'
@@ -9,6 +9,9 @@ import './PlayerPages.css'
 interface RowState {
   homeInput: string
   awayInput: string
+  savedHome: string | null
+  savedAway: string | null
+  hasPrediction: boolean
   saving: boolean
   error: string | null
   savedMessage: string | null
@@ -18,10 +21,43 @@ function sanitizeDigits(value: string): string {
   return value.replace(/\D/g, '')
 }
 
+function isDirty(row: RowState): boolean {
+  if (!row.hasPrediction) return false
+  return row.homeInput !== row.savedHome || row.awayInput !== row.savedAway
+}
+
+function isReady(row: RowState): boolean {
+  return row.homeInput !== '' && row.awayInput !== ''
+}
+
+function buttonLabel(row: RowState): string {
+  if (row.saving) return 'Guardando...'
+  if (!row.hasPrediction && !isReady(row)) return '¡Pronosticá!'
+  if (!row.hasPrediction && isReady(row)) return '¡Pronosticá!'
+  if (row.hasPrediction && isDirty(row)) return 'Guardar cambios'
+  return 'Pronosticado'
+}
+
+function buttonDisabled(row: RowState): boolean {
+  if (row.saving) return true
+  if (!row.hasPrediction && !isReady(row)) return true
+  if (row.hasPrediction && !isDirty(row)) return true
+  return false
+}
+
+function isSaved(row: RowState): boolean {
+  return row.hasPrediction && !isDirty(row)
+}
+
 function buildInitialRow(match: MatchWithPrediction): RowState {
+  const homeInput = match.myPrediction ? String(match.myPrediction.predictedHomeScore) : ''
+  const awayInput = match.myPrediction ? String(match.myPrediction.predictedAwayScore) : ''
   return {
-    homeInput: match.myPrediction ? String(match.myPrediction.predictedHomeScore) : '',
-    awayInput: match.myPrediction ? String(match.myPrediction.predictedAwayScore) : '',
+    homeInput,
+    awayInput,
+    savedHome: match.myPrediction ? String(match.myPrediction.predictedHomeScore) : null,
+    savedAway: match.myPrediction ? String(match.myPrediction.predictedAwayScore) : null,
+    hasPrediction: !!match.myPrediction,
     saving: false,
     error: null,
     savedMessage: null,
@@ -35,6 +71,7 @@ export default function PredictionsMatchesPage() {
   const [matches, setMatches] = useState<MatchWithPrediction[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [rows, setRows] = useState<Record<number, RowState>>({})
+  const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
   useEffect(() => {
     let cancelled = false
@@ -66,33 +103,84 @@ export default function PredictionsMatchesPage() {
     setRows((prev) => ({ ...prev, [matchId]: { ...prev[matchId], ...patch } }))
   }
 
-  function handlePredictionEnter(event: KeyboardEvent<HTMLInputElement>) {
+  function handleInputChange(
+    matchId: number,
+    field: 'homeInput' | 'awayInput',
+    value: string,
+  ) {
+    const clean = sanitizeDigits(value)
+    setRows((prev) => {
+      const row = prev[matchId]
+      if (!row) return prev
+      const updated = { ...row, [field]: clean, savedMessage: null, error: null }
+      return { ...prev, [matchId]: updated }
+    })
+  }
+
+  function handlePredictionEnter(event: KeyboardEvent<HTMLInputElement>, matchId: number) {
     if (event.key !== 'Enter') return
-
     event.preventDefault()
-    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-prediction-score]'))
-    const currentIndex = inputs.indexOf(event.currentTarget)
-    const nextInput = inputs[currentIndex + 1]
 
-    if (nextInput) {
-      nextInput.focus()
-      nextInput.select()
+    const card = cardRefs.current[matchId]
+    if (!card) return
+
+    const inputs = Array.from(card.querySelectorAll<HTMLInputElement>('[data-prediction-score]'))
+    const currentIndex = inputs.indexOf(event.currentTarget)
+
+    if (currentIndex === inputs.length - 1) {
+      const btn = card.querySelector<HTMLButtonElement>('[data-prediction-action]')
+      if (btn) {
+        btn.focus()
+      }
       return
     }
 
-    event.currentTarget.closest('.pp-match-card')?.querySelector<HTMLButtonElement>('button')?.focus()
+    const nextInput = inputs[currentIndex + 1]
+    if (nextInput) {
+      nextInput.focus()
+      nextInput.select()
+    }
+  }
+
+  function handleActionKeyDown(event: KeyboardEvent<HTMLButtonElement>, match: MatchWithPrediction) {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    if (event.key === ' ') event.preventDefault()
+
+    const row = rows[match.id]
+    if (!row || buttonDisabled(row)) return
+
+    savePrediction(match)
+  }
+
+  function advanceToNextMatch(currentMatchId: number) {
+    if (!matches) return
+    const pending = matches.filter((m) => m.canPredict)
+    const currentIndex = pending.findIndex((m) => m.id === currentMatchId)
+    const nextMatch = pending[currentIndex + 1]
+    if (nextMatch) {
+      const nextCard = cardRefs.current[nextMatch.id]
+      if (nextCard) {
+        const firstInput = nextCard.querySelector<HTMLInputElement>('[data-prediction-score]')
+        if (firstInput) {
+          setTimeout(() => {
+            firstInput.focus()
+            firstInput.select()
+          }, 300)
+        }
+      }
+    }
   }
 
   async function savePrediction(match: MatchWithPrediction) {
     const row = rows[match.id]
-    if (!row) return
+    if (!row || buttonDisabled(row)) return
 
     const homeScore = Number(row.homeInput)
     const awayScore = Number(row.awayInput)
 
     if (
-      row.homeInput.trim() === '' ||
-      row.awayInput.trim() === '' ||
+      row.homeInput === '' ||
+      row.awayInput === '' ||
       !Number.isInteger(homeScore) ||
       !Number.isInteger(awayScore) ||
       homeScore < 0 ||
@@ -105,7 +193,7 @@ export default function PredictionsMatchesPage() {
     updateRow(match.id, { saving: true, error: null, savedMessage: null })
 
     try {
-      const isUpdate = !!match.myPrediction
+      const isUpdate = row.hasPrediction
       const updated = isUpdate
         ? await api.put<MatchWithPrediction['myPrediction']>(`/predictions/${match.myPrediction!.id}`, {
             predictedHomeScore: homeScore,
@@ -119,8 +207,15 @@ export default function PredictionsMatchesPage() {
           })
 
       setMatches((prev) => (prev ? prev.map((m) => (m.id === match.id ? { ...m, myPrediction: updated } : m)) : prev))
-      updateRow(match.id, { saving: false, savedMessage: isUpdate ? 'Pronóstico actualizado correctamente.' : 'Pronóstico guardado correctamente.' })
+      updateRow(match.id, {
+        saving: false,
+        savedHome: String(homeScore),
+        savedAway: String(awayScore),
+        hasPrediction: true,
+        savedMessage: isUpdate ? 'Pronóstico actualizado correctamente.' : 'Pronóstico guardado correctamente.',
+      })
       setTimeout(() => updateRow(match.id, { savedMessage: null }), 4000)
+      advanceToNextMatch(match.id)
     } catch (err) {
       updateRow(match.id, {
         saving: false,
@@ -176,10 +271,19 @@ export default function PredictionsMatchesPage() {
               const row = rows[m.id]
               if (!row) return null
               const startsAt = new Date(m.startsAtUtc)
-              const hasPrediction = !!m.myPrediction
+              const saved = isSaved(row)
+              const btnLabel = buttonLabel(row)
+              const btnDisabled = buttonDisabled(row)
+              const btnClass = saved
+                ? 'pp-btn pp-btn--saved'
+                : 'pp-btn pp-btn--primary'
 
               return (
-                <div key={m.id} className={`pp-match-card ${hasPrediction ? 'pp-match-card--saved' : 'pp-match-card--pending'}`}>
+                <div
+                  key={m.id}
+                  ref={(el) => { cardRefs.current[m.id] = el }}
+                  className={`pp-match-card ${row.hasPrediction ? 'pp-match-card--saved' : 'pp-match-card--pending'}`}
+                >
                   <div className="pp-match-card__teams">
                     <div className="pp-match-card__team">
                       <TeamBadge name={m.participantHome} size={40} />
@@ -199,7 +303,7 @@ export default function PredictionsMatchesPage() {
 
                   <div className="pp-match-card__prediction">
                     <span className="pp-match-card__prediction-label">
-                      {hasPrediction ? 'TU PRONÓSTICO' : 'INGRESÁ TU PRONÓSTICO'}
+                      {saved ? '✅ PRONOSTICADO' : 'INGRESÁ TU PRONÓSTICO'}
                     </span>
                     <div className="pp-match-card__inputs">
                       <input
@@ -209,8 +313,8 @@ export default function PredictionsMatchesPage() {
                         placeholder="-"
                         aria-label={`Goles ${m.participantHome}`}
                         value={row.homeInput}
-                        onChange={(e) => updateRow(m.id, { homeInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })}
-                        onKeyDown={handlePredictionEnter}
+                        onChange={(e) => handleInputChange(m.id, 'homeInput', e.target.value)}
+                        onKeyDown={(e) => handlePredictionEnter(e, m.id)}
                         data-prediction-score
                         className="pp-match-card__input"
                       />
@@ -222,22 +326,24 @@ export default function PredictionsMatchesPage() {
                         placeholder="-"
                         aria-label={`Goles ${m.participantAway}`}
                         value={row.awayInput}
-                        onChange={(e) => updateRow(m.id, { awayInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })}
-                        onKeyDown={handlePredictionEnter}
+                        onChange={(e) => handleInputChange(m.id, 'awayInput', e.target.value)}
+                        onKeyDown={(e) => handlePredictionEnter(e, m.id)}
                         data-prediction-score
                         className="pp-match-card__input"
                       />
                     </div>
                     <button
                       type="button"
-                      className="pp-btn pp-btn--primary"
+                      className={btnClass}
                       style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }}
-                      disabled={row.saving}
+                      disabled={btnDisabled}
                       onClick={() => savePrediction(m)}
+                      onKeyDown={(e) => handleActionKeyDown(e, m)}
+                      data-prediction-action
                     >
-                      {row.saving ? 'Guardando...' : hasPrediction ? 'Guardar cambios' : '¡Pronosticá!'}
+                      {btnLabel}
                     </button>
-                    {hasPrediction && (
+                    {row.hasPrediction && !saved && (
                       <span className="pp-match-card__hint">
                         Podés modificar tu pronóstico hasta el cierre del partido.
                       </span>

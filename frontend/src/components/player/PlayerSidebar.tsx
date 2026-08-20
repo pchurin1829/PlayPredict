@@ -12,7 +12,7 @@ interface SidebarItem {
 const GENERAL_ITEMS: SidebarItem[] = [
   { label: 'Inicio', icon: '🏠', to: '/' },
   { label: 'Mis Ligas', icon: '🏆', to: '/leagues' },
-  { label: 'Explorar Ligas', icon: '🔍', to: '/competitions/explore' },
+  { label: 'Explorar Competencias', icon: '🔍', to: '/competitions/explore' },
   { label: 'Ranking General', icon: '📊', to: '/rankings' },
   { label: 'Fixture', icon: '📅', comingSoon: true },
 ]

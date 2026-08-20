@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type {
   LeagueSummary,
@@ -109,6 +110,30 @@ export default function PlayerDashboardPage() {
     return (
       <div className="pdash">
         <div className="pdash__loading">Cargando tu dashboard...</div>
+      </div>
+    )
+  }
+
+  if (leagues.length === 0) {
+    return (
+      <div className="pdash">
+        <div className="pdash__main">
+          <div className="pdash__empty-state">
+            <span className="pdash__empty-icon">⚽</span>
+            <h2 className="pdash__empty-title">¡Bienvenido a PlayPredict!</h2>
+            <p className="pdash__empty-text">
+              Para empezar a pronosticar, participá en una Liga Oficial de PlayPredict o creá tu propia Liga con amigos sobre una Competencia.
+            </p>
+            <div className="pdash__empty-actions">
+              <Link to="/competitions/explore" className="pp-btn pp-btn--primary" style={{ fontSize: '1rem', padding: '0.7rem 1.5rem' }}>
+                Explorar Competencias
+              </Link>
+              <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
+                ✋ Unirme con código
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

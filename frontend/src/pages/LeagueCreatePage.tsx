@@ -122,6 +122,7 @@ export default function LeagueCreatePage() {
 
       <div className="pp-header">
         <h1>Crear Liga</h1>
+        <p className="pp-header__subtitle">Estás creando una Liga privada para jugar con amigos utilizando los partidos de esta competencia. No estás creando una nueva Competencia deportiva.</p>
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}

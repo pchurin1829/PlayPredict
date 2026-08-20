@@ -20,6 +20,7 @@ public static class DataSeeder
     private const string DefaultCompanyName = "PlayPredict";
     private const string DemoExperienceName = "PlayPredict Demo";
     private const string DemoLeagueName = "Liga General - Liga Profesional (demo)";
+    private const string CopaLibertadoresOfficialLeagueName = "Liga General - Copa Libertadores (demo)";
 
     // Fallback usado únicamente si no hay contraseña configurada (ver SeedAdminUsersAsync).
     // Nunca reutilizar en un entorno real: el método se niega a correr fuera de Development.
@@ -556,6 +557,33 @@ public static class DataSeeder
         }
 
         await db.SaveChangesAsync();
+
+        // Liga Oficial de Copa Libertadores: disponible para que los jugadores se unan
+        // desde Explorar Competencias, pero sin participantes automáticos.
+        var copaCompetition = await db.Competitions
+            .FirstOrDefaultAsync(c => c.Name == CopaLibertadoresName);
+        if (copaCompetition is not null)
+        {
+            var copaLeagueExists = await db.Leagues
+                .AnyAsync(l => l.CompetitionId == copaCompetition.Id && l.LeagueType == LeagueType.Official);
+            if (!copaLeagueExists)
+            {
+                var copaLeague = new League
+                {
+                    Name = CopaLibertadoresOfficialLeagueName,
+                    CompetitionId = copaCompetition.Id,
+                    ScopeType = LeagueScopeType.FullCompetition,
+                    LeagueType = LeagueType.Official,
+                    InviteCode = "DEMO-COPA-01",
+                    IsActive = true,
+                    CreatedByUserId = users[RankingDemoUsers[0].Email].Id,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    UpdatedAtUtc = DateTime.UtcNow
+                };
+                db.Leagues.Add(copaLeague);
+                await db.SaveChangesAsync();
+            }
+        }
     }
 
     // Sólo en Development: Premios de demostración (Sprint 7) sobre Clausura 2026 / Fecha 1.

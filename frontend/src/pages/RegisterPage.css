@@ -150,6 +150,11 @@
   color: var(--pp-login-text-secondary);
 }
 
+/* ── Input wrap error state ────────────────────────────────── */
+.pp-register__input-wrap--error {
+  border-color: #ef4444;
+}
+
 /* ── Field error ────────────────────────────────────────────── */
 .pp-register__field-error {
   font-size: 0.78rem;

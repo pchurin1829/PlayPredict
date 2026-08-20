@@ -90,6 +90,14 @@
   background: var(--color-bg);
 }
 
+/* ── Saved / confirmed state (e.g. "Pronosticado") ── */
+.pp-btn--saved {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  cursor: default;
+}
+
 .pp-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -202,6 +210,11 @@
 .pp-league-card__status--inactive {
   background: var(--color-danger-light);
   color: #721c24;
+}
+
+.pp-league-card__status--suspended {
+  background: rgba(250, 204, 21, 0.18);
+  color: #facc15;
 }
 
 .pp-league-card__action {
@@ -1180,6 +1193,14 @@
   padding: 0.3rem 0.75rem;
 }
 
+/* ── Actions row (multiple buttons in league card footer) ── */
+.pp-league-card__actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 600px) {
   .pp-header {
@@ -1224,11 +1245,17 @@
   margin: 0.25rem 0 0;
 }
 
-/* ── Official league card highlight ── */
+/* ── Official league card highlight (available to join) ── */
 .pp-league-card--official {
   border-color: var(--color-primary);
   border-width: 2px;
   box-shadow: 0 2px 12px rgba(134, 118, 255, 0.15);
+}
+
+/* ── Mine / participating league cards (celeste tint, clearly lighter) ── */
+.pp-league-card--mine {
+  background: #1e2e50;
+  border-color: rgba(6, 182, 212, 0.25);
 }
 
 /* ── Success message ── */

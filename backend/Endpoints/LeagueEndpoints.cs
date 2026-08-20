@@ -210,6 +210,56 @@ public static class LeagueEndpoints
             return Results.Ok(await ToSummaryDtoAsync(db, league, user.Id));
         });
 
+        group.MapDelete("/{id:int}/leave", async (int id, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        {
+            var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
+            if (user is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var league = await db.Leagues.FindAsync(id);
+            if (league is null)
+            {
+                return Results.NotFound();
+            }
+
+            var participant = await db.LeagueParticipants
+                .FirstOrDefaultAsync(lp => lp.LeagueId == id && lp.UserId == user.Id);
+            if (participant is null)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["league"] = ["No participás en esta Liga."]
+                });
+            }
+
+            // El creador de una Liga privada no puede abandonarla.
+            if (league.CreatedByUserId == user.Id && league.LeagueType == LeagueType.Private)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["league"] = ["El creador de una Liga de Amigos no puede abandonarla."]
+                });
+            }
+
+            // No permitir abandonar si el usuario tiene pronósticos en esta Liga.
+            var hasPredictions = await db.Predictions
+                .AnyAsync(p => p.LeagueId == id && p.UserId == user.Id);
+            if (hasPredictions)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["league"] = ["No podés abandonar esta Liga porque ya tenés pronósticos registrados. Los resultados y el ranking quedarían inconsistentes."]
+                });
+            }
+
+            db.LeagueParticipants.Remove(participant);
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { message = "Dejaste la Liga correctamente." });
+        });
+
         group.MapPost("/join", async (JoinLeagueDto dto, ClaimsPrincipal principal, PlayPredictDbContext db) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);

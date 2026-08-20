@@ -1,10 +1,12 @@
 import { getToken } from '../auth/token'
 
 export class ApiError extends Error {
+  status: number
   fieldErrors: Record<string, string[]>
 
-  constructor(message: string, fieldErrors: Record<string, string[]> = {}) {
+  constructor(message: string, status: number = 0, fieldErrors: Record<string, string[]> = {}) {
     super(message)
+    this.status = status
     this.fieldErrors = fieldErrors
   }
 }
@@ -42,7 +44,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       }
     }
 
-    throw new ApiError(message, fieldErrors)
+    throw new ApiError(message, response.status, fieldErrors)
   }
 
   if (response.status === 204) {
@@ -58,4 +60,6 @@ export const api = {
     request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
   put: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
+  del: <T>(path: string) =>
+    request<T>(path, { method: 'DELETE' }),
 }

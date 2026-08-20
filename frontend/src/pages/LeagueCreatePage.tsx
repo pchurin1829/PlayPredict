@@ -29,7 +29,7 @@ export default function LeagueCreatePage() {
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
 
-  const cancelTo = preselectedCompetitionId ? `/competitions/${preselectedCompetitionId}` : '/leagues'
+  const cancelTo = '/competitions/explore'
 
   useEffect(() => {
     if (preselectedCompetitionId) {

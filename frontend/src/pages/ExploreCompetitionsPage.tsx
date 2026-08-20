@@ -42,6 +42,9 @@ export default function ExploreCompetitionsPage() {
 
       if (leaguesResult.status === 'fulfilled') {
         officialLeagues = leaguesResult.value
+      } else {
+        setError(leaguesResult.reason?.message ?? 'No se pudieron cargar las Ligas Oficiales.')
+        return
       }
 
       const active = competitions.filter((c) => c.isActive)
@@ -98,9 +101,9 @@ export default function ExploreCompetitionsPage() {
   return (
     <div>
       <div className="pp-header">
-        <h1>Explorar Competencias</h1>
+        <h1>Explorar Competencias Oficiales</h1>
         <p className="pp-header__subtitle">
-          Elegí una competencia para participar en una Liga Oficial de PlayPredict o crear tu propia Liga con amigos.
+          Participá en las Ligas Oficiales de PlayPredict o creá tu propia Liga con amigos usando los partidos de una competencia oficial.
         </p>
       </div>
 

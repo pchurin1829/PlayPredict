@@ -231,13 +231,13 @@ public static class DataSeeder
 
     // Sólo en Development: Liga de demostración para que los Pronósticos sembrados
     // (Sprint 8.5) tengan un LeagueId válido. Reutiliza cualquier Liga que ya exista
-    // para esta Competencia (por ejemplo, la Liga técnica creada por el backfill de la
-    // migración `AddLeagues` en una base con datos previos) para no crear una Liga
-    // redundante ni duplicar los Pronósticos de demostración; si no existe ninguna
-    // (base de datos nueva, sin datos previos al Sprint 8.5), crea la de demostración.
+    // Oficial para esta Competencia (por ejemplo, la Liga técnica creada por el backfill
+    // de `AddLeagues`). Una Liga privada del usuario nunca reemplaza a la Oficial: ambas
+    // usan el mismo fixture, pero son ámbitos de participación diferentes.
     private static async Task<League> GetOrCreateDemoLeagueAsync(PlayPredictDbContext db, int competitionId, int ownerUserId)
     {
-        var league = await db.Leagues.FirstOrDefaultAsync(l => l.CompetitionId == competitionId);
+        var league = await db.Leagues.FirstOrDefaultAsync(l =>
+            l.CompetitionId == competitionId && l.LeagueType == LeagueType.Official);
         if (league is not null)
         {
             return league;

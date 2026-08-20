@@ -142,16 +142,6 @@ export default function PredictionsMatchesPage() {
     }
   }
 
-  function handleActionKeyDown(event: KeyboardEvent<HTMLButtonElement>, match: MatchWithPrediction) {
-    if (event.key !== 'Enter' && event.key !== ' ') return
-    if (event.key === ' ') event.preventDefault()
-
-    const row = rows[match.id]
-    if (!row || buttonDisabled(row)) return
-
-    savePrediction(match)
-  }
-
   function advanceToNextMatch(currentMatchId: number) {
     if (!matches) return
     const pending = matches.filter((m) => m.canPredict)
@@ -338,7 +328,6 @@ export default function PredictionsMatchesPage() {
                       style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }}
                       disabled={btnDisabled}
                       onClick={() => savePrediction(m)}
-                      onKeyDown={(e) => handleActionKeyDown(e, m)}
                       data-prediction-action
                     >
                       {btnLabel}

@@ -1,5 +1,9 @@
 # PROJECT STATUS
 
+**PLAYER — Competencias Oficiales (2026-08-20, sin commit):** “Mis Ligas” queda limitado a ligas participadas; “Explorar Competencias Oficiales” concentra Participar/Ir a Liga Oficial y Crear Liga con amigos. Corregidos el ocultamiento de errores de `/leagues/officials`, la reutilización incorrecta de una liga privada como Official demo y el retorno de Crear Liga vía `/competitions/{id}`. TypeScript/build frontend y build backend OK; health/API navegada pendientes por timeout Npgsql del entorno. Informe: `docs/ai/codex/2026-08-20_PLAYER_competencias_oficiales_navegacion.md`.
+
+**Auditoría post-Qwen (2026-08-20, sin commit):** corregidos dos bugs mínimos del circuito PLAYER: doble request al guardar Pronósticos con ENTER (keydown manual + click nativo) y pérdida de descripción al Suspender/Reactivar una Liga. `tsc --noEmit`, build frontend y backend health OK. La prueba visual/teclado completa quedó bloqueada porque Docker Desktop dejó el frontend inaccesible después del reinicio requerido y los comandos de arranque quedaron colgados; DB/backend no se tocaron. Informe: `docs/ai/codex/2026-08-20_1019_auditoria-post-qwen.md`.
+
 Versión: 0.9.0
 Estado: Sprint 8 (Gestión de Experiencias — MVP) commiteado y pusheado (`1708be5`). Sprint 8.5 (Ligas y Experiencia de Usuario) — Fase 1, Etapa 1, Etapa 2 y Etapa 2.5 — **commiteado y pusheado** en `21dac5c` (rama `prueba-glm-ui`, sincronizada con `origin`). Sprint 8.6 (Hardening) completado como auditoría de solo lectura, sin cambios de código propios (ver detalle más abajo).
 

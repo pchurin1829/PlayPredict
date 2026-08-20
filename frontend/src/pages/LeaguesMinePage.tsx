@@ -14,9 +14,7 @@ interface ModalTarget {
 
 export default function LeaguesMinePage() {
   const [myLeagues, setMyLeagues] = useState<LeagueSummary[] | null>(null)
-  const [officialLeagues, setOfficialLeagues] = useState<LeagueSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [joiningId, setJoiningId] = useState<number | null>(null)
   const [actingId, setActingId] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [modalTarget, setModalTarget] = useState<ModalTarget | null>(null)
@@ -26,28 +24,14 @@ export default function LeaguesMinePage() {
     setError(null)
 
     async function load() {
-      let mineData: LeagueSummary[] | null = null
-      let officialsData: LeagueSummary[] | null = null
-
-      const [mineResult, officialsResult] = await Promise.allSettled([
-        api.get<LeagueSummary[]>('/leagues/mine'),
-        api.get<LeagueSummary[]>('/leagues/officials'),
-      ])
-
-      if (cancelled) return
-
-      if (mineResult.status === 'fulfilled') {
-        mineData = mineResult.value
-      } else {
-        setError(mineResult.reason?.message ?? 'No se pudieron cargar tus Ligas.')
+      try {
+        const mine = await api.get<LeagueSummary[]>('/leagues/mine')
+        if (!cancelled) setMyLeagues(mine)
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : 'No se pudieron cargar tus Ligas.')
+        }
       }
-
-      if (officialsResult.status === 'fulfilled') {
-        officialsData = officialsResult.value
-      }
-
-      setMyLeagues(mineData)
-      setOfficialLeagues(officialsData)
     }
 
     load()
@@ -55,27 +39,8 @@ export default function LeaguesMinePage() {
   }, [])
 
   async function refresh() {
-    const [mine, officials] = await Promise.all([
-      api.get<LeagueSummary[]>('/leagues/mine'),
-      api.get<LeagueSummary[]>('/leagues/officials'),
-    ])
+    const mine = await api.get<LeagueSummary[]>('/leagues/mine')
     setMyLeagues(mine)
-    setOfficialLeagues(officials)
-  }
-
-  async function handleJoinOfficial(leagueId: number) {
-    setJoiningId(leagueId)
-    setMessage(null)
-    try {
-      await api.post<LeagueSummary>(`/leagues/${leagueId}/join`, {})
-      setMessage('Te uniste correctamente a la Liga Oficial.')
-      await refresh()
-    } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : 'Ocurrió un error al unirse.')
-    } finally {
-      setJoiningId(null)
-      setTimeout(() => setMessage(null), 4000)
-    }
   }
 
   function openModal(id: number, name: string, action: ModalTarget['action']) {
@@ -102,7 +67,7 @@ export default function LeaguesMinePage() {
         const league = myLeagues?.find((l) => l.id === id)
         await api.put(`/leagues/${id}`, {
           name: league?.name ?? '',
-          description: null,
+          description: league?.description ?? null,
           isActive: false,
         })
         setMessage('Liga suspendida correctamente.')
@@ -111,7 +76,7 @@ export default function LeaguesMinePage() {
         const league = myLeagues?.find((l) => l.id === id)
         await api.put(`/leagues/${id}`, {
           name: league?.name ?? '',
-          description: null,
+          description: league?.description ?? null,
           isActive: true,
         })
         setMessage('Liga reactivada correctamente.')
@@ -130,8 +95,6 @@ export default function LeaguesMinePage() {
   }
 
   const loading = !myLeagues && !error
-  const availableOfficials = officialLeagues?.filter((l) => !l.isParticipant) ?? []
-
   const modalConfig = modalTarget
     ? {
         leave: { title: 'Dejar de participar', msg: `¿Querés dejar de participar en "${modalTarget.name}"?`, confirm: 'Dejar liga' },
@@ -156,49 +119,6 @@ export default function LeaguesMinePage() {
       {loading && <StatusMessage kind="loading" message="Cargando Ligas..." />}
       {message && <StatusMessage kind={message.includes('error') || message.includes('No podés') || message.includes('incorrecto') ? 'error' : 'success'} message={message} />}
 
-      {/* ── Ligas Oficiales disponibles ── */}
-      {availableOfficials.length > 0 && (
-        <>
-          <div className="pp-section-title">
-            <h2>🏆 Ligas Oficiales disponibles</h2>
-            <p>Participá en las Ligas organizadas por PlayPredict</p>
-          </div>
-          <div className="pp-grid">
-            {availableOfficials.map((l) => (
-              <div key={l.id} className="pp-league-card pp-league-card--official">
-                <div className="pp-league-card__header">
-                  <h3 className="pp-league-card__name">{l.name}</h3>
-                  <span className="pp-league-card__badge pp-league-card__badge--official">
-                    🏆 OFICIAL
-                  </span>
-                </div>
-                <span className="pp-league-card__comp">⚽ {l.competitionName}</span>
-                <div className="pp-league-card__meta">
-                  <span>
-                    📋 {LEAGUE_SCOPE_LABELS[l.scopeType]}
-                    {l.scopeType === 'RoundRange' && l.roundFromName && l.roundToName && (
-                      <> ({l.roundFromName} → {l.roundToName})</>
-                    )}
-                  </span>
-                  <span>👥 {l.participantsCount} participante{l.participantsCount !== 1 ? 's' : ''}</span>
-                </div>
-                <div className="pp-league-card__footer">
-                  <span className="pp-league-card__status pp-league-card__status--active">Activa</span>
-                  <button
-                    type="button"
-                    className="pp-btn pp-btn--primary pp-btn--sm"
-                    disabled={joiningId === l.id}
-                    onClick={() => handleJoinOfficial(l.id)}
-                  >
-                    {joiningId === l.id ? 'Uniéndose...' : 'Participar'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
       {/* ── Mis Ligas ── */}
       {myLeagues && (
         <>
@@ -216,7 +136,7 @@ export default function LeaguesMinePage() {
               </p>
               <div className="pp-empty__actions">
                 <Link to="/competitions/explore" className="pp-btn pp-btn--primary">
-                  Explorar Competencias
+                  Explorar Competencias Oficiales
                 </Link>
                 <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
                   ✋ Unirme con código
@@ -300,7 +220,7 @@ export default function LeaguesMinePage() {
                             disabled={actingId === l.id}
                             onClick={() => openModal(l.id, l.name, 'suspend')}
                           >
-                            {actingId === l.id ? 'Suspentiendo...' : 'Suspender Liga'}
+                            {actingId === l.id ? 'Suspendiendo...' : 'Suspender Liga'}
                           </button>
                         )}
                         {!isOfficial && l.isCreator && !l.isActive && (

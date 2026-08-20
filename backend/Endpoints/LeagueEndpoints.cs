@@ -38,6 +38,7 @@ public static class LeagueEndpoints
                 Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
                 CompetitionId = competition!.Id,
                 ScopeType = scopeType,
+                LeagueType = LeagueType.Private,
                 RoundFromId = scopeType == LeagueScopeType.RoundRange ? dto.RoundFromId : null,
                 RoundToId = scopeType == LeagueScopeType.RoundRange ? dto.RoundToId : null,
                 InviteCode = inviteCode,

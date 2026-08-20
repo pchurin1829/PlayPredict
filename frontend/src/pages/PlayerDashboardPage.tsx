@@ -126,7 +126,7 @@ export default function PlayerDashboardPage() {
             </p>
             <div className="pdash__empty-actions">
               <Link to="/competitions/explore" className="pp-btn pp-btn--primary" style={{ fontSize: '1rem', padding: '0.7rem 1.5rem' }}>
-                Explorar Competencias
+                Explorar Competencias Oficiales
               </Link>
               <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
                 ✋ Unirme con código

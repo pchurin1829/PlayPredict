@@ -112,6 +112,7 @@ export default function LeagueDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('resumen')
   const [roundFilter, setRoundFilter] = useState<number | null>(null)
+  const [expandedPredictionRounds, setExpandedPredictionRounds] = useState<Set<number>>(new Set())
   const [copiedCode, setCopiedCode] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<MatchWithPrediction | null>(null)
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
@@ -157,6 +158,13 @@ export default function LeagueDetailPage() {
         const initialRows: Record<number, RowState> = {}
         ms.forEach((m) => { initialRows[m.id] = buildInitialRow(m) })
         setRows(initialRows)
+        if (activeTab === 'pronosticos') {
+          const roundsNeedingAction = new Set(
+            ms.filter((m) => m.canPredict && !m.myPrediction).map((m) => m.roundId),
+          )
+          const openRounds = new Set(ms.filter((m) => m.canPredict).map((m) => m.roundId))
+          setExpandedPredictionRounds(roundsNeedingAction.size > 0 ? roundsNeedingAction : openRounds)
+        }
       })
       .catch(() => { if (!cancelled) setMatches([]) })
     return () => { cancelled = true }
@@ -318,15 +326,22 @@ export default function LeagueDetailPage() {
   ]
 
   // Match grouping for Pronósticos and Resultados tabs
-  const pendingMatches = matches ? matches.filter((m) => m.canPredict) : []
   const finishedMatches = matches ? matches.filter((m) => m.status === 'Finished') : []
-  const closedMatches = matches ? matches.filter((m) => !m.canPredict && m.status !== 'Finished') : []
 
   const roundOptions = league?.rounds ? [...league.rounds].sort((a, b) => a.order - b.order) : []
 
   function filterByRound(ms: MatchWithPrediction[]): MatchWithPrediction[] {
     if (roundFilter === null) return ms
     return ms.filter((m) => m.roundId === roundFilter)
+  }
+
+  function togglePredictionRound(roundId: number) {
+    setExpandedPredictionRounds((previous) => {
+      const next = new Set(previous)
+      if (next.has(roundId)) next.delete(roundId)
+      else next.add(roundId)
+      return next
+    })
   }
 
   // ── RENDER ──────────────────────────────────────────────────
@@ -452,27 +467,60 @@ export default function LeagueDetailPage() {
               )}
 
               {(() => {
-                const filtered = filterByRound(pendingMatches)
-                if (filtered.length === 0) {
+                const visibleRounds = roundOptions.filter((round) =>
+                  roundFilter === null || round.id === roundFilter
+                )
+
+                return visibleRounds.map((round) => {
+                  const roundMatches = matches
+                    .filter((match) => match.roundId === round.id)
+                    .sort((a, b) => new Date(a.startsAtUtc).getTime() - new Date(b.startsAtUtc).getTime())
+                  if (roundMatches.length === 0) return null
+
+                  const isExpanded = expandedPredictionRounds.has(round.id)
+                  const hasOpenMatches = roundMatches.some((match) => match.canPredict)
+                  const needsAction = roundMatches.some((match) => match.canPredict && !rows[match.id]?.hasPrediction)
+                  const roundState = !hasOpenMatches
+                    ? 'Cerrada'
+                    : needsAction
+                      ? 'ABIERTA'
+                      : 'Pronosticada'
+
                   return (
-                    <div className="pp-empty">
-                      <span className="pp-empty__icon">✅</span>
-                      <p className="pp-empty__text">
-                        {pendingMatches.length === 0
-                          ? 'No hay partidos para pronosticar en este momento.'
-                          : 'No hay partidos para pronosticar en esta Fecha.'}
-                      </p>
-                    </div>
-                  )
-                }
-                const grouped = groupByRound(filtered)
-                const elements: React.ReactElement[] = []
-                grouped.forEach((ms, roundName) => {
-                  elements.push(
-                    <div key={`p-${roundName}`}>
-                      <h3 className="pp-round-heading">{roundName}</h3>
-                      <div className="pp-matches">
-                        {ms.map((m) => {
+                    <section key={round.id} className="pp-prediction-round">
+                      <button
+                        type="button"
+                        className={`pp-prediction-round__toggle ${isExpanded ? 'pp-prediction-round__toggle--expanded' : ''}`}
+                        aria-expanded={isExpanded}
+                        aria-controls={`prediction-round-${round.id}`}
+                        onClick={() => togglePredictionRound(round.id)}
+                      >
+                        <span className="pp-prediction-round__title">{round.name}</span>
+                        <span className={`pp-prediction-round__status pp-prediction-round__status--${roundState.toLowerCase()}`}>
+                          {roundState}
+                        </span>
+                        <span className="pp-prediction-round__chevron" aria-hidden="true">›</span>
+                      </button>
+
+                      {isExpanded && (
+                        <div id={`prediction-round-${round.id}`} className="pp-matches pp-prediction-round__content">
+                          {roundMatches.map((m) => {
+                            if (!m.canPredict) {
+                              return (
+                                <div key={m.id} className="pp-match-card pp-match-card--closed">
+                                  <div className="pp-match-card__teams">
+                                    <div className="pp-match-card__team"><TeamBadge name={m.participantHome} size={32} /><span className="pp-match-card__team-name">{m.participantHome}</span></div>
+                                    <span className="pp-match-card__vs">VS</span>
+                                    <div className="pp-match-card__team"><TeamBadge name={m.participantAway} size={32} /><span className="pp-match-card__team-name">{m.participantAway}</span></div>
+                                  </div>
+                                  <div className="pp-match-card__closed-text">
+                                    Pronóstico cerrado
+                                    {m.myPrediction && <span style={{ marginLeft: '0.5rem' }}>({m.myPrediction.predictedHomeScore} - {m.myPrediction.predictedAwayScore})</span>}
+                                  </div>
+                                </div>
+                              )
+                            }
+
                           const row = rows[m.id]
                           if (!row) return null
                           const startsAt = new Date(m.startsAtUtc)
@@ -524,39 +572,12 @@ export default function LeagueDetailPage() {
                               {row.savedMessage && <div className="pp-match-card__saved">{row.savedMessage}</div>}
                             </div>
                           )
-                        })}
-                      </div>
-                    </div>
+                          })}
+                        </div>
+                      )}
+                    </section>
                   )
                 })
-                // Closed matches after pending
-                const filteredClosed = filterByRound(closedMatches)
-                if (filteredClosed.length > 0) {
-                  const closedGrouped = groupByRound(filteredClosed)
-                  closedGrouped.forEach((ms, roundName) => {
-                    elements.push(
-                      <div key={`c-${roundName}`}>
-                        <h3 className="pp-round-heading">{roundName} — 🔒 Cerrados</h3>
-                        <div className="pp-matches">
-                          {ms.map((m) => (
-                            <div key={m.id} className="pp-match-card pp-match-card--closed">
-                              <div className="pp-match-card__teams">
-                                <div className="pp-match-card__team"><TeamBadge name={m.participantHome} size={32} /><span className="pp-match-card__team-name">{m.participantHome}</span></div>
-                                <span className="pp-match-card__vs">VS</span>
-                                <div className="pp-match-card__team"><TeamBadge name={m.participantAway} size={32} /><span className="pp-match-card__team-name">{m.participantAway}</span></div>
-                              </div>
-                              <div className="pp-match-card__closed-text">
-                                Pronóstico cerrado
-                                {m.myPrediction && <span style={{ marginLeft: '0.5rem' }}>({m.myPrediction.predictedHomeScore} - {m.myPrediction.predictedAwayScore})</span>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })
-                }
-                return elements
               })()}
             </>
           )}

@@ -110,7 +110,7 @@ export default function LeaguesMinePage() {
         <p className="pp-header__subtitle">Tus Ligas de amigos y las Ligas Oficiales de PlayPredict en las que participás</p>
         <div className="pp-header__actions">
           <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
-            ✋ Unirme con código
+            ✋ Unirme a una Liga de amigos
           </Link>
         </div>
       </div>
@@ -139,7 +139,7 @@ export default function LeaguesMinePage() {
                   Explorar Competencias Oficiales
                 </Link>
                 <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
-                  ✋ Unirme con código
+                  ✋ Unirme a una Liga de amigos
                 </Link>
               </div>
             </div>

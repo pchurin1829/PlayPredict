@@ -129,7 +129,7 @@ export default function PlayerDashboardPage() {
                 Explorar Competencias Oficiales
               </Link>
               <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
-                ✋ Unirme con código
+                ✋ Unirme a una Liga de amigos
               </Link>
             </div>
           </div>

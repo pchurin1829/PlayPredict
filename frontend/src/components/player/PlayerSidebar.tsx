@@ -114,16 +114,6 @@ export default function PlayerSidebar({ collapsed = false, onToggle }: PlayerSid
               )}
             </nav>
           </div>
-
-          <div className="psidebar__invite">
-            <p className="psidebar__invite-text">
-              <strong>¡Invitá amigos!</strong>
-              Sumá amigos a tus ligas y hacé la competencia más divertida.
-            </p>
-            <button type="button" className="psidebar__invite-btn" onClick={handleComingSoonClick}>
-              Invitar amigos <ComingSoonBadge />
-            </button>
-          </div>
         </>
       )}
     </aside>

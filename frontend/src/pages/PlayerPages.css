@@ -1163,6 +1163,84 @@
   border-bottom: 1px solid var(--color-border-light);
 }
 
+/* ── Prediction rounds: chronological collapsible sequence ── */
+.pp-prediction-round {
+  margin-bottom: 0.65rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.pp-prediction-round__toggle {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pp-prediction-round__toggle:hover,
+.pp-prediction-round__toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.pp-prediction-round__toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.pp-prediction-round__title {
+  font-weight: 750;
+}
+
+.pp-prediction-round__status {
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+}
+
+.pp-prediction-round__status--cerrada {
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--color-text-muted);
+}
+
+.pp-prediction-round__status--abierta {
+  background: rgba(134, 118, 255, 0.18);
+  color: #b6adff;
+}
+
+.pp-prediction-round__status--pronosticada {
+  background: rgba(45, 190, 125, 0.15);
+  color: #63d9a3;
+}
+
+.pp-prediction-round__chevron {
+  color: var(--color-text-secondary);
+  font-size: 1.45rem;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform 0.15s ease;
+}
+
+.pp-prediction-round__toggle--expanded .pp-prediction-round__chevron {
+  transform: rotate(90deg);
+}
+
+.pp-prediction-round__content {
+  padding: 0 0.9rem 0.9rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
 /* ── Round filter (chips for ≤3, dropdown for >3) ──────── */
 .pp-round-chips {
   display: flex;

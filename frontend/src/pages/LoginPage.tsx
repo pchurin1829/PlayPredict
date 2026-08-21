@@ -157,6 +157,8 @@ export default function LoginPage() {
   return (
     <div className="pp-login">
       <div className="pp-login__stage">
+        <div className="pp-login__bg-photo" aria-hidden="true" />
+        <div className="pp-login__bg-overlay" aria-hidden="true" />
         <StadiumScene />
 
         <div className="pp-login__content">

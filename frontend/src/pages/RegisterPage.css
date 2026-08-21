@@ -8,9 +8,34 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #08080d;
+  position: relative;
+  overflow-x: hidden;
+  background:
+    radial-gradient(850px 520px at 20% 8%, rgba(134, 118, 255, 0.2), transparent 62%),
+    radial-gradient(650px 460px at 90% 88%, rgba(74, 74, 209, 0.16), transparent 65%),
+    linear-gradient(145deg, #12122a 0%, var(--pp-login-bg) 58%, #19152f 100%);
   padding: 2rem 1.25rem;
   box-sizing: border-box;
+  font-family: var(--font-sans);
+}
+
+.pp-register__bg-photo,
+.pp-register__bg-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pp-register__bg-photo {
+  background-image: var(--pp-auth-football-image, none);
+  background-position: center;
+  background-size: cover;
+  filter: grayscale(1) brightness(0.42) contrast(1.08);
+  opacity: 0.36;
+}
+
+.pp-register__bg-overlay {
+  background: linear-gradient(135deg, rgba(45, 34, 91, 0.78), rgba(14, 14, 26, 0.92));
 }
 
 /* ── Card wrapper ───────────────────────────────────────────── */
@@ -18,6 +43,8 @@
   width: 100%;
   max-width: 440px;
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Brand + subtitle ───────────────────────────────────────── */
@@ -44,12 +71,12 @@
 
 /* ── Form panel ─────────────────────────────────────────────── */
 .pp-register__form {
-  background: var(--pp-login-surface);
+  background: rgba(26, 26, 46, 0.96);
   border: 1px solid var(--pp-login-border);
   border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
+  box-shadow: 0 24px 60px rgba(8, 7, 24, 0.42), 0 0 0 1px rgba(134, 118, 255, 0.06);
+  backdrop-filter: blur(10px);
   text-align: left;
 }
 
@@ -62,7 +89,7 @@
 
 .pp-register__form .status-message--error {
   background: rgba(239, 68, 68, 0.14);
-  color: #ff8f8f;
+  color: var(--pp-login-danger);
 }
 
 /* ── Name / surname side-by-side row ────────────────────────── */
@@ -78,6 +105,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  min-width: 0;
 }
 
 .pp-register__field label {
@@ -100,6 +128,7 @@
 
 .pp-register__input-wrap:focus-within {
   border-color: var(--pp-login-primary);
+  box-shadow: 0 0 0 3px rgba(134, 118, 255, 0.16);
 }
 
 .pp-register__input-wrap svg {
@@ -152,13 +181,13 @@
 
 /* ── Input wrap error state ────────────────────────────────── */
 .pp-register__input-wrap--error {
-  border-color: #ef4444;
+  border-color: var(--pp-login-danger);
 }
 
 /* ── Field error ────────────────────────────────────────────── */
 .pp-register__field-error {
   font-size: 0.78rem;
-  color: #ff8f8f;
+  color: var(--pp-login-danger);
 }
 
 /* ── Submit button ──────────────────────────────────────────── */
@@ -224,5 +253,33 @@
 
   .pp-register__form {
     padding: 1.5rem;
+  }
+}
+
+@media (max-height: 820px) and (min-width: 481px) {
+  .pp-register {
+    align-items: flex-start;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .pp-register__subtitle {
+    margin-bottom: 0.8rem;
+  }
+
+  .pp-register__form {
+    padding: 1.35rem 1.6rem;
+  }
+
+  .pp-register__form h1 {
+    margin-bottom: 1rem;
+  }
+
+  .pp-register__field {
+    margin-bottom: 0.75rem;
+  }
+
+  .pp-register__actions {
+    margin-top: 1rem;
   }
 }

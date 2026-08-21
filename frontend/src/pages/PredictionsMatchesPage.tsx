@@ -3,14 +3,15 @@ import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { LeagueDetail, MatchWithPrediction } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import ConfirmModal from '../components/ConfirmModal'
 import TeamBadge from '../components/player/TeamBadge'
 import './PlayerPages.css'
 
 interface RowState {
   homeInput: string
   awayInput: string
-  savedHome: string | null
-  savedAway: string | null
+  savedHome: string
+  savedAway: string
   hasPrediction: boolean
   saving: boolean
   error: string | null
@@ -30,19 +31,16 @@ function isReady(row: RowState): boolean {
   return row.homeInput !== '' && row.awayInput !== ''
 }
 
-function buttonLabel(row: RowState): string {
-  if (row.saving) return 'Guardando...'
-  if (!row.hasPrediction && !isReady(row)) return '¡Pronosticá!'
-  if (!row.hasPrediction && isReady(row)) return '¡Pronosticá!'
-  if (row.hasPrediction && isDirty(row)) return 'Guardar cambios'
-  return 'Pronosticado'
-}
-
-function buttonDisabled(row: RowState): boolean {
-  if (row.saving) return true
-  if (!row.hasPrediction && !isReady(row)) return true
-  if (row.hasPrediction && !isDirty(row)) return true
-  return false
+function predictionAction(row: RowState): { label: string; kind: 'none' | 'save' | 'delete'; disabled: boolean } {
+  const empty = row.homeInput === '' && row.awayInput === ''
+  if (row.saving) return { label: 'Guardando...', kind: 'none', disabled: true }
+  if (!row.hasPrediction && empty) return { label: '¡Pronosticá!', kind: 'none', disabled: true }
+  if (!row.hasPrediction && !isReady(row)) return { label: 'Completá ambos resultados', kind: 'none', disabled: true }
+  if (!row.hasPrediction) return { label: 'Guardar pronóstico', kind: 'save', disabled: false }
+  if (!isDirty(row)) return { label: 'Pronosticado', kind: 'none', disabled: true }
+  if (empty) return { label: 'Eliminar pronóstico', kind: 'delete', disabled: false }
+  if (!isReady(row)) return { label: 'Completá ambos resultados', kind: 'none', disabled: true }
+  return { label: 'Guardar cambios', kind: 'save', disabled: false }
 }
 
 function isSaved(row: RowState): boolean {
@@ -55,8 +53,8 @@ function buildInitialRow(match: MatchWithPrediction): RowState {
   return {
     homeInput,
     awayInput,
-    savedHome: match.myPrediction ? String(match.myPrediction.predictedHomeScore) : null,
-    savedAway: match.myPrediction ? String(match.myPrediction.predictedAwayScore) : null,
+    savedHome: match.myPrediction ? String(match.myPrediction.predictedHomeScore) : '',
+    savedAway: match.myPrediction ? String(match.myPrediction.predictedAwayScore) : '',
     hasPrediction: !!match.myPrediction,
     saving: false,
     error: null,
@@ -71,6 +69,7 @@ export default function PredictionsMatchesPage() {
   const [matches, setMatches] = useState<MatchWithPrediction[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [rows, setRows] = useState<Record<number, RowState>>({})
+  const [deleteTarget, setDeleteTarget] = useState<MatchWithPrediction | null>(null)
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
   useEffect(() => {
@@ -163,7 +162,9 @@ export default function PredictionsMatchesPage() {
 
   async function savePrediction(match: MatchWithPrediction) {
     const row = rows[match.id]
-    if (!row || buttonDisabled(row)) return
+    if (!row) return
+    const action = predictionAction(row)
+    if (action.kind !== 'save' || action.disabled) return
 
     const homeScore = Number(row.homeInput)
     const awayScore = Number(row.awayInput)
@@ -211,6 +212,24 @@ export default function PredictionsMatchesPage() {
         saving: false,
         error: err instanceof ApiError ? err.message : 'Ocurrió un error inesperado al guardar.',
       })
+    }
+  }
+
+  async function deletePrediction() {
+    const match = deleteTarget
+    if (!match?.myPrediction) return
+    setDeleteTarget(null)
+    updateRow(match.id, { saving: true, error: null, savedMessage: null })
+    try {
+      await api.del<void>(`/predictions/${match.myPrediction.id}`)
+      setMatches((prev) => prev ? prev.map((m) => m.id === match.id ? { ...m, myPrediction: null } : m) : prev)
+      updateRow(match.id, {
+        homeInput: '', awayInput: '', savedHome: '', savedAway: '', hasPrediction: false,
+        saving: false, savedMessage: 'Pronóstico eliminado correctamente.',
+      })
+      setTimeout(() => updateRow(match.id, { savedMessage: null }), 4000)
+    } catch (err) {
+      updateRow(match.id, { saving: false, error: err instanceof ApiError ? err.message : 'Ocurrió un error inesperado al eliminar.' })
     }
   }
 
@@ -262,11 +281,10 @@ export default function PredictionsMatchesPage() {
               if (!row) return null
               const startsAt = new Date(m.startsAtUtc)
               const saved = isSaved(row)
-              const btnLabel = buttonLabel(row)
-              const btnDisabled = buttonDisabled(row)
+              const action = predictionAction(row)
               const btnClass = saved
                 ? 'pp-btn pp-btn--saved'
-                : 'pp-btn pp-btn--primary'
+                : action.kind === 'delete' ? 'pp-btn pp-btn--danger' : 'pp-btn pp-btn--primary'
 
               return (
                 <div
@@ -326,11 +344,11 @@ export default function PredictionsMatchesPage() {
                       type="button"
                       className={btnClass}
                       style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }}
-                      disabled={btnDisabled}
-                      onClick={() => savePrediction(m)}
+                      disabled={action.disabled}
+                      onClick={() => action.kind === 'delete' ? setDeleteTarget(m) : savePrediction(m)}
                       data-prediction-action
                     >
-                      {btnLabel}
+                      {action.label}
                     </button>
                     {row.hasPrediction && !saved && (
                       <span className="pp-match-card__hint">
@@ -441,6 +459,16 @@ export default function PredictionsMatchesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Eliminar pronóstico"
+        message="¿Querés eliminar este pronóstico? Los valores guardados se borrarán definitivamente."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        onConfirm={deletePrediction}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

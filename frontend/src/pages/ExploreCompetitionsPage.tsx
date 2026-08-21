@@ -140,21 +140,29 @@ export default function ExploreCompetitionsPage() {
                 </div>
                 <div className="pp-comp-card__actions">
                   {joinedOfficial ? (
-                    <Link
-                      to={`/leagues/${joinedOfficial.id}`}
-                      className="pp-comp-card__action"
-                    >
-                      🏆 Ir a mi Liga
-                    </Link>
+                    <div className="pp-comp-card__official-state pp-comp-card__official-state--joined">
+                      <strong>✓ Estás participando</strong>
+                      <span>Entrá para ver tu Liga Oficial.</span>
+                      <Link
+                        to={`/leagues/${joinedOfficial.id}`}
+                        className="pp-comp-card__action pp-comp-card__action--view"
+                      >
+                        Ver
+                      </Link>
+                    </div>
                   ) : availableOfficials.length > 0 ? (
-                    <button
-                      type="button"
-                      className="pp-comp-card__action"
-                      disabled={joiningId === availableOfficials[0].id}
-                      onClick={() => handleJoinOfficial(availableOfficials[0].id)}
-                    >
-                      {joiningId === availableOfficials[0].id ? 'Uniéndose...' : '🏆 Participar en Liga Oficial'}
-                    </button>
+                    <div className="pp-comp-card__official-state pp-comp-card__official-state--available">
+                      <strong>Todavía no participás</strong>
+                      <span>Tocá Participar para sumarte a la Liga Oficial.</span>
+                      <button
+                        type="button"
+                        className="pp-comp-card__action"
+                        disabled={joiningId === availableOfficials[0].id}
+                        onClick={() => handleJoinOfficial(availableOfficials[0].id)}
+                      >
+                        {joiningId === availableOfficials[0].id ? 'Uniéndose...' : 'Participar'}
+                      </button>
+                    </div>
                   ) : null}
                   <Link
                     to={`/leagues/new?competitionId=${competition.id}`}

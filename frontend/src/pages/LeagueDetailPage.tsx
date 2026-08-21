@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, useCallback, type KeyboardEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { LEAGUE_SCOPE_LABELS, type LeagueDetail, type LeagueParticipantInfo, type RankingEntry, type MatchWithPrediction } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 import ComingSoonBadge from '../components/player/ComingSoonBadge'
+import ConfirmModal from '../components/ConfirmModal'
 import TeamBadge from '../components/player/TeamBadge'
 import { useAuth } from '../auth/AuthContext'
 import './PlayerPages.css'
@@ -13,6 +14,9 @@ type Tab = 'resumen' | 'pronosticos' | 'resultados' | 'ranking' | 'premios' | 'p
 interface RowState {
   homeInput: string
   awayInput: string
+  savedHome: string
+  savedAway: string
+  hasPrediction: boolean
   saving: boolean
   error: string | null
   savedMessage: string | null
@@ -23,13 +27,77 @@ function sanitizeDigits(value: string): string {
 }
 
 function buildInitialRow(match: MatchWithPrediction): RowState {
+  const home = match.myPrediction ? String(match.myPrediction.predictedHomeScore) : ''
+  const away = match.myPrediction ? String(match.myPrediction.predictedAwayScore) : ''
   return {
-    homeInput: match.myPrediction ? String(match.myPrediction.predictedHomeScore) : '',
-    awayInput: match.myPrediction ? String(match.myPrediction.predictedAwayScore) : '',
+    homeInput: home,
+    awayInput: away,
+    savedHome: home,
+    savedAway: away,
+    hasPrediction: !!match.myPrediction,
     saving: false,
     error: null,
     savedMessage: null,
   }
+}
+
+function isDirty(row: RowState): boolean {
+  return row.hasPrediction && (row.homeInput !== row.savedHome || row.awayInput !== row.savedAway)
+}
+
+function hasBothScores(row: RowState): boolean {
+  return row.homeInput !== '' && row.awayInput !== ''
+}
+
+function hasNoScores(row: RowState): boolean {
+  return row.homeInput === '' && row.awayInput === ''
+}
+
+function predictionAction(row: RowState): { label: string; kind: 'none' | 'save' | 'delete'; disabled: boolean } {
+  if (row.saving) return { label: 'Guardando...', kind: 'none', disabled: true }
+  if (!row.hasPrediction && hasNoScores(row)) return { label: '¡Pronosticá!', kind: 'none', disabled: true }
+  if (!row.hasPrediction && !hasBothScores(row)) return { label: 'Completá ambos resultados', kind: 'none', disabled: true }
+  if (!row.hasPrediction) return { label: 'Guardar pronóstico', kind: 'save', disabled: false }
+  if (!isDirty(row)) return { label: 'Pronosticado', kind: 'none', disabled: true }
+  if (hasNoScores(row)) return { label: 'Eliminar pronóstico', kind: 'delete', disabled: false }
+  if (!hasBothScores(row)) return { label: 'Completá ambos resultados', kind: 'none', disabled: true }
+  return { label: 'Guardar cambios', kind: 'save', disabled: false }
+}
+
+interface CalendarDateParts {
+  day: string
+  month: string
+  year: string
+  key: string
+}
+
+const argentinaDateFormatter = new Intl.DateTimeFormat('es-AR', {
+  timeZone: 'America/Argentina/Buenos_Aires',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
+
+function calendarDateParts(value: string): CalendarDateParts {
+  const parts = argentinaDateFormatter.formatToParts(new Date(value))
+  const day = parts.find((part) => part.type === 'day')?.value ?? ''
+  const month = parts.find((part) => part.type === 'month')?.value ?? ''
+  const year = parts.find((part) => part.type === 'year')?.value ?? ''
+  return { day, month, year, key: `${year}-${month}-${day}` }
+}
+
+function formatRoundDateRange(roundMatches: MatchWithPrediction[]): string {
+  const dates = roundMatches
+    .map((match) => calendarDateParts(match.startsAtUtc))
+    .sort((a, b) => a.key.localeCompare(b.key))
+
+  if (dates.length === 0) return ''
+  const min = dates[0]
+  const max = dates[dates.length - 1]
+  if (min.key === max.key) return `${min.day}/${min.month}/${min.year}`
+  if (min.year === max.year && min.month === max.month) return `${min.day}–${max.day}/${max.month}/${max.year}`
+  if (min.year === max.year) return `${min.day}/${min.month}–${max.day}/${max.month}/${max.year}`
+  return `${min.day}/${min.month}/${min.year}–${max.day}/${max.month}/${max.year}`
 }
 
 export default function LeagueDetailPage() {
@@ -45,6 +113,8 @@ export default function LeagueDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>('resumen')
   const [roundFilter, setRoundFilter] = useState<number | null>(null)
   const [copiedCode, setCopiedCode] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<MatchWithPrediction | null>(null)
+  const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
   useEffect(() => {
     let cancelled = false
@@ -96,11 +166,13 @@ export default function LeagueDetailPage() {
     setRows((prev) => ({ ...prev, [matchId]: { ...prev[matchId], ...patch } }))
   }
 
-  function handlePredictionEnter(event: KeyboardEvent<HTMLInputElement>) {
+  function handlePredictionEnter(event: KeyboardEvent<HTMLInputElement>, matchId: number) {
     if (event.key !== 'Enter') return
 
     event.preventDefault()
-    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-prediction-score]'))
+    const card = cardRefs.current[matchId]
+    if (!card) return
+    const inputs = Array.from(card.querySelectorAll<HTMLInputElement>('[data-prediction-score]'))
     const currentIndex = inputs.indexOf(event.currentTarget)
     const nextInput = inputs[currentIndex + 1]
 
@@ -110,12 +182,30 @@ export default function LeagueDetailPage() {
       return
     }
 
-    event.currentTarget.closest('.pp-match-card')?.querySelector<HTMLButtonElement>('button')?.focus()
+    card.querySelector<HTMLButtonElement>('[data-prediction-action]')?.focus()
+  }
+
+  function advanceToNextMatch(currentMatchId: number) {
+    if (!matches) return
+    const pending = matches.filter((m) => m.canPredict)
+    const currentIndex = pending.findIndex((m) => m.id === currentMatchId)
+    const nextMatch = pending[currentIndex + 1]
+    const firstInput = nextMatch
+      ? cardRefs.current[nextMatch.id]?.querySelector<HTMLInputElement>('[data-prediction-score]')
+      : null
+    if (firstInput) {
+      setTimeout(() => {
+        firstInput.focus()
+        firstInput.select()
+      }, 300)
+    }
   }
 
   async function savePrediction(match: MatchWithPrediction) {
     const row = rows[match.id]
     if (!row) return
+    const action = predictionAction(row)
+    if (action.kind !== 'save' || action.disabled) return
     const homeScore = Number(row.homeInput)
     const awayScore = Number(row.awayInput)
     if (row.homeInput.trim() === '' || row.awayInput.trim() === '' || !Number.isInteger(homeScore) || !Number.isInteger(awayScore) || homeScore < 0 || awayScore < 0) {
@@ -124,26 +214,52 @@ export default function LeagueDetailPage() {
     }
     updateRow(match.id, { saving: true, error: null, savedMessage: null })
     try {
-      const isUpdate = !!match.myPrediction
+      const isUpdate = row.hasPrediction
       const updated = isUpdate
         ? await api.put<MatchWithPrediction['myPrediction']>(`/predictions/${match.myPrediction!.id}`, { predictedHomeScore: homeScore, predictedAwayScore: awayScore })
         : await api.post<MatchWithPrediction['myPrediction']>('/predictions', { leagueId: Number(leagueId), matchId: match.id, predictedHomeScore: homeScore, predictedAwayScore: awayScore })
       setMatches((prev) => prev ? prev.map((m) => m.id === match.id ? { ...m, myPrediction: updated } : m) : prev)
-      updateRow(match.id, { saving: false, savedMessage: isUpdate ? 'Pronóstico actualizado correctamente.' : 'Pronóstico guardado correctamente.' })
+      updateRow(match.id, {
+        saving: false,
+        savedHome: String(homeScore),
+        savedAway: String(awayScore),
+        hasPrediction: true,
+        savedMessage: isUpdate ? 'Pronóstico actualizado correctamente.' : 'Pronóstico guardado correctamente.',
+      })
       setTimeout(() => updateRow(match.id, { savedMessage: null }), 4000)
+      advanceToNextMatch(match.id)
     } catch (err) {
       updateRow(match.id, { saving: false, error: err instanceof ApiError ? err.message : 'Ocurrió un error inesperado al guardar.' })
     }
   }
 
+  async function deletePrediction() {
+    const match = deleteTarget
+    if (!match?.myPrediction) return
+    setDeleteTarget(null)
+    updateRow(match.id, { saving: true, error: null, savedMessage: null })
+    try {
+      await api.del<void>(`/predictions/${match.myPrediction.id}`)
+      setMatches((prev) => prev ? prev.map((m) => m.id === match.id ? { ...m, myPrediction: null } : m) : prev)
+      updateRow(match.id, {
+        homeInput: '', awayInput: '', savedHome: '', savedAway: '', hasPrediction: false,
+        saving: false, savedMessage: 'Pronóstico eliminado correctamente.',
+      })
+      setTimeout(() => updateRow(match.id, { savedMessage: null }), 4000)
+    } catch (err) {
+      updateRow(match.id, { saving: false, error: err instanceof ApiError ? err.message : 'Ocurrió un error inesperado al eliminar.' })
+    }
+  }
+
   const handleCopyCode = useCallback(() => {
-    if (!league?.inviteCode) return
-    navigator.clipboard.writeText(league.inviteCode).then(() => {
+    const inviteCode = league?.inviteCode
+    if (!inviteCode) return
+    navigator.clipboard.writeText(inviteCode).then(() => {
       setCopiedCode(true)
       setTimeout(() => setCopiedCode(false), 2000)
     }).catch(() => {
       const fallback = document.createElement('textarea')
-      fallback.value = league.inviteCode
+      fallback.value = inviteCode
       fallback.style.position = 'fixed'
       fallback.style.opacity = '0'
       document.body.appendChild(fallback)
@@ -360,9 +476,14 @@ export default function LeagueDetailPage() {
                           const row = rows[m.id]
                           if (!row) return null
                           const startsAt = new Date(m.startsAtUtc)
-                          const hasPrediction = !!m.myPrediction
+                          const action = predictionAction(row)
+                          const saved = row.hasPrediction && !isDirty(row)
                           return (
-                            <div key={m.id} className={`pp-match-card ${hasPrediction ? 'pp-match-card--saved' : 'pp-match-card--pending'}`}>
+                            <div
+                              key={m.id}
+                              ref={(el) => { cardRefs.current[m.id] = el }}
+                              className={`pp-match-card ${row.hasPrediction ? 'pp-match-card--saved' : 'pp-match-card--pending'}`}
+                            >
                               <div className="pp-match-card__teams">
                                 <div className="pp-match-card__team">
                                   <TeamBadge name={m.participantHome} size={40} />
@@ -380,17 +501,24 @@ export default function LeagueDetailPage() {
                               </div>
                               <div className="pp-match-card__prediction">
                                 <span className="pp-match-card__prediction-label">
-                                  {hasPrediction ? 'TU PRONÓSTICO' : 'INGRESÁ TU PRONÓSTICO'}
+                                  {saved ? '✅ PRONOSTICADO' : 'INGRESÁ TU PRONÓSTICO'}
                                 </span>
                                 <div className="pp-match-card__inputs">
-                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantHome}`} value={row.homeInput} onChange={(e) => updateRow(m.id, { homeInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={handlePredictionEnter} data-prediction-score className="pp-match-card__input" />
+                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantHome}`} value={row.homeInput} onChange={(e) => updateRow(m.id, { homeInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={(e) => handlePredictionEnter(e, m.id)} data-prediction-score className="pp-match-card__input" />
                                   <span className="pp-match-card__separator">-</span>
-                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantAway}`} value={row.awayInput} onChange={(e) => updateRow(m.id, { awayInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={handlePredictionEnter} data-prediction-score className="pp-match-card__input" />
+                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantAway}`} value={row.awayInput} onChange={(e) => updateRow(m.id, { awayInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={(e) => handlePredictionEnter(e, m.id)} data-prediction-score className="pp-match-card__input" />
                                 </div>
-                                <button type="button" className="pp-btn pp-btn--primary" style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }} disabled={row.saving} onClick={() => savePrediction(m)}>
-                                  {row.saving ? 'Guardando...' : hasPrediction ? 'Guardar cambios' : '¡Pronosticá!'}
+                                <button
+                                  type="button"
+                                  className={saved ? 'pp-btn pp-btn--saved' : action.kind === 'delete' ? 'pp-btn pp-btn--danger' : 'pp-btn pp-btn--primary'}
+                                  style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }}
+                                  disabled={action.disabled}
+                                  onClick={() => action.kind === 'delete' ? setDeleteTarget(m) : savePrediction(m)}
+                                  data-prediction-action
+                                >
+                                  {action.label}
                                 </button>
-                                {hasPrediction && <span className="pp-match-card__hint">Podés modificar tu pronóstico hasta el cierre del partido.</span>}
+                                {row.hasPrediction && !saved && action.kind !== 'delete' && <span className="pp-match-card__hint">Podés modificar tu pronóstico hasta el cierre del partido.</span>}
                               </div>
                               {row.error && <div className="pp-match-card__error">{row.error}</div>}
                               {row.savedMessage && <div className="pp-match-card__saved">{row.savedMessage}</div>}
@@ -469,9 +597,11 @@ export default function LeagueDetailPage() {
                 const grouped = groupByRound(filtered)
                 const elements: React.ReactElement[] = []
                 grouped.forEach((ms, roundName) => {
+                  const roundMatches = matches.filter((match) => match.roundId === ms[0].roundId)
+                  const dateRange = formatRoundDateRange(roundMatches)
                   elements.push(
                     <div key={`r-${roundName}`}>
-                      <h3 className="pp-round-heading">{roundName}</h3>
+                      <h3 className="pp-round-heading">{roundName}{dateRange ? ` · ${dateRange}` : ''}</h3>
                       <div className="pp-matches">
                         {ms.map((m) => (
                           <div key={m.id} className="pp-match-card pp-match-card--finished">
@@ -580,6 +710,16 @@ export default function LeagueDetailPage() {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Eliminar pronóstico"
+        message="¿Querés eliminar este pronóstico? Los valores guardados se borrarán definitivamente."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        onConfirm={deletePrediction}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

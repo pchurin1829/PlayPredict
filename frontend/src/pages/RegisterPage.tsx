@@ -63,6 +63,8 @@ export default function RegisterPage() {
 
   return (
     <div className="pp-register">
+      <div className="pp-register__bg-photo" aria-hidden="true" />
+      <div className="pp-register__bg-overlay" aria-hidden="true" />
       <div className="pp-register__card">
         <div className="pp-register__brand">
           <svg width="28" height="28" viewBox="0 0 48 46" fill="none" className="pp-login__logo-mark">

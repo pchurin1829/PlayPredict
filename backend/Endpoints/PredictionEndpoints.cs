@@ -192,6 +192,39 @@ public static class PredictionEndpoints
 
             return Results.Ok(ToDto(prediction));
         });
+
+        group.MapDelete("/{id:int}", async (int id, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        {
+            var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
+            if (user is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var prediction = await db.Predictions.FindAsync(id);
+            if (prediction is null)
+            {
+                return Results.NotFound();
+            }
+
+            if (prediction.UserId != user.Id)
+            {
+                return Results.Json(new { message = "No podés eliminar el pronóstico de otro usuario." }, statusCode: StatusCodes.Status403Forbidden);
+            }
+
+            // Eliminar respeta las mismas reglas temporales que crear/editar: el usuario
+            // debe seguir participando, la Liga debe estar activa y el partido abierto.
+            var validationError = await ValidatePredictionContextAsync(db, prediction.LeagueId, prediction.MatchId, user.Id);
+            if (validationError is not null)
+            {
+                return validationError;
+            }
+
+            db.Predictions.Remove(prediction);
+            await db.SaveChangesAsync();
+
+            return Results.NoContent();
+        });
     }
 
     // Reglas del Sprint 8.5: valida, en orden, todo lo necesario antes de guardar un

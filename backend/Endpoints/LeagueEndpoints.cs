@@ -244,17 +244,10 @@ public static class LeagueEndpoints
                 });
             }
 
-            // No permitir abandonar si el usuario tiene pronósticos en esta Liga.
-            var hasPredictions = await db.Predictions
-                .AnyAsync(p => p.LeagueId == id && p.UserId == user.Id);
-            if (hasPredictions)
-            {
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["league"] = ["No podés abandonar esta Liga porque ya tenés pronósticos registrados. Los resultados y el ranking quedarían inconsistentes."]
-                });
-            }
-
+            // Política temporal para la demo: abandonar una Liga elimina solamente la
+            // participación. Los pronósticos se conservan para que, si el usuario vuelve
+            // a participar, recupere los valores cargados. La política definitiva sobre
+            // pronósticos al abandonar una Liga queda pendiente de decisión de producto.
             db.LeagueParticipants.Remove(participant);
             await db.SaveChangesAsync();
 

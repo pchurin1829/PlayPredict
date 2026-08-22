@@ -204,7 +204,7 @@ export default function LeaguesMinePage() {
                       <span>👥 {l.participantsCount} participante{l.participantsCount !== 1 ? 's' : ''}</span>
                     </div>
                     <div className="pp-league-card__footer">
-                      <div className="pp-league-card__actions-row">
+                      <div className={`pp-league-card__actions-row ${isOfficial ? 'pp-league-card__actions-row--official' : ''}`}>
                         <Link to={`/leagues/${l.id}`} className="pp-league-card__action">
                           Entrar
                         </Link>

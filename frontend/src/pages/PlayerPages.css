@@ -1334,6 +1334,11 @@
   flex-wrap: wrap;
 }
 
+.pp-league-card__actions-row--official {
+  width: 100%;
+  justify-content: space-between;
+}
+
 .pp-league-groups {
   display: grid;
   gap: 0.75rem;

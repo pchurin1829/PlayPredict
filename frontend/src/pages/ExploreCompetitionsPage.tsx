@@ -75,12 +75,12 @@ export default function ExploreCompetitionsPage() {
     return () => { cancelled = true }
   }, [])
 
-  async function handleJoinOfficial(leagueId: number) {
+  async function handleJoinOfficial(leagueId: number, competitionName: string) {
     setJoiningId(leagueId)
     setMessage(null)
     try {
       await api.post<LeagueSummary>(`/leagues/${leagueId}/join`, {})
-      setMessage('Te uniste correctamente a la Liga Oficial.')
+      setMessage(`Te uniste correctamente a ${competitionName} (Oficial).`)
       // Refresh to update isParticipant flags
       const updated = await api.get<LeagueSummary[]>('/leagues/officials')
       setItems((prev) => {
@@ -158,7 +158,7 @@ export default function ExploreCompetitionsPage() {
                         type="button"
                         className="pp-comp-card__action"
                         disabled={joiningId === availableOfficials[0].id}
-                        onClick={() => handleJoinOfficial(availableOfficials[0].id)}
+                        onClick={() => handleJoinOfficial(availableOfficials[0].id, competition.name)}
                       >
                         {joiningId === availableOfficials[0].id ? 'Uniéndose...' : 'Participar'}
                       </button>

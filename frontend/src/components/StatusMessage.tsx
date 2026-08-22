@@ -1,5 +1,5 @@
 interface StatusMessageProps {
-  kind: 'loading' | 'error' | 'success'
+  kind: 'loading' | 'error' | 'success' | 'info'
   message: string
 }
 

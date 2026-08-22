@@ -176,6 +176,11 @@ table.admin-table {
   color: #155724;
 }
 
+.status-message--info {
+  background: #e7ecff;
+  color: #33408f;
+}
+
 .form-card {
   background: #fff;
   border-radius: 8px;

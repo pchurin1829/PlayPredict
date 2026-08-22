@@ -48,9 +48,9 @@ export default function LeagueJoinPage() {
       <Link to="/leagues" className="pp-back">← Mis Ligas</Link>
 
       <div className="pp-header">
-        <h1>Unirme a una Liga de amigos</h1>
+        <h1>Unirme a Liga de Amigos con código</h1>
         <p className="pp-header__subtitle">
-          ¿Te invitaron a una Liga? Ingresá el código de invitación que te compartieron.
+          Usá el código de invitación que te compartió el creador de una Liga de Amigos.
         </p>
       </div>
 
@@ -75,7 +75,7 @@ export default function LeagueJoinPage() {
 
           <div className="pp-form__actions">
             <button type="submit" className="pp-btn pp-btn--primary" disabled={saving || !inviteCode.trim()} style={{ flex: 1 }}>
-              {saving ? 'Uniéndome...' : '✋ Unirme a la Liga'}
+              {saving ? 'Uniéndome...' : '✋ Unirme a Liga de Amigos'}
             </button>
             <Link to="/leagues" className="pp-btn pp-btn--secondary">
               Cancelar

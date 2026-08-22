@@ -363,7 +363,7 @@ public static class PredictionEndpoints
             evaluation?.OfficialHomeScore,
             evaluation?.OfficialAwayScore);
 
-    internal static MatchWithPredictionDto ToMatchWithPredictionDto(Match m, Prediction? prediction, PredictionEvaluation? evaluation) =>
+    internal static MatchWithPredictionDto ToMatchWithPredictionDto(Match m, Prediction? prediction, PredictionEvaluation? evaluation, bool leagueIsActive = true) =>
         new(m.Id, m.RoundId, m.ParticipantHome, m.ParticipantAway, m.StartsAtUtc, m.Status.ToString(),
-            m.HomeGoals, m.AwayGoals, prediction is null ? null : ToDto(prediction, evaluation), CanCreateOrEditPrediction(m));
+            m.HomeGoals, m.AwayGoals, prediction is null ? null : ToDto(prediction, evaluation), leagueIsActive && CanCreateOrEditPrediction(m));
 }

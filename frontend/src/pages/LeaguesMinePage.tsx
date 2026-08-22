@@ -9,7 +9,7 @@ import './PlayerPages.css'
 interface ModalTarget {
   id: number
   name: string
-  action: 'leave' | 'suspend' | 'reactivate'
+  action: 'leave' | 'suspend' | 'reactivate' | 'delete'
 }
 
 export default function LeaguesMinePage() {
@@ -18,6 +18,7 @@ export default function LeaguesMinePage() {
   const [actingId, setActingId] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [modalTarget, setModalTarget] = useState<ModalTarget | null>(null)
+  const [manageTargetId, setManageTargetId] = useState<number | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -44,6 +45,7 @@ export default function LeaguesMinePage() {
   }
 
   function openModal(id: number, name: string, action: ModalTarget['action']) {
+    setManageTargetId(null)
     setModalTarget({ id, name, action })
   }
 
@@ -81,6 +83,11 @@ export default function LeaguesMinePage() {
         })
         setMessage('Liga reactivada correctamente.')
         await refresh()
+      } else if (action === 'delete') {
+        await api.del(`/leagues/${id}`)
+        setManageTargetId(null)
+        setMessage('Liga eliminada correctamente.')
+        await refresh()
       }
     } catch (err) {
       if (err instanceof ApiError && err.fieldErrors.league) {
@@ -95,11 +102,26 @@ export default function LeaguesMinePage() {
   }
 
   const loading = !myLeagues && !error
+  const leagueGroups = myLeagues
+    ? [
+        {
+          title: 'Ligas Oficiales',
+          subtitle: 'Competencias oficiales en las que participás',
+          leagues: myLeagues.filter((league) => league.leagueType === 'Official'),
+        },
+        {
+          title: 'Mis Ligas de Amigos',
+          subtitle: 'Ligas propias y de amigos en las que participás',
+          leagues: myLeagues.filter((league) => league.leagueType === 'Private'),
+        },
+      ].filter((group) => group.leagues.length > 0)
+    : []
   const modalConfig = modalTarget
     ? {
         leave: { title: 'Dejar de participar', msg: `¿Querés dejar de participar en "${modalTarget.name}"?`, confirm: 'Dejar liga' },
         suspend: { title: 'Suspender Liga', msg: `¿Querés suspender "${modalTarget.name}"? Los participantes y pronósticos se conservarán.`, confirm: 'Suspender' },
         reactivate: { title: 'Reactivar Liga', msg: `¿Querés reactivar "${modalTarget.name}"?`, confirm: 'Reactivar' },
+        delete: { title: 'Eliminar Liga definitivamente', msg: `¿Querés eliminar "${modalTarget.name}"? Se borrarán la Liga, sus participantes, pronósticos, puntos e historial. Esta acción no se puede deshacer.`, confirm: 'Sí, eliminar Liga' },
       }[modalTarget.action]
     : null
 
@@ -110,7 +132,7 @@ export default function LeaguesMinePage() {
         <p className="pp-header__subtitle">Tus Ligas de amigos y las Ligas Oficiales de PlayPredict en las que participás</p>
         <div className="pp-header__actions">
           <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
-            ✋ Unirme a una Liga de amigos
+            ✋ Unirme a Liga de Amigos con código
           </Link>
         </div>
       </div>
@@ -122,10 +144,6 @@ export default function LeaguesMinePage() {
       {/* ── Mis Ligas ── */}
       {myLeagues && (
         <>
-          <div className="pp-section-title">
-            <h2>📋 Mis Ligas</h2>
-            <p>Ligas en las que participás</p>
-          </div>
           {myLeagues.length === 0 ? (
             <div className="pp-empty">
               <span className="pp-empty__icon">🏆</span>
@@ -139,13 +157,20 @@ export default function LeaguesMinePage() {
                   Explorar Competencias Oficiales
                 </Link>
                 <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
-                  ✋ Unirme a una Liga de amigos
+                  ✋ Unirme a Liga de Amigos con código
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="pp-grid">
-              {myLeagues.map((l) => {
+            <div className="pp-league-groups">
+              {leagueGroups.map((group) => (
+                <section key={group.title} className="pp-league-group">
+                  <div className="pp-section-title pp-section-title--league-group">
+                    <h2>{group.title}</h2>
+                    <p>{group.subtitle}</p>
+                  </div>
+                  <div className="pp-grid">
+              {group.leagues.map((l) => {
                 const isOfficial = l.leagueType === 'Official'
                 const cardClass = isOfficial
                   ? 'pp-league-card pp-league-card--official'
@@ -155,19 +180,18 @@ export default function LeaguesMinePage() {
                   <div key={l.id} className={cardClass}>
                     <div className="pp-league-card__header">
                       <h3 className="pp-league-card__name">{l.name}</h3>
-                      {isOfficial ? (
-                        <span className="pp-league-card__badge pp-league-card__badge--official">
-                          🏆 OFICIAL
+                      <div className="pp-league-card__badge-stack">
+                        {isOfficial ? (
+                          <span className="pp-league-card__badge pp-league-card__badge--official">🏆 OFICIAL</span>
+                        ) : l.isCreator ? (
+                          <span className="pp-league-card__badge pp-league-card__badge--mine">MI LIGA</span>
+                        ) : (
+                          <span className="pp-league-card__badge pp-league-card__badge--private">AMIGOS</span>
+                        )}
+                        <span className={`pp-league-card__status ${l.isActive ? 'pp-league-card__status--active' : 'pp-league-card__status--suspended'}`}>
+                          {l.isActive ? 'Activa' : 'Suspendida'}
                         </span>
-                      ) : l.isCreator ? (
-                        <span className="pp-league-card__badge pp-league-card__badge--mine">
-                          MI LIGA
-                        </span>
-                      ) : (
-                        <span className="pp-league-card__badge pp-league-card__badge--private">
-                          AMIGOS
-                        </span>
-                      )}
+                      </div>
                     </div>
                     <span className="pp-league-card__comp">⚽ {l.competitionName}</span>
                     <div className="pp-league-card__meta">
@@ -180,9 +204,6 @@ export default function LeaguesMinePage() {
                       <span>👥 {l.participantsCount} participante{l.participantsCount !== 1 ? 's' : ''}</span>
                     </div>
                     <div className="pp-league-card__footer">
-                      <span className={`pp-league-card__status ${l.isActive ? 'pp-league-card__status--active' : l.isCreator && !l.isActive ? 'pp-league-card__status--suspended' : 'pp-league-card__status--inactive'}`}>
-                        {l.isActive ? 'Activa' : l.isCreator ? 'Suspendida' : 'Inactiva'}
-                      </span>
                       <div className="pp-league-card__actions-row">
                         <Link to={`/leagues/${l.id}`} className="pp-league-card__action">
                           Entrar
@@ -212,25 +233,15 @@ export default function LeaguesMinePage() {
                           </button>
                         )}
 
-                        {/* Caso C: MI LIGA creada por el usuario — Suspender / Reactivar */}
-                        {!isOfficial && l.isCreator && l.isActive && (
+                        {/* Caso C: MI LIGA creada por el usuario — administración centralizada */}
+                        {!isOfficial && l.isCreator && (
                           <button
                             type="button"
                             className="pp-btn pp-btn--secondary pp-btn--sm"
                             disabled={actingId === l.id}
-                            onClick={() => openModal(l.id, l.name, 'suspend')}
+                            onClick={() => setManageTargetId(l.id)}
                           >
-                            {actingId === l.id ? 'Suspendiendo...' : 'Suspender Liga'}
-                          </button>
-                        )}
-                        {!isOfficial && l.isCreator && !l.isActive && (
-                          <button
-                            type="button"
-                            className="pp-btn pp-btn--primary pp-btn--sm"
-                            disabled={actingId === l.id}
-                            onClick={() => openModal(l.id, l.name, 'reactivate')}
-                          >
-                            {actingId === l.id ? 'Reactivando...' : 'Reactivar Liga'}
+                            Administrar
                           </button>
                         )}
                       </div>
@@ -238,10 +249,45 @@ export default function LeaguesMinePage() {
                   </div>
                 )
               })}
+                  </div>
+                </section>
+              ))}
             </div>
           )}
         </>
       )}
+
+      {manageTargetId !== null && (() => {
+        const target = myLeagues?.find((league) => league.id === manageTargetId)
+        if (!target) return null
+        return (
+          <div className="cmodal-overlay" onClick={() => setManageTargetId(null)}>
+            <div className="cmodal pp-manage-modal" onClick={(event) => event.stopPropagation()}>
+              <h3 className="cmodal__title">Administrar {target.name}</h3>
+              <p className="cmodal__message">
+                La suspensión conserva participantes, pronósticos, resultados y ranking, pero impide nuevas participaciones y pronósticos.
+              </p>
+              <div className="pp-manage-modal__actions">
+                <button
+                  type="button"
+                  className="pp-btn pp-btn--secondary"
+                  onClick={() => openModal(target.id, target.name, target.isActive ? 'suspend' : 'reactivate')}
+                >
+                  {target.isActive ? 'Suspender Liga' : 'Reactivar Liga'}
+                </button>
+                <button
+                  type="button"
+                  className="pp-btn pp-btn--danger"
+                  onClick={() => openModal(target.id, target.name, 'delete')}
+                >
+                  Eliminar Liga
+                </button>
+              </div>
+              <button type="button" className="cmodal__cancel" onClick={() => setManageTargetId(null)}>Cerrar</button>
+            </div>
+          </div>
+        )
+      })()}
 
       <ConfirmModal
         open={modalTarget !== null}

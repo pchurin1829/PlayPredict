@@ -362,7 +362,7 @@ export default function LeagueDetailPage() {
             )}
           </span>
           <span className="pp-workspace__meta-item">👥 {league.participantsCount} participantes</span>
-          <span className="pp-workspace__meta-item">{league.isActive ? '🟢 Activa' : '🔴 Inactiva'}</span>
+          <span className="pp-workspace__meta-item">{league.isActive ? '🟢 Activa' : '🟡 Suspendida'}</span>
         </div>
       </div>
 
@@ -439,6 +439,9 @@ export default function LeagueDetailPage() {
       {/* ── PRONÓSTICOS ────────────────────────────────────── */}
       {activeTab === 'pronosticos' && (
         <div>
+          {!league.isActive && (
+            <StatusMessage kind="info" message="Esta Liga está suspendida. Podés consultar los pronósticos, pero no cargar ni modificar nuevos resultados hasta que se reactive." />
+          )}
           {!matches && <StatusMessage kind="loading" message="Cargando partidos..." />}
 
           {matches && matches.length === 0 && (
@@ -499,7 +502,7 @@ export default function LeagueDetailPage() {
                         <span className={`pp-prediction-round__status pp-prediction-round__status--${roundState.toLowerCase()}`}>
                           {roundState}
                         </span>
-                        <span className="pp-prediction-round__chevron" aria-hidden="true">›</span>
+                        <span className="pp-prediction-round__action">{isExpanded ? 'Ocultar' : 'Ver'}</span>
                       </button>
 
                       {isExpanded && (

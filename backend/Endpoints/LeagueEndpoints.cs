@@ -254,6 +254,53 @@ public static class LeagueEndpoints
             return Results.Ok(new { message = "Dejaste la Liga correctamente." });
         });
 
+        group.MapDelete("/{id:int}", async (int id, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        {
+            var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
+            if (user is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var league = await db.Leagues.FindAsync(id);
+            if (league is null)
+            {
+                return Results.NotFound();
+            }
+
+            if (league.LeagueType != LeagueType.Private || league.CreatedByUserId != user.Id)
+            {
+                return Forbidden("Solo el creador puede eliminar su Liga de Amigos.");
+            }
+
+            // Eliminar una Liga es distinto de suspenderla: la confirmación explícita del
+            // owner elimina sus datos dependientes en el orden requerido por las FK Restrict.
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            var predictionIds = await db.Predictions
+                .Where(p => p.LeagueId == id)
+                .Select(p => p.Id)
+                .ToListAsync();
+
+            if (predictionIds.Count > 0)
+            {
+                await db.PredictionEvaluations
+                    .Where(e => predictionIds.Contains(e.PredictionId))
+                    .ExecuteDeleteAsync();
+                await db.Predictions
+                    .Where(p => p.LeagueId == id)
+                    .ExecuteDeleteAsync();
+            }
+
+            await db.LeagueParticipants
+                .Where(lp => lp.LeagueId == id)
+                .ExecuteDeleteAsync();
+            db.Leagues.Remove(league);
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Results.Ok(new { message = "Liga eliminada correctamente." });
+        });
+
         group.MapPost("/join", async (JoinLeagueDto dto, ClaimsPrincipal principal, PlayPredictDbContext db) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
@@ -369,7 +416,7 @@ public static class LeagueEndpoints
             {
                 var prediction = predictions.FirstOrDefault(p => p.MatchId == m.Id);
                 var evaluation = prediction is null ? null : evaluations.GetValueOrDefault(prediction.Id);
-                return PredictionEndpoints.ToMatchWithPredictionDto(m, prediction, evaluation);
+                return PredictionEndpoints.ToMatchWithPredictionDto(m, prediction, evaluation, league.IsActive);
             });
 
             return Results.Ok(result);

@@ -9,6 +9,7 @@ import type {
   Competition,
   Edition,
   Round,
+  LeagueDetail,
 } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import DashboardHero from '../components/player/DashboardHero'
@@ -24,8 +25,7 @@ export default function PlayerDashboardPage() {
   const { user } = useAuth()
 
   const [leagues, setLeagues] = useState<LeagueSummary[]>([])
-  const [matches, setMatches] = useState<MatchWithPrediction[]>([])
-  const [firstLeagueId, setFirstLeagueId] = useState<number | null>(null)
+  const [leagueContexts, setLeagueContexts] = useState<Array<{ league: LeagueDetail; matches: MatchWithPrediction[] }>>([])
   const [ranking, setRanking] = useState<RankingEntry[]>([])
   const [prizes, setPrizes] = useState<Prize[]>([])
   const [activeEdition, setActiveEdition] = useState<Edition | null>(null)
@@ -49,12 +49,16 @@ export default function PlayerDashboardPage() {
 
         if (leaguesData.length > 0) {
           const firstLeague = leaguesData[0]
-          setFirstLeagueId(firstLeague.id)
-
-          const leagueMatches = await api.get<MatchWithPrediction[]>(`/leagues/${firstLeague.id}/matches`)
+          const contexts = await Promise.all(leaguesData.map(async (league) => {
+            const [detail, leagueMatches] = await Promise.all([
+              api.get<LeagueDetail>(`/leagues/${league.id}`),
+              api.get<MatchWithPrediction[]>(`/leagues/${league.id}/matches`),
+            ])
+            return { league: detail, matches: leagueMatches }
+          }))
 
           if (cancelled) return
-          setMatches(leagueMatches)
+          setLeagueContexts(contexts)
 
           // Get active edition from the league's competition
           const compEditions = await api.get<Edition[]>(`/competitions/${firstLeague.competitionId}/editions`).catch(() => [])
@@ -89,10 +93,44 @@ export default function PlayerDashboardPage() {
   }, [])
 
   function handlePredictionUpdated(updatedMatch: MatchWithPrediction) {
-    setMatches((prev) => prev.map((m) => (m.id === updatedMatch.id ? updatedMatch : m)))
+    const leagueId = updatedMatch.myPrediction?.leagueId
+    setLeagueContexts((prev) => prev.map((context) => (
+      context.league.id === leagueId
+        ? { ...context, matches: context.matches.map((match) => match.id === updatedMatch.id ? updatedMatch : match) }
+        : context
+    )))
   }
 
-  const pendingCount = matches.filter((m) => m.canPredict && !m.myPrediction).length
+  const pendingGroups = leagueContexts.flatMap((context) => {
+    const byRound = new Map<number, MatchWithPrediction[]>()
+    context.matches
+      .filter((match) => match.canPredict && !match.myPrediction)
+      .forEach((match) => byRound.set(match.roundId, [...(byRound.get(match.roundId) ?? []), match]))
+    return Array.from(byRound, ([roundId, groupMatches]) => ({
+      league: context.league,
+      roundId,
+      roundName: context.league.rounds.find((round) => round.id === roundId)?.name ?? 'Fecha',
+      matches: groupMatches.sort((a, b) => Date.parse(a.startsAtUtc) - Date.parse(b.startsAtUtc)),
+    }))
+  }).sort((a, b) => Date.parse(a.matches[0].startsAtUtc) - Date.parse(b.matches[0].startsAtUtc))
+
+  const upcomingGroups = leagueContexts.flatMap((context) => {
+    const byRound = new Map<number, MatchWithPrediction[]>()
+    context.matches
+      .filter((match) => !!match.myPrediction && (
+        match.canPredict || (match.status === 'Scheduled' && Date.parse(match.startsAtUtc) > Date.now())
+      ))
+      .forEach((match) => byRound.set(match.roundId, [...(byRound.get(match.roundId) ?? []), match]))
+    return Array.from(byRound, ([roundId, groupMatches]) => ({
+      league: context.league,
+      roundId,
+      roundName: context.league.rounds.find((round) => round.id === roundId)?.name ?? 'Fecha',
+      matches: groupMatches.sort((a, b) => {
+        const pendingDifference = Number(!!a.myPrediction) - Number(!!b.myPrediction)
+        return pendingDifference || Date.parse(a.startsAtUtc) - Date.parse(b.startsAtUtc)
+      }),
+    }))
+  }).sort((a, b) => Date.parse(a.matches[0].startsAtUtc) - Date.parse(b.matches[0].startsAtUtc))
   const bestPosition = ranking.length > 0
     ? ranking.find((r) => r.userId === user?.id)?.position ?? null
     : null
@@ -142,31 +180,68 @@ export default function PlayerDashboardPage() {
     <div className="pdash">
       <div className="pdash__main">
         <DashboardHero
-          pendingCount={pendingCount}
           bestPosition={bestPosition}
           totalPoints={totalPoints}
         />
 
+        <section className="pdash__section pdash__pending-section">
+          <h2 className="pdash__section-title">Pronósticos pendientes</h2>
+          {pendingGroups.length === 0 ? (
+            <div className="pdash__empty-card">No tenés pronósticos pendientes por el momento.</div>
+          ) : (
+            <div className="pdash__pending-groups">
+              {pendingGroups.map((group) => (
+                <article key={`${group.league.id}-${group.roundId}`} className={`pdash__context-card pdash__context-card--${group.league.leagueType.toLowerCase()}`}>
+                  <div className="pdash__context-main">
+                    <span className="pdash__context-competition">{group.league.competitionName}</span>
+                    <strong className="pdash__context-line">
+                      {group.league.name} · {group.roundName}
+                    </strong>
+                    <span className="pdash__context-count">
+                      {group.matches.length} partido{group.matches.length === 1 ? '' : 's'} pendiente{group.matches.length === 1 ? '' : 's'}
+                    </span>
+                    <span className="pdash__context-time">
+                      Primer cierre: {new Date(group.matches[0].startsAtUtc).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <Link className="pp-btn pp-btn--primary pdash__context-cta" to={`/leagues/${group.league.id}?tab=pronosticos&round=${group.roundId}`}>
+                    Pronosticar
+                  </Link>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
         <div id="proximos-partidos" className="pdash__section">
-          <h2 className="pdash__section-title">Próximos partidos</h2>
-          {matches.length === 0 ? (
+          <h2 className="pdash__section-title">Tus próximos partidos</h2>
+          {upcomingGroups.length === 0 ? (
             <div className="pdash__empty-card">
-              {leagues.length === 0
-                ? 'Unite a una Liga para empezar a pronosticar'
-                : 'No hay partidos disponibles en este momento'}
+              No hay próximos partidos disponibles en este momento.
             </div>
           ) : (
-            <div className="pdash__matches">
-              {matches.map((m) =>
-                firstLeagueId ? (
-                  <MatchPredictionCard
-                    key={m.id}
-                    match={m}
-                    leagueId={firstLeagueId}
-                    onPredictionUpdated={handlePredictionUpdated}
-                  />
-                ) : null,
-              )}
+            <div className="pdash__upcoming-groups">
+              {upcomingGroups.map((group) => (
+                <section key={`${group.league.id}-${group.roundId}`} className="pdash__upcoming-group">
+                  <div className="pdash__upcoming-heading">
+                    <div>
+                      <h3>{group.league.competitionName} — {group.roundName}</h3>
+                      <p>{group.league.name}</p>
+                    </div>
+                    <Link to={`/leagues/${group.league.id}?tab=pronosticos&round=${group.roundId}`}>Ver fecha</Link>
+                  </div>
+                  <div className="pdash__matches">
+                    {group.matches.map((match) => (
+                      <MatchPredictionCard
+                        key={`${group.league.id}-${match.id}`}
+                        match={match}
+                        leagueId={group.league.id}
+                        onPredictionUpdated={handlePredictionUpdated}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
             </div>
           )}
         </div>

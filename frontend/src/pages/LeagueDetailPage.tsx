@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, type KeyboardEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { LEAGUE_SCOPE_LABELS, type LeagueDetail, type LeagueParticipantInfo, type RankingEntry, type MatchWithPrediction } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
@@ -102,7 +102,10 @@ function formatRoundDateRange(roundMatches: MatchWithPrediction[]): string {
 
 export default function LeagueDetailPage() {
   const { leagueId } = useParams()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
+  const requestedTab = searchParams.get('tab')
+  const requestedRoundId = Number(searchParams.get('round')) || null
 
   const [league, setLeague] = useState<LeagueDetail | null>(null)
   const [participants, setParticipants] = useState<LeagueParticipantInfo[] | null>(null)
@@ -110,7 +113,7 @@ export default function LeagueDetailPage() {
   const [matches, setMatches] = useState<MatchWithPrediction[] | null>(null)
   const [rows, setRows] = useState<Record<number, RowState>>({})
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<Tab>('resumen')
+  const [activeTab, setActiveTab] = useState<Tab>(requestedTab === 'pronosticos' ? 'pronosticos' : 'resumen')
   const [roundFilter, setRoundFilter] = useState<number | null>(null)
   const [expandedPredictionRounds, setExpandedPredictionRounds] = useState<Set<number>>(new Set())
   const [copiedCode, setCopiedCode] = useState(false)
@@ -163,12 +166,18 @@ export default function LeagueDetailPage() {
             ms.filter((m) => m.canPredict && !m.myPrediction).map((m) => m.roundId),
           )
           const openRounds = new Set(ms.filter((m) => m.canPredict).map((m) => m.roundId))
-          setExpandedPredictionRounds(roundsNeedingAction.size > 0 ? roundsNeedingAction : openRounds)
+          const requestedRoundExists = requestedRoundId != null && ms.some((match) => match.roundId === requestedRoundId)
+          setExpandedPredictionRounds(
+            requestedRoundExists
+              ? new Set([requestedRoundId])
+              : roundsNeedingAction.size > 0 ? roundsNeedingAction : openRounds,
+          )
+          if (requestedRoundExists) setRoundFilter(requestedRoundId)
         }
       })
       .catch(() => { if (!cancelled) setMatches([]) })
     return () => { cancelled = true }
-  }, [activeTab, leagueId])
+  }, [activeTab, leagueId, requestedRoundId])
 
   function updateRow(matchId: number, patch: Partial<RowState>) {
     setRows((prev) => ({ ...prev, [matchId]: { ...prev[matchId], ...patch } }))
@@ -347,14 +356,14 @@ export default function LeagueDetailPage() {
   // ── RENDER ──────────────────────────────────────────────────
 
   return (
-    <div>
+    <div className={`pp-league-workspace pp-league-workspace--${league.leagueType === 'Official' ? 'official' : 'private'}`}>
       <Link to="/leagues" className="pp-back">← Mis Ligas</Link>
 
       <div className="pp-workspace__header">
         <h1 className="pp-workspace__title">{league.name}</h1>
         {league.description && <p className="pp-workspace__subtitle">{league.description}</p>}
         <div className="pp-workspace__meta">
-          <span className="pp-workspace__meta-item">⚽ {league.competitionName}</span>
+          <span className="pp-workspace__meta-item">⚽ {league.competitionName} · {league.editionName}</span>
           <span className="pp-workspace__meta-item">
             📋 {LEAGUE_SCOPE_LABELS[league.scopeType]}
             {league.scopeType === 'RoundRange' && league.roundFromName && league.roundToName && (
@@ -386,7 +395,7 @@ export default function LeagueDetailPage() {
           <div className="pp-info-card">
             <h2 className="pp-info-card__title">Tu Liga</h2>
             <div className="pp-info-card__meta">
-              <span className="pp-info-card__meta-item">⚽ Competencia: {league.competitionName}</span>
+              <span className="pp-info-card__meta-item">⚽ Fuente deportiva: {league.competitionName} · {league.editionName}</span>
               <span className="pp-info-card__meta-item">
                 📋 Alcance: {LEAGUE_SCOPE_LABELS[league.scopeType]}
                 {league.scopeType === 'RoundRange' && league.roundFromName && league.roundToName && (
@@ -555,9 +564,9 @@ export default function LeagueDetailPage() {
                                   {saved ? '✅ PRONOSTICADO' : 'INGRESÁ TU PRONÓSTICO'}
                                 </span>
                                 <div className="pp-match-card__inputs">
-                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantHome}`} value={row.homeInput} onChange={(e) => updateRow(m.id, { homeInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={(e) => handlePredictionEnter(e, m.id)} data-prediction-score className="pp-match-card__input" />
+                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantHome}`} value={row.homeInput} onFocus={(e) => e.currentTarget.select()} onChange={(e) => updateRow(m.id, { homeInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={(e) => handlePredictionEnter(e, m.id)} data-prediction-score className="pp-match-card__input" />
                                   <span className="pp-match-card__separator">-</span>
-                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantAway}`} value={row.awayInput} onChange={(e) => updateRow(m.id, { awayInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={(e) => handlePredictionEnter(e, m.id)} data-prediction-score className="pp-match-card__input" />
+                                  <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantAway}`} value={row.awayInput} onFocus={(e) => e.currentTarget.select()} onChange={(e) => updateRow(m.id, { awayInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={(e) => handlePredictionEnter(e, m.id)} data-prediction-score className="pp-match-card__input" />
                                 </div>
                                 <button
                                   type="button"

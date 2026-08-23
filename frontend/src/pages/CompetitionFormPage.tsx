@@ -72,7 +72,7 @@ export default function CompetitionFormPage() {
   return (
     <div>
       <div className="breadcrumb">
-        <Link to="/competitions">← Competencias</Link>
+        <Link to="/competitions">← Volver a Competencias</Link>
       </div>
       <div className="admin-header">
         <h1>{isEdit ? 'Editar Competencia' : 'Nueva Competencia'}</h1>
@@ -117,8 +117,9 @@ export default function CompetitionFormPage() {
           <button type="submit" className="btn btn-primary" disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
+          <Link to="/competitions" className="btn btn-secondary">Cancelar</Link>
           {isEdit && (
-            <Link to={`/competitions/${competitionId}/editions`} className="btn btn-secondary">
+            <Link to={`/competitions/${competitionId}/editions`} className="btn btn-tertiary form-actions__contextual">
               Ver Ediciones
             </Link>
           )}

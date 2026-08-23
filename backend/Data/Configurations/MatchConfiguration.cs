@@ -32,6 +32,18 @@ public class MatchConfiguration : IEntityTypeConfiguration<Match>
             .IsRequired();
 
         builder.HasIndex(m => m.RoundId);
+        builder.HasIndex(m => m.HomeTeamId);
+        builder.HasIndex(m => m.AwayTeamId);
         builder.HasIndex(m => m.StartsAtUtc);
+
+        builder.HasOne(m => m.HomeTeam)
+            .WithMany(t => t.HomeMatches)
+            .HasForeignKey(m => m.HomeTeamId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(m => m.AwayTeam)
+            .WithMany(t => t.AwayMatches)
+            .HasForeignKey(m => m.AwayTeamId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

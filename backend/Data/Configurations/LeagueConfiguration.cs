@@ -21,10 +21,16 @@ public class LeagueConfiguration : IEntityTypeConfiguration<League>
 
         builder.HasIndex(l => l.InviteCode).IsUnique();
         builder.HasIndex(l => l.CompetitionId);
+        builder.HasIndex(l => l.EditionId);
 
         builder.HasOne(l => l.Competition)
             .WithMany()
             .HasForeignKey(l => l.CompetitionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(l => l.Edition)
+            .WithMany()
+            .HasForeignKey(l => l.EditionId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(l => l.RoundFrom)

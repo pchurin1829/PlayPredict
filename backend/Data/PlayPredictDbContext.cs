@@ -14,6 +14,7 @@ public class PlayPredictDbContext : DbContext
     public DbSet<Edition> Editions => Set<Edition>();
     public DbSet<Round> Rounds => Set<Round>();
     public DbSet<Match> Matches => Set<Match>();
+    public DbSet<Team> Teams => Set<Team>();
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();

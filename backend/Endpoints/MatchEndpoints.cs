@@ -20,6 +20,8 @@ public static class MatchEndpoints
             }
 
             var matches = await db.Matches
+                .Include(m => m.HomeTeam)
+                .Include(m => m.AwayTeam)
                 .Where(m => m.RoundId == roundId)
                 .OrderBy(m => m.StartsAtUtc)
                 .Select(m => ToDto(m))
@@ -30,7 +32,7 @@ public static class MatchEndpoints
 
         app.MapGet("/api/matches/{id:int}", async (int id, PlayPredictDbContext db) =>
         {
-            var match = await db.Matches.FindAsync(id);
+            var match = await db.Matches.Include(m => m.HomeTeam).Include(m => m.AwayTeam).FirstOrDefaultAsync(m => m.Id == id);
             return match is null
                 ? Results.NotFound()
                 : Results.Ok(ToDto(match));
@@ -44,17 +46,27 @@ public static class MatchEndpoints
                 return Results.NotFound();
             }
 
-            var (errors, status) = ValidateMatch(dto.ParticipantHome, dto.ParticipantAway, dto.Status, MatchStatus.Scheduled);
+            var (errors, status) = ValidateMatch(dto.HomeTeamId, dto.AwayTeamId, dto.StartsAtUtc, dto.Status, MatchStatus.Scheduled);
             if (errors.Count > 0)
             {
                 return Results.ValidationProblem(errors);
             }
 
+            var teams = await db.Teams.Where(t => t.Id == dto.HomeTeamId || t.Id == dto.AwayTeamId).ToDictionaryAsync(t => t.Id);
+            if (!teams.TryGetValue(dto.HomeTeamId, out var homeTeam) || !teams.TryGetValue(dto.AwayTeamId, out var awayTeam))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["teams"] = ["Seleccioná equipos válidos."] });
+            var participationErrors = await ValidateRoundTeamAvailabilityAsync(db, roundId, null, homeTeam, awayTeam, []);
+            if (participationErrors.Count > 0) return Results.ValidationProblem(participationErrors);
+
             var match = new Match
             {
                 RoundId = roundId,
-                ParticipantHome = dto.ParticipantHome.Trim(),
-                ParticipantAway = dto.ParticipantAway.Trim(),
+                HomeTeamId = homeTeam.Id,
+                AwayTeamId = awayTeam.Id,
+                HomeTeam = homeTeam,
+                AwayTeam = awayTeam,
+                ParticipantHome = homeTeam.Name,
+                ParticipantAway = awayTeam.Name,
                 StartsAtUtc = dto.StartsAtUtc,
                 Status = status,
                 CreatedAtUtc = DateTime.UtcNow
@@ -74,14 +86,25 @@ public static class MatchEndpoints
                 return Results.NotFound();
             }
 
-            var (errors, status) = ValidateMatch(dto.ParticipantHome, dto.ParticipantAway, dto.Status, match.Status);
+            var (errors, status) = ValidateMatch(dto.HomeTeamId, dto.AwayTeamId, dto.StartsAtUtc, dto.Status, match.Status);
             if (errors.Count > 0)
             {
                 return Results.ValidationProblem(errors);
             }
 
-            match.ParticipantHome = dto.ParticipantHome.Trim();
-            match.ParticipantAway = dto.ParticipantAway.Trim();
+            var teams = await db.Teams.Where(t => t.Id == dto.HomeTeamId || t.Id == dto.AwayTeamId).ToDictionaryAsync(t => t.Id);
+            if (!teams.TryGetValue(dto.HomeTeamId, out var homeTeam) || !teams.TryGetValue(dto.AwayTeamId, out var awayTeam))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["teams"] = ["Seleccioná equipos válidos."] });
+            var participationErrors = await ValidateRoundTeamAvailabilityAsync(db, match.RoundId, match.Id, homeTeam, awayTeam,
+                [match.HomeTeamId, match.AwayTeamId]);
+            if (participationErrors.Count > 0) return Results.ValidationProblem(participationErrors);
+
+            match.HomeTeamId = homeTeam.Id;
+            match.AwayTeamId = awayTeam.Id;
+            match.HomeTeam = homeTeam;
+            match.AwayTeam = awayTeam;
+            match.ParticipantHome = homeTeam.Name;
+            match.ParticipantAway = awayTeam.Name;
             match.StartsAtUtc = dto.StartsAtUtc;
             match.Status = status;
 
@@ -109,7 +132,7 @@ public static class MatchEndpoints
                 return Results.ValidationProblem(errors);
             }
 
-            var match = await db.Matches.FindAsync(id);
+            var match = await db.Matches.Include(m => m.HomeTeam).Include(m => m.AwayTeam).FirstOrDefaultAsync(m => m.Id == id);
             if (match is null)
             {
                 return Results.NotFound();
@@ -136,30 +159,46 @@ public static class MatchEndpoints
 
             return Results.Ok(ToDto(match));
         }).WithTags("Matches");
+
+        app.MapDelete("/api/matches/{id:int}", async (int id, PlayPredictDbContext db) =>
+        {
+            var match = await db.Matches.FindAsync(id);
+            if (match is null) return Results.NotFound();
+
+            if (match.Status == MatchStatus.Finished || match.HomeGoals.HasValue || match.AwayGoals.HasValue)
+            {
+                return Results.Conflict(new
+                {
+                    message = "No se puede eliminar este partido porque ya tiene un resultado cargado."
+                });
+            }
+
+            var predictionsCount = await db.Predictions.CountAsync(p => p.MatchId == id);
+            if (predictionsCount > 0)
+            {
+                var evaluationsCount = await db.PredictionEvaluations.CountAsync(e => db.Predictions
+                    .Where(p => p.MatchId == id).Select(p => p.Id).Contains(e.PredictionId));
+                return Results.Conflict(new
+                {
+                    message = $"No se puede eliminar el partido porque tiene {predictionsCount} pronóstico(s) y {evaluationsCount} evaluación(es) relacionadas."
+                });
+            }
+
+            db.Matches.Remove(match);
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        }).WithTags("Matches");
     }
 
     private static (Dictionary<string, string[]> Errors, MatchStatus Status) ValidateMatch(
-        string participantHome, string participantAway, string? statusInput, MatchStatus fallbackStatus)
+        int homeTeamId, int awayTeamId, DateTime startsAtUtc, string? statusInput, MatchStatus fallbackStatus)
     {
         var errors = new Dictionary<string, string[]>();
 
-        if (string.IsNullOrWhiteSpace(participantHome))
-        {
-            errors["participantHome"] = ["El participante local es obligatorio."];
-        }
-        else if (participantHome.Trim().Length > 150)
-        {
-            errors["participantHome"] = ["El participante local no puede superar los 150 caracteres."];
-        }
-
-        if (string.IsNullOrWhiteSpace(participantAway))
-        {
-            errors["participantAway"] = ["El participante visitante es obligatorio."];
-        }
-        else if (participantAway.Trim().Length > 150)
-        {
-            errors["participantAway"] = ["El participante visitante no puede superar los 150 caracteres."];
-        }
+        if (homeTeamId <= 0) errors["homeTeamId"] = ["El equipo local es obligatorio."];
+        if (awayTeamId <= 0) errors["awayTeamId"] = ["El equipo visitante es obligatorio."];
+        if (homeTeamId > 0 && homeTeamId == awayTeamId) errors["awayTeamId"] = ["El equipo visitante debe ser distinto del local."];
+        if (startsAtUtc == default) errors["startsAtUtc"] = ["La fecha y hora del partido son obligatorias."];
 
         // Un partido Finalizado solo puede modificarse vía /result: este endpoint nunca
         // le cambia el estado ni el resultado, sin importar qué status llegue en el DTO.
@@ -184,6 +223,22 @@ public static class MatchEndpoints
         return (errors, status);
     }
 
+    private static async Task<Dictionary<string, string[]>> ValidateRoundTeamAvailabilityAsync(
+        PlayPredictDbContext db, int roundId, int? currentMatchId, Team homeTeam, Team awayTeam, HashSet<int> grandfatheredTeamIds)
+    {
+        var roundName = await db.Rounds.Where(r => r.Id == roundId).Select(r => r.Name).FirstAsync();
+        var otherMatches = await db.Matches
+            .Where(m => m.RoundId == roundId && (!currentMatchId.HasValue || m.Id != currentMatchId.Value))
+            .Select(m => new { m.HomeTeamId, m.AwayTeamId })
+            .ToListAsync();
+        var usedTeamIds = otherMatches.SelectMany(m => new[] { m.HomeTeamId, m.AwayTeamId }).ToHashSet();
+        var errors = new Dictionary<string, string[]>();
+        if (usedTeamIds.Contains(homeTeam.Id) && !grandfatheredTeamIds.Contains(homeTeam.Id)) errors["homeTeamId"] = [$"{homeTeam.Name} ya participa en otro partido de {roundName}."];
+        if (usedTeamIds.Contains(awayTeam.Id) && !grandfatheredTeamIds.Contains(awayTeam.Id)) errors["awayTeamId"] = [$"{awayTeam.Name} ya participa en otro partido de {roundName}."];
+        return errors;
+    }
+
     internal static MatchDto ToDto(Match m) =>
-        new(m.Id, m.RoundId, m.ParticipantHome, m.ParticipantAway, m.StartsAtUtc, m.Status.ToString(), m.HomeGoals, m.AwayGoals, m.CreatedAtUtc);
+        new(m.Id, m.RoundId, m.HomeTeamId, m.AwayTeamId, m.ParticipantHome, m.ParticipantAway,
+            m.HomeTeam?.LogoUrl, m.AwayTeam?.LogoUrl, m.StartsAtUtc, m.Status.ToString(), m.HomeGoals, m.AwayGoals, m.CreatedAtUtc);
 }

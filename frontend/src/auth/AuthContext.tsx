@@ -16,6 +16,8 @@ interface AuthContextValue {
   loading: boolean
   login: (token: string, user: User) => void
   logout: () => void
+  viewMode: 'admin' | 'player'
+  setViewMode: (mode: 'admin' | 'player') => void
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -23,6 +25,9 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewModeState] = useState<'admin' | 'player'>(() =>
+    localStorage.getItem('playpredict_view_mode') === 'player' ? 'player' : 'admin',
+  )
 
   useEffect(() => {
     if (!getToken()) {
@@ -43,15 +48,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function login(token: string, loggedUser: User) {
     setToken(token)
     setUser(loggedUser)
+    if (loggedUser.roles.includes('ADMIN')) setViewMode('admin')
   }
 
   function logout() {
     clearToken()
     setUser(null)
+    localStorage.removeItem('playpredict_view_mode')
+  }
+
+  function setViewMode(mode: 'admin' | 'player') {
+    localStorage.setItem('playpredict_view_mode', mode)
+    setViewModeState(mode)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, viewMode, setViewMode }}>
       {children}
     </AuthContext.Provider>
   )

@@ -99,7 +99,7 @@ export default function AdminExperienceFormPage() {
   return (
     <div>
       <div className="breadcrumb">
-        <Link to="/admin/experiences">← Experiencias</Link>
+        <Link to="/admin/experiences">← Volver a Experiencias</Link>
       </div>
       <div className="admin-header">
         <h1>{isEdit ? 'Editar Experiencia' : 'Nueva Experiencia'}</h1>
@@ -243,7 +243,7 @@ export default function AdminExperienceFormPage() {
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
           <Link to="/admin/experiences" className="btn btn-secondary">
-            Volver a Experiencias
+            Cancelar
           </Link>
         </div>
       </form>

@@ -8,6 +8,7 @@ public class League
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public int CompetitionId { get; set; }
+    public int EditionId { get; set; }
     public LeagueScopeType ScopeType { get; set; }
     public int? RoundFromId { get; set; }
     public int? RoundToId { get; set; }
@@ -19,6 +20,7 @@ public class League
     public DateTime UpdatedAtUtc { get; set; }
 
     public Competition Competition { get; set; } = null!;
+    public Edition Edition { get; set; } = null!;
     public Round? RoundFrom { get; set; }
     public Round? RoundTo { get; set; }
     public User CreatedByUser { get; set; } = null!;

@@ -67,13 +67,10 @@ export default function CompetitionsListPage() {
                     </span>
                   </td>
                   <td>
-                    <Link
-                      to={`/competitions/${c.id}/edit`}
-                      className="btn btn-secondary"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Editar
-                    </Link>
+                    <div className="match-row-actions">
+                      <Link to={`/competitions/${c.id}/edit`} className="btn btn-secondary" onClick={(e) => e.stopPropagation()}>Editar</Link>
+                      <Link to={`/competitions/${c.id}/editions`} className="btn btn-primary" onClick={(e) => e.stopPropagation()}>Ver Ediciones</Link>
+                    </div>
                   </td>
                 </tr>
               ))}

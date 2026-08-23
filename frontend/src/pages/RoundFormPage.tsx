@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import { isoToLocalInput, localInputToIsoUtc } from '../api/dateUtils'
 import type { Round } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 
@@ -13,25 +12,39 @@ export default function RoundFormPage() {
   const [editionId, setEditionId] = useState<string | undefined>(editionIdParam)
   const [name, setName] = useState('')
   const [order, setOrder] = useState(1)
-  const [startDateUtc, setStartDateUtc] = useState('')
-  const [endDateUtc, setEndDateUtc] = useState('')
+  const [suggestedOrder, setSuggestedOrder] = useState(1)
+  const [existingRounds, setExistingRounds] = useState<Round[]>([])
 
-  const [loading, setLoading] = useState(isEdit)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    if (!isEdit) return
-    api
-      .get<Round>(`/rounds/${roundId}`)
-      .then((r) => {
+    if (!isEdit) {
+      api.get<Round[]>(`/editions/${editionIdParam}/rounds`).then((rounds) => {
+        setExistingRounds(rounds)
+        const used = new Set(rounds.map((round) => round.order))
+        let next = 1
+        while (used.has(next)) next++
+        setSuggestedOrder(next)
+        setOrder(next)
+        setName(`FECHA ${next}`)
+      }).catch((err) => setError(err.message ?? 'No se pudieron cargar las Fechas existentes.'))
+        .finally(() => setLoading(false))
+      return
+    }
+    api.get<Round>(`/rounds/${roundId}`).then(async (r) => ({ round: r, rounds: await api.get<Round[]>(`/editions/${r.editionId}/rounds`) }))
+      .then(({ round: r, rounds }) => {
         setEditionId(String(r.editionId))
         setName(r.name)
         setOrder(r.order)
-        setStartDateUtc(isoToLocalInput(r.startDateUtc))
-        setEndDateUtc(isoToLocalInput(r.endDateUtc))
+        setExistingRounds(rounds.filter((candidate) => candidate.id !== r.id))
+        const used = new Set(rounds.map((candidate) => candidate.order))
+        let next = 1
+        while (used.has(next)) next++
+        setSuggestedOrder(next)
       })
       .catch((err) => setError(err.message ?? 'No se pudo cargar la fecha.'))
       .finally(() => setLoading(false))
@@ -47,8 +60,6 @@ export default function RoundFormPage() {
     const payload = {
       name,
       order,
-      startDateUtc: localInputToIsoUtc(startDateUtc),
-      endDateUtc: localInputToIsoUtc(endDateUtc),
     }
 
     try {
@@ -73,6 +84,17 @@ export default function RoundFormPage() {
     }
   }
 
+  function handleOrderChange(nextOrder: number) {
+    setOrder(nextOrder)
+    const occupied = existingRounds.find((round) => round.order === nextOrder)
+    setFieldErrors((current) => {
+      const next = { ...current }
+      if (occupied) next.order = [`El orden ${nextOrder} ya está utilizado por ${occupied.name}. El próximo orden disponible es ${suggestedOrder}.`]
+      else delete next.order
+      return next
+    })
+  }
+
   if (loading) {
     return <StatusMessage kind="loading" message="Cargando fecha..." />
   }
@@ -80,7 +102,7 @@ export default function RoundFormPage() {
   return (
     <div>
       <div className="breadcrumb">
-        <Link to={`/editions/${editionId}/rounds`}>← Fechas</Link>
+        <Link to={`/editions/${editionId}/rounds`}>← Volver a Fechas</Link>
       </div>
       <div className="admin-header">
         <h1>{isEdit ? 'Editar Fecha' : 'Nueva Fecha'}</h1>
@@ -88,6 +110,7 @@ export default function RoundFormPage() {
 
       {error && <StatusMessage kind="error" message={error} />}
       {saved && <StatusMessage kind="success" message="Fecha guardada correctamente." />}
+      {!isEdit && <p className="admin-help">Próxima fecha sugerida: <strong>Fecha {suggestedOrder} (orden {suggestedOrder})</strong></p>}
 
       <form className="form-card" onSubmit={handleSubmit}>
         <div className="form-field">
@@ -103,42 +126,18 @@ export default function RoundFormPage() {
             type="number"
             min={1}
             value={order}
-            onChange={(e) => setOrder(Number(e.target.value))}
+            onChange={(e) => handleOrderChange(Number(e.target.value))}
           />
           {fieldErrors.order && <span className="form-field-error">{fieldErrors.order[0]}</span>}
         </div>
 
-        <div className="form-row">
-          <div className="form-field">
-            <label htmlFor="startDateUtc">Fecha de inicio (opcional)</label>
-            <input
-              id="startDateUtc"
-              type="datetime-local"
-              value={startDateUtc}
-              onChange={(e) => setStartDateUtc(e.target.value)}
-            />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="endDateUtc">Fecha de finalización (opcional)</label>
-            <input
-              id="endDateUtc"
-              type="datetime-local"
-              value={endDateUtc}
-              onChange={(e) => setEndDateUtc(e.target.value)}
-            />
-            {fieldErrors.endDateUtc && (
-              <span className="form-field-error">{fieldErrors.endDateUtc[0]}</span>
-            )}
-          </div>
-        </div>
-
         <div className="form-actions">
-          <button type="submit" className="btn btn-primary" disabled={saving}>
+          <button type="submit" className="btn btn-primary" disabled={saving || Boolean(fieldErrors.order)}>
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
+          <Link to={`/editions/${editionId}/rounds`} className="btn btn-secondary">Cancelar</Link>
           {isEdit && (
-            <Link to={`/rounds/${roundId}/matches`} className="btn btn-secondary">
+            <Link to={`/rounds/${roundId}/matches`} className="btn btn-tertiary form-actions__contextual">
               Ver Partidos
             </Link>
           )}

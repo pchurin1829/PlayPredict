@@ -23,7 +23,7 @@ public static class LeagueEndpoints
                 return Results.Unauthorized();
             }
 
-            var (errors, scopeType, competition) = await ValidateCreateAsync(db, dto);
+            var (errors, scopeType, competition, edition) = await ValidateCreateAsync(db, dto);
             if (errors.Count > 0)
             {
                 return Results.ValidationProblem(errors);
@@ -37,6 +37,7 @@ public static class LeagueEndpoints
                 Name = dto.Name.Trim(),
                 Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
                 CompetitionId = competition!.Id,
+                EditionId = edition!.Id,
                 ScopeType = scopeType,
                 LeagueType = LeagueType.Private,
                 RoundFromId = scopeType == LeagueScopeType.RoundRange ? dto.RoundFromId : null,
@@ -429,7 +430,7 @@ public static class LeagueEndpoints
     private static Task<bool> IsParticipantAsync(PlayPredictDbContext db, int leagueId, int userId) =>
         db.LeagueParticipants.AnyAsync(lp => lp.LeagueId == leagueId && lp.UserId == userId);
 
-    private static async Task<(Dictionary<string, string[]> Errors, LeagueScopeType ScopeType, Competition? Competition)> ValidateCreateAsync(
+    private static async Task<(Dictionary<string, string[]> Errors, LeagueScopeType ScopeType, Competition? Competition, Edition? Edition)> ValidateCreateAsync(
         PlayPredictDbContext db, CreateLeagueDto dto)
     {
         var errors = ValidateNameDescription(dto.Name, dto.Description);
@@ -437,7 +438,7 @@ public static class LeagueEndpoints
         if (!Enum.TryParse<LeagueScopeType>(dto.ScopeType, ignoreCase: true, out var scopeType))
         {
             errors["scopeType"] = [$"Alcance inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<LeagueScopeType>())}."];
-            return (errors, default, null);
+            return (errors, default, null, null);
         }
 
         var competition = await db.Competitions.FindAsync(dto.CompetitionId);
@@ -450,9 +451,19 @@ public static class LeagueEndpoints
             errors["competitionId"] = ["La Competencia indicada no está habilitada."];
         }
 
+        var edition = await db.Editions.FindAsync(dto.EditionId);
+        if (edition is null)
+        {
+            errors["editionId"] = ["La Edición indicada no existe."];
+        }
+        else if (edition.CompetitionId != dto.CompetitionId)
+        {
+            errors["editionId"] = ["La Edición debe pertenecer a la Competencia elegida."];
+        }
+
         if (errors.Count > 0)
         {
-            return (errors, scopeType, competition);
+            return (errors, scopeType, competition, edition);
         }
 
         if (scopeType == LeagueScopeType.FullCompetition)
@@ -462,14 +473,14 @@ public static class LeagueEndpoints
                 errors["roundFromId"] = ["No se debe indicar rango de Fechas cuando el alcance es toda la Competencia."];
             }
 
-            return (errors, scopeType, competition);
+            return (errors, scopeType, competition, edition);
         }
 
         // RoundRange
         if (dto.RoundFromId is null || dto.RoundToId is null)
         {
             errors["roundFromId"] = ["Debés indicar la Fecha inicial y la Fecha final para este alcance."];
-            return (errors, scopeType, competition);
+            return (errors, scopeType, competition, edition);
         }
 
         var roundFrom = await db.Rounds.FindAsync(dto.RoundFromId.Value);
@@ -478,7 +489,7 @@ public static class LeagueEndpoints
         if (roundFrom is null || roundTo is null)
         {
             errors["roundFromId"] = ["Alguna de las Fechas indicadas no existe."];
-            return (errors, scopeType, competition);
+            return (errors, scopeType, competition, edition);
         }
 
         var roundFromCompetitionId = await db.Editions
@@ -490,16 +501,16 @@ public static class LeagueEndpoints
         {
             errors["roundFromId"] = ["Ambas Fechas deben pertenecer a la Competencia elegida."];
         }
-        else if (roundFrom.EditionId != roundTo.EditionId)
+        else if (roundFrom.EditionId != dto.EditionId || roundTo.EditionId != dto.EditionId)
         {
-            errors["roundFromId"] = ["Ambas Fechas deben pertenecer a la misma Edición."];
+            errors["roundFromId"] = ["Ambas Fechas deben pertenecer a la Edición elegida."];
         }
         else if (roundFrom.Order > roundTo.Order)
         {
             errors["roundFromId"] = ["La Fecha inicial no puede ser posterior a la Fecha final."];
         }
 
-        return (errors, scopeType, competition);
+        return (errors, scopeType, competition, edition);
     }
 
     private static Dictionary<string, string[]> ValidateNameDescription(string? name, string? description)
@@ -545,8 +556,8 @@ public static class LeagueEndpoints
         if (league.ScopeType == LeagueScopeType.FullCompetition)
         {
             return await db.Rounds
-                .Where(r => r.Edition.CompetitionId == league.CompetitionId)
-                .OrderBy(r => r.EditionId).ThenBy(r => r.Order)
+                .Where(r => r.EditionId == league.EditionId)
+                .OrderBy(r => r.Order)
                 .ToListAsync();
         }
 
@@ -566,7 +577,7 @@ public static class LeagueEndpoints
         if (league.ScopeType == LeagueScopeType.FullCompetition)
         {
             return await db.Matches
-                .Where(m => m.Round.Edition.CompetitionId == league.CompetitionId)
+                .Where(m => m.Round.EditionId == league.EditionId)
                 .OrderBy(m => m.StartsAtUtc)
                 .ToListAsync();
         }
@@ -585,12 +596,14 @@ public static class LeagueEndpoints
     {
         var competitionName = await db.Competitions
             .Where(c => c.Id == league.CompetitionId).Select(c => c.Name).FirstAsync();
+        var editionName = await db.Editions
+            .Where(e => e.Id == league.EditionId).Select(e => e.Name).FirstAsync();
         var participantsCount = await db.LeagueParticipants.CountAsync(lp => lp.LeagueId == league.Id);
         var isCreator = league.CreatedByUserId == currentUserId;
         var (roundFromName, roundToName) = await GetRoundRangeNamesAsync(db, league);
 
         return new LeagueSummaryDto(
-            league.Id, league.Name, league.Description, league.CompetitionId, competitionName,
+            league.Id, league.Name, league.Description, league.CompetitionId, competitionName, league.EditionId, editionName,
             league.ScopeType.ToString(), league.LeagueType.ToString(),
             league.RoundFromId, league.RoundToId, roundFromName, roundToName,
             league.CreatedByUserId, isCreator, participantsCount, league.IsActive,
@@ -601,6 +614,8 @@ public static class LeagueEndpoints
     {
         var competitionName = await db.Competitions
             .Where(c => c.Id == league.CompetitionId).Select(c => c.Name).FirstAsync();
+        var editionName = await db.Editions
+            .Where(e => e.Id == league.EditionId).Select(e => e.Name).FirstAsync();
         var creator = await db.Users.FindAsync(league.CreatedByUserId);
         var participantsCount = await db.LeagueParticipants.CountAsync(lp => lp.LeagueId == league.Id);
         var isCreator = league.CreatedByUserId == currentUserId;
@@ -608,7 +623,7 @@ public static class LeagueEndpoints
         var rounds = await GetRoundsInLeagueScopeAsync(db, league);
 
         return new LeagueDetailDto(
-            league.Id, league.Name, league.Description, league.CompetitionId, competitionName,
+            league.Id, league.Name, league.Description, league.CompetitionId, competitionName, league.EditionId, editionName,
             league.ScopeType.ToString(), league.LeagueType.ToString(),
             league.RoundFromId, league.RoundToId, roundFromName, roundToName,
             league.CreatedByUserId, $"{creator!.FirstName} {creator.LastName}", isCreator, participantsCount, league.IsActive,

@@ -2,8 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { isoToLocalInput, localInputToIsoUtc } from '../api/dateUtils'
-import { MATCH_STATUSES, MATCH_STATUS_LABELS, type Match, type MatchStatus } from '../api/types'
+import { MATCH_STATUSES, MATCH_STATUS_LABELS, type Match, type MatchStatus, type Team } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+
+function SelectedTeam({ team }: { team: Team | undefined }) {
+  if (!team) return null
+  return <div className="selected-team-preview">{team.logoUrl ? <img src={team.logoUrl} alt="" /> : <span aria-hidden="true">{team.shortName.slice(0, 2).toUpperCase()}</span>}<strong>{team.name}</strong></div>
+}
 
 export default function MatchFormPage() {
   const { roundId: roundIdParam, matchId } = useParams()
@@ -11,34 +16,52 @@ export default function MatchFormPage() {
   const navigate = useNavigate()
 
   const [roundId, setRoundId] = useState<string | undefined>(roundIdParam)
-  const [participantHome, setParticipantHome] = useState('')
-  const [participantAway, setParticipantAway] = useState('')
+  const [homeTeamId, setHomeTeamId] = useState('')
+  const [awayTeamId, setAwayTeamId] = useState('')
+  const [teams, setTeams] = useState<Team[]>([])
+  const [roundMatches, setRoundMatches] = useState<Match[]>([])
+  const [originalTeamIds, setOriginalTeamIds] = useState<number[]>([])
   const [startsAtUtc, setStartsAtUtc] = useState('')
   const [status, setStatus] = useState<MatchStatus>('Scheduled')
   const [currentStatus, setCurrentStatus] = useState<string | null>(null)
 
-  const [loading, setLoading] = useState(isEdit)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
 
   useEffect(() => {
-    if (!isEdit) return
-    api
-      .get<Match>(`/matches/${matchId}`)
-      .then((m) => {
+    async function load() {
+      try {
+        const current = isEdit ? await api.get<Match>(`/matches/${matchId}`) : null
+        const targetRoundId = current?.roundId ?? Number(roundIdParam)
+        const [teamItems, matches] = await Promise.all([
+          api.get<Team[]>('/teams'),
+          api.get<Match[]>(`/rounds/${targetRoundId}/matches`),
+        ])
+        setTeams(teamItems.filter((team) => team.active))
+        setRoundMatches(matches.filter((match) => match.id !== current?.id))
+        if (!current) return
+        const m = current
         setRoundId(String(m.roundId))
-        setParticipantHome(m.participantHome)
-        setParticipantAway(m.participantAway)
+        setHomeTeamId(String(m.homeTeamId))
+        setAwayTeamId(String(m.awayTeamId))
+        setOriginalTeamIds([m.homeTeamId, m.awayTeamId])
         setStartsAtUtc(isoToLocalInput(m.startsAtUtc))
         setCurrentStatus(m.status)
         if (m.status !== 'Finished') {
           setStatus(m.status)
         }
-      })
-      .catch((err) => setError(err.message ?? 'No se pudo cargar el partido.'))
-      .finally(() => setLoading(false))
-  }, [matchId, isEdit])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudo cargar el partido.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [matchId, isEdit, roundIdParam])
+
+  const usedTeamIds = new Set(roundMatches.flatMap((match) => [match.homeTeamId, match.awayTeamId]).filter((teamId) => !originalTeamIds.includes(teamId)))
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -46,11 +69,22 @@ export default function MatchFormPage() {
     setError(null)
     setFieldErrors({})
 
+    if (!startsAtUtc) {
+      setFieldErrors({ startsAtUtc: ['La fecha y hora del partido son obligatorias.'] })
+      setSaving(false)
+      return
+    }
+    if (homeTeamId && homeTeamId === awayTeamId) {
+      setFieldErrors({ awayTeamId: ['El equipo visitante debe ser distinto del local.'] })
+      setSaving(false)
+      return
+    }
+
     try {
       if (isEdit) {
         await api.put(`/matches/${matchId}`, {
-          participantHome,
-          participantAway,
+          homeTeamId: Number(homeTeamId),
+          awayTeamId: Number(awayTeamId),
           startsAtUtc: localInputToIsoUtc(startsAtUtc),
           // Un partido Finalizado no debe enviar status: su resultado oficial
           // solo se modifica desde "Cargar resultado".
@@ -58,8 +92,8 @@ export default function MatchFormPage() {
         })
       } else {
         await api.post<Match>(`/rounds/${roundIdParam}/matches`, {
-          participantHome,
-          participantAway,
+          homeTeamId: Number(homeTeamId),
+          awayTeamId: Number(awayTeamId),
           startsAtUtc: localInputToIsoUtc(startsAtUtc),
           status,
         })
@@ -87,7 +121,7 @@ export default function MatchFormPage() {
   return (
     <div>
       <div className="breadcrumb">
-        <Link to={`/rounds/${roundId}/matches`}>← Partidos</Link>
+        <Link to={`/rounds/${roundId}/matches`}>← Volver a Partidos</Link>
       </div>
       <div className="admin-header">
         <h1>{isEdit ? 'Editar Partido' : 'Nuevo Partido'}</h1>
@@ -104,28 +138,26 @@ export default function MatchFormPage() {
       <form className="form-card" onSubmit={handleSubmit}>
         <div className="form-row">
           <div className="form-field">
-            <label htmlFor="participantHome">Participante local</label>
-            <input
-              id="participantHome"
-              type="text"
-              value={participantHome}
-              onChange={(e) => setParticipantHome(e.target.value)}
-            />
-            {fieldErrors.participantHome && (
-              <span className="form-field-error">{fieldErrors.participantHome[0]}</span>
+            <label htmlFor="homeTeamId">Equipo local</label>
+            <select id="homeTeamId" value={homeTeamId} onChange={(e) => setHomeTeamId(e.target.value)} required>
+              <option value="">Seleccionar equipo</option>
+              {teams.map((team) => <option key={team.id} value={team.id} disabled={usedTeamIds.has(team.id)}>{team.name}{usedTeamIds.has(team.id) ? ' — ya participa en esta Fecha' : ''}</option>)}
+            </select>
+            <SelectedTeam team={teams.find((team) => team.id === Number(homeTeamId))} />
+            {fieldErrors.homeTeamId && (
+              <span className="form-field-error">{fieldErrors.homeTeamId[0]}</span>
             )}
           </div>
 
           <div className="form-field">
-            <label htmlFor="participantAway">Participante visitante</label>
-            <input
-              id="participantAway"
-              type="text"
-              value={participantAway}
-              onChange={(e) => setParticipantAway(e.target.value)}
-            />
-            {fieldErrors.participantAway && (
-              <span className="form-field-error">{fieldErrors.participantAway[0]}</span>
+            <label htmlFor="awayTeamId">Equipo visitante</label>
+            <select id="awayTeamId" value={awayTeamId} onChange={(e) => setAwayTeamId(e.target.value)} required>
+              <option value="">Seleccionar equipo</option>
+              {teams.map((team) => <option key={team.id} value={team.id} disabled={usedTeamIds.has(team.id)}>{team.name}{usedTeamIds.has(team.id) ? ' — ya participa en esta Fecha' : ''}</option>)}
+            </select>
+            <SelectedTeam team={teams.find((team) => team.id === Number(awayTeamId))} />
+            {fieldErrors.awayTeamId && (
+              <span className="form-field-error">{fieldErrors.awayTeamId[0]}</span>
             )}
           </div>
         </div>
@@ -137,7 +169,9 @@ export default function MatchFormPage() {
             type="datetime-local"
             value={startsAtUtc}
             onChange={(e) => setStartsAtUtc(e.target.value)}
+            required
           />
+          {fieldErrors.startsAtUtc && <span className="form-field-error">{fieldErrors.startsAtUtc[0]}</span>}
         </div>
 
         <div className="form-field">
@@ -165,7 +199,7 @@ export default function MatchFormPage() {
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
           <Link to={`/rounds/${roundId}/matches`} className="btn btn-secondary">
-            Volver a Partidos
+            Cancelar
           </Link>
         </div>
       </form>

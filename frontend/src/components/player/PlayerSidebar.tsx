@@ -28,9 +28,10 @@ const ACCOUNT_ITEMS: SidebarItem[] = [
 interface PlayerSidebarProps {
   collapsed?: boolean
   onToggle?: () => void
+  onNavigate?: () => void
 }
 
-export default function PlayerSidebar({ collapsed = false, onToggle }: PlayerSidebarProps) {
+export default function PlayerSidebar({ collapsed = false, onToggle, onNavigate }: PlayerSidebarProps) {
   const location = useLocation()
 
   function isActive(to?: string): boolean {
@@ -66,6 +67,7 @@ export default function PlayerSidebar({ collapsed = false, onToggle }: PlayerSid
                     key={item.label}
                     to={item.to}
                     className={`psidebar__item ${isActive(item.to) ? 'psidebar__item--active' : ''}`}
+                    onClick={onNavigate}
                   >
                     <span className="psidebar__item-icon">{item.icon}</span>
                     <span className="psidebar__item-label">{item.label}</span>
@@ -95,6 +97,7 @@ export default function PlayerSidebar({ collapsed = false, onToggle }: PlayerSid
                     key={item.label}
                     to={item.to}
                     className={`psidebar__item ${isActive(item.to) ? 'psidebar__item--active' : ''}`}
+                    onClick={onNavigate}
                   >
                     <span className="psidebar__item-icon">{item.icon}</span>
                     <span className="psidebar__item-label">{item.label}</span>

@@ -193,7 +193,7 @@ export default function LeaguesMinePage() {
                         </span>
                       </div>
                     </div>
-                    <span className="pp-league-card__comp">⚽ {l.competitionName}</span>
+                    <span className="pp-league-card__comp">⚽ {l.competitionName} · {l.editionName}</span>
                     <div className="pp-league-card__meta">
                       <span>
                         📋 {LEAGUE_SCOPE_LABELS[l.scopeType]}
@@ -204,7 +204,7 @@ export default function LeaguesMinePage() {
                       <span>👥 {l.participantsCount} participante{l.participantsCount !== 1 ? 's' : ''}</span>
                     </div>
                     <div className="pp-league-card__footer">
-                      <div className={`pp-league-card__actions-row ${isOfficial ? 'pp-league-card__actions-row--official' : ''}`}>
+                      <div className={`pp-league-card__actions-row pp-league-card__actions-row--${isOfficial ? 'official' : 'private'}`}>
                         <Link to={`/leagues/${l.id}`} className="pp-league-card__action">
                           Entrar
                         </Link>
@@ -213,7 +213,7 @@ export default function LeaguesMinePage() {
                         {isOfficial && (
                           <button
                             type="button"
-                            className="pp-btn pp-btn--secondary pp-btn--sm"
+                            className="pp-btn pp-btn--card-secondary pp-btn--sm"
                             disabled={actingId === l.id}
                             onClick={() => openModal(l.id, l.name, 'leave')}
                           >
@@ -225,7 +225,7 @@ export default function LeaguesMinePage() {
                         {!isOfficial && !l.isCreator && (
                           <button
                             type="button"
-                            className="pp-btn pp-btn--secondary pp-btn--sm"
+                            className="pp-btn pp-btn--card-secondary pp-btn--sm"
                             disabled={actingId === l.id}
                             onClick={() => openModal(l.id, l.name, 'leave')}
                           >
@@ -237,7 +237,7 @@ export default function LeaguesMinePage() {
                         {!isOfficial && l.isCreator && (
                           <button
                             type="button"
-                            className="pp-btn pp-btn--secondary pp-btn--sm"
+                            className="pp-btn pp-btn--card-secondary pp-btn--sm"
                             disabled={actingId === l.id}
                             onClick={() => setManageTargetId(l.id)}
                           >

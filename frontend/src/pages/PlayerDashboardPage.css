@@ -34,6 +34,103 @@
   color: var(--color-text);
 }
 
+.pdash__pending-groups,
+.pdash__upcoming-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.pdash__context-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--pp-league-private);
+  border-radius: var(--radius-md);
+  background: var(--pp-league-private-soft);
+}
+
+.pdash__context-card--official {
+  border-left-color: var(--pp-league-official);
+  background: var(--pp-league-official-soft);
+}
+
+.pdash__context-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.pdash__context-competition {
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.pdash__context-line {
+  color: var(--color-text-secondary);
+  font-size: 0.86rem;
+}
+
+.pdash__context-count {
+  margin-top: 0.2rem;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.pdash__context-time {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.pdash__context-cta {
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+.pdash__upcoming-group {
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.pdash__upcoming-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.pdash__upcoming-heading h3,
+.pdash__upcoming-heading p {
+  margin: 0;
+}
+
+.pdash__upcoming-heading h3 {
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.pdash__upcoming-heading p {
+  margin-top: 0.2rem;
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+}
+
+.pdash__upcoming-heading a {
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .pdash__matches {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -131,6 +228,29 @@
 }
 
 @media (max-width: 600px) {
+  .pdash__section {
+    margin-bottom: 1.1rem;
+  }
+
+  .pdash__context-card {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 0.9rem;
+  }
+
+  .pdash__context-cta {
+    width: 100%;
+    text-align: center;
+  }
+
+  .pdash__upcoming-group {
+    padding: 0.75rem;
+  }
+
+  .pdash__upcoming-heading {
+    gap: 0.6rem;
+  }
+
   .pdash__matches {
     grid-template-columns: 1fr;
   }

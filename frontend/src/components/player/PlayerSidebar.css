@@ -1,6 +1,6 @@
 .psidebar {
   width: var(--sidebar-width);
-  background: var(--color-surface);
+  background: var(--pp-bg-sidebar);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
@@ -165,10 +165,24 @@
     bottom: 0;
     z-index: 25;
     box-shadow: var(--shadow-lg);
+    width: min(82vw, 280px);
+    transition: transform 0.2s ease;
   }
 
   .psidebar--collapsed {
-    left: calc(-1 * var(--sidebar-width) - 10px);
+    width: min(82vw, 280px);
+    left: 0;
+    transform: translateX(-105%);
     box-shadow: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .psidebar__item {
+    min-height: 44px;
+  }
+
+  .psidebar__item--soon {
+    display: none;
   }
 }

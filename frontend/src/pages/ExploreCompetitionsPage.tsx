@@ -18,6 +18,10 @@ export default function ExploreCompetitionsPage() {
   const [joiningId, setJoiningId] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
 
+  function editionLabel(name: string): string {
+    return name.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? name
+  }
+
   useEffect(() => {
     let cancelled = false
     setError(null)
@@ -75,12 +79,12 @@ export default function ExploreCompetitionsPage() {
     return () => { cancelled = true }
   }, [])
 
-  async function handleJoinOfficial(leagueId: number, competitionName: string) {
+  async function handleJoinOfficial(leagueId: number, leagueName: string) {
     setJoiningId(leagueId)
     setMessage(null)
     try {
       await api.post<LeagueSummary>(`/leagues/${leagueId}/join`, {})
-      setMessage(`Te uniste correctamente a ${competitionName} (Oficial).`)
+      setMessage(`Te uniste correctamente a ${leagueName} (Oficial).`)
       // Refresh to update isParticipant flags
       const updated = await api.get<LeagueSummary[]>('/leagues/officials')
       setItems((prev) => {
@@ -120,59 +124,52 @@ export default function ExploreCompetitionsPage() {
 
       {items && items.length > 0 && (
         <div className="pp-grid">
-          {items.map(({ competition, activeEdition, roundsCount, officialLeagues }) => {
-            const joinedOfficial = officialLeagues.find((l) => l.isParticipant)
-            const availableOfficials = officialLeagues.filter((l) => !l.isParticipant)
-
-            return (
-              <div key={competition.id} className="pp-comp-card">
-                <h3 className="pp-comp-card__name">🏆 {competition.name}</h3>
-                {activeEdition ? (
-                  <span className="pp-comp-card__edition">📍 {activeEdition.name}</span>
-                ) : (
-                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                    Sin edición activa
-                  </span>
-                )}
+          {items.flatMap(({ competition, activeEdition, roundsCount, officialLeagues }) => {
+            const sourceDetails = (
+              <>
                 <div className="pp-comp-card__details">
                   <span>🏅 {competition.sport}</span>
                   {roundsCount > 0 && <span>📅 {roundsCount} fecha{roundsCount !== 1 ? 's' : ''}</span>}
                 </div>
+                <Link to={`/leagues/new?competitionId=${competition.id}`} className="pp-comp-card__action pp-comp-card__action--secondary">
+                  + Crear Liga con amigos
+                </Link>
+              </>
+            )
+
+            if (officialLeagues.length === 0) {
+              return [(
+                <div key={`competition-${competition.id}`} className="pp-comp-card">
+                  <h3 className="pp-comp-card__name">{competition.name}</h3>
+                  <span className="pp-comp-card__edition">{activeEdition?.name ?? 'Sin edición activa'}</span>
+                  <p className="pp-comp-card__source-note">Todavía no tiene una Liga Oficial PlayPredict activa.</p>
+                  <div className="pp-comp-card__actions">{sourceDetails}</div>
+                </div>
+              )]
+            }
+
+            return officialLeagues.map((league) => (
+              <div key={league.id} className="pp-comp-card pp-comp-card--official-league">
+                <div className="pp-comp-card__title-row">
+                  <h3 className="pp-comp-card__name">{league.name}</h3>
+                  <span className="pp-league-card__badge pp-league-card__badge--official">OFICIAL</span>
+                </div>
+                <span className="pp-comp-card__edition">{competition.name} · {editionLabel(league.editionName)}</span>
                 <div className="pp-comp-card__actions">
-                  {joinedOfficial ? (
-                    <div className="pp-comp-card__official-state pp-comp-card__official-state--joined">
-                      <strong>✓ Estás participando</strong>
-                      <span>Entrá para ver tu Liga Oficial.</span>
-                      <Link
-                        to={`/leagues/${joinedOfficial.id}`}
-                        className="pp-comp-card__action pp-comp-card__action--view"
-                      >
-                        Ver
-                      </Link>
-                    </div>
-                  ) : availableOfficials.length > 0 ? (
-                    <div className="pp-comp-card__official-state pp-comp-card__official-state--available">
-                      <strong>Todavía no participás</strong>
-                      <span>Tocá Participar para sumarte a la Liga Oficial.</span>
-                      <button
-                        type="button"
-                        className="pp-comp-card__action"
-                        disabled={joiningId === availableOfficials[0].id}
-                        onClick={() => handleJoinOfficial(availableOfficials[0].id, competition.name)}
-                      >
-                        {joiningId === availableOfficials[0].id ? 'Uniéndose...' : 'Participar'}
+                  <div className={`pp-comp-card__official-state ${league.isParticipant ? 'pp-comp-card__official-state--joined' : 'pp-comp-card__official-state--available'}`}>
+                    <strong>{league.isParticipant ? '✓ Estás participando' : 'Todavía no participás'}</strong>
+                    {league.isParticipant ? (
+                      <Link to={`/leagues/${league.id}`} className="pp-comp-card__action pp-comp-card__action--view">Ver</Link>
+                    ) : (
+                      <button type="button" className="pp-comp-card__action" disabled={joiningId === league.id} onClick={() => handleJoinOfficial(league.id, league.name)}>
+                        {joiningId === league.id ? 'Uniéndose...' : 'Participar'}
                       </button>
-                    </div>
-                  ) : null}
-                  <Link
-                    to={`/leagues/new?competitionId=${competition.id}`}
-                    className="pp-comp-card__action pp-comp-card__action--secondary"
-                  >
-                    + Crear Liga con amigos
-                  </Link>
+                    )}
+                  </div>
+                  {sourceDetails}
                 </div>
               </div>
-            )
+            ))
           })}
         </div>
       )}

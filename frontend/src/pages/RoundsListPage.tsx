@@ -1,16 +1,30 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { api } from '../api/client'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { api, ApiError } from '../api/client'
 import type { Edition, Round } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+
+interface GenerateRoundsResult {
+  existingCount: number
+  createdCount: number
+  totalCount: number
+  message: string
+  rounds: Round[]
+}
 
 export default function RoundsListPage() {
   const { editionId } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const adminFlow = searchParams.get('adminFlow')
+  const flowQuery = adminFlow ? `?adminFlow=${adminFlow}` : ''
 
   const [edition, setEdition] = useState<Edition | null>(null)
   const [rounds, setRounds] = useState<Round[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [generateCount, setGenerateCount] = useState(1)
+  const [generating, setGenerating] = useState(false)
+  const [generationMessage, setGenerationMessage] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -24,6 +38,7 @@ export default function RoundsListPage() {
         if (cancelled) return
         setEdition(ed)
         setRounds(rs)
+        setGenerateCount(Math.max(1, rs.length))
       })
       .catch((err) => {
         if (!cancelled) setError(err.message ?? 'No se pudieron cargar las fechas.')
@@ -34,22 +49,47 @@ export default function RoundsListPage() {
     }
   }, [editionId])
 
+  async function generateRounds() {
+    setGenerating(true)
+    setError(null)
+    setGenerationMessage(null)
+    try {
+      const result = await api.post<GenerateRoundsResult>(`/editions/${editionId}/rounds/generate`, { count: generateCount })
+      setRounds(result.rounds)
+      setGenerateCount(result.totalCount)
+      setGenerationMessage(result.message)
+    } catch (reason) {
+      setError(reason instanceof ApiError ? reason.message : 'No se pudieron generar las Fechas.')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   return (
     <div>
       <div className="breadcrumb">
         {edition && (
-          <Link to={`/competitions/${edition.competitionId}/editions`}>← Ediciones</Link>
+          <><Link to="/competitions">Competencias</Link> &gt; <Link to={`/competitions/${edition.competitionId}/editions`}>Ediciones</Link> &gt; {adminFlow === 'results' ? 'Resultados' : 'Fixture'}</>
         )}
       </div>
       <div className="admin-header">
-        <h1>Fechas {edition ? `— ${edition.name}` : ''}</h1>
-        <Link to={`/editions/${editionId}/rounds/new`} className="btn btn-primary">
-          + Nueva Fecha
-        </Link>
+        <div><h1>{adminFlow === 'results' ? 'Resultados' : 'Fixture / Partidos'} {edition ? `— ${edition.name}` : ''}</h1>{rounds && <p className="admin-help">Fechas actuales: <strong>{rounds.length}</strong></p>}</div>
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}
       {!rounds && !error && <StatusMessage kind="loading" message="Cargando fechas..." />}
+
+      {rounds && adminFlow !== 'results' && (
+        <section className="round-generator form-card">
+          <div><h2>Generar Fechas</h2><p className="admin-help">Indicá el total de jornadas que debe tener la Edition. Sólo se crearán las faltantes.</p></div>
+          <div className="round-generator__controls">
+            <div className="form-field"><label htmlFor="generateRoundCount">Cantidad de fechas</label><input id="generateRoundCount" type="number" min="1" step="1" value={generateCount} onChange={(event) => setGenerateCount(Number(event.target.value))} /></div>
+            <button type="button" className="btn btn-primary" disabled={generating || generateCount < 1} onClick={generateRounds}>{generating ? 'Generando...' : 'Generar'}</button>
+          </div>
+          {generationMessage && <StatusMessage kind="success" message={generationMessage} />}
+          <div className="round-generator__manual"><span>¿Necesitás una jornada especial?</span><Link to={`/editions/${editionId}/rounds/new`} className="btn btn-secondary">+ Nueva Fecha</Link></div>
+        </section>
+      )}
 
       {rounds && rounds.length === 0 && (
         <div className="empty-state">Esta edición todavía no tiene fechas.</div>
@@ -70,19 +110,11 @@ export default function RoundsListPage() {
                 <tr
                   key={r.id}
                   className="is-clickable"
-                  onClick={() => navigate(`/rounds/${r.id}/matches`)}
+                  onClick={() => navigate(`/rounds/${r.id}/matches${flowQuery}`)}
                 >
                   <td>{r.order}</td>
                   <td>{r.name}</td>
-                  <td>
-                    <Link
-                      to={`/rounds/${r.id}/edit`}
-                      className="btn btn-secondary"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Editar
-                    </Link>
-                  </td>
+                  <td><div className="round-row-actions"><Link to={`/rounds/${r.id}/matches${flowQuery}`} className="btn btn-primary" onClick={(e) => e.stopPropagation()}>Ver Partidos</Link><Link to={`/rounds/${r.id}/edit`} className="btn btn-secondary" onClick={(e) => e.stopPropagation()}>Editar</Link></div></td>
                 </tr>
               ))}
             </tbody>

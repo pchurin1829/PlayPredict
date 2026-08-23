@@ -12,9 +12,25 @@
 
 .playout__content {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   padding: 1.5rem;
   background: var(--color-bg);
+}
+
+.playout__backdrop {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .playout__backdrop {
+    display: block;
+    position: fixed;
+    inset: var(--header-height) 0 0;
+    z-index: 20;
+    border: 0;
+    background: rgba(24, 34, 48, 0.38);
+  }
 }
 
 @media (max-width: 768px) {

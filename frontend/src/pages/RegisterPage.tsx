@@ -45,7 +45,7 @@ export default function RegisterPage() {
         password,
       })
       login(response.token, response.user)
-      const target = response.user.roles.includes('ADMIN') ? '/competitions' : '/'
+      const target = response.user.roles.includes('ADMIN') ? '/admin' : '/'
       navigate(target, { replace: true })
     } catch (err) {
       if (err instanceof ApiError) {

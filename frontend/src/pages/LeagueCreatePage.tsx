@@ -53,13 +53,13 @@ export default function LeagueCreatePage() {
     setRoundFromId('')
     setRoundToId('')
 
-    if (competitionId === '' || scopeType !== 'RoundRange') return
+    if (competitionId === '') return
 
     api
       .get<Edition[]>(`/competitions/${competitionId}/editions`)
       .then(setEditions)
       .catch((err) => setError(err.message ?? 'No se pudieron cargar las Ediciones.'))
-  }, [competitionId, scopeType])
+  }, [competitionId])
 
   useEffect(() => {
     setRounds([])
@@ -95,6 +95,7 @@ export default function LeagueCreatePage() {
       name,
       description: description || null,
       competitionId: competitionId === '' ? null : competitionId,
+      editionId: editionId === '' ? null : editionId,
       scopeType,
       roundFromId: scopeType === 'RoundRange' && roundFromId !== '' ? roundFromId : null,
       roundToId: scopeType === 'RoundRange' && roundToId !== '' ? roundToId : null,
@@ -177,6 +178,21 @@ export default function LeagueCreatePage() {
             {fieldErrors.description && <span className="pp-form__error">{fieldErrors.description[0]}</span>}
           </div>
 
+          <div className="pp-form__field">
+            <label className="pp-form__label" htmlFor="editionId">Edición deportiva</label>
+            <select
+              id="editionId"
+              className="pp-form__select"
+              value={editionId}
+              onChange={(e) => setEditionId(e.target.value ? Number(e.target.value) : '')}
+              disabled={competitionId === ''}
+            >
+              <option value="">Seleccionar...</option>
+              {editions.map((edition) => <option key={edition.id} value={edition.id}>{edition.name}</option>)}
+            </select>
+            {fieldErrors.editionId && <span className="pp-form__error">{fieldErrors.editionId[0]}</span>}
+          </div>
+
           {/* Scope selector — visual cards */}
           <div className="pp-form__field">
             <label className="pp-form__label">Alcance de la Liga</label>
@@ -205,22 +221,6 @@ export default function LeagueCreatePage() {
           {/* Round range fields */}
           {scopeType === 'RoundRange' && (
             <>
-              <div className="pp-form__field">
-                <label className="pp-form__label" htmlFor="editionId">Torneo / Edición</label>
-                <select
-                  id="editionId"
-                  className="pp-form__select"
-                  value={editionId}
-                  onChange={(e) => setEditionId(e.target.value ? Number(e.target.value) : '')}
-                  disabled={competitionId === ''}
-                >
-                  <option value="">Seleccionar...</option>
-                  {editions.map((ed) => (
-                    <option key={ed.id} value={ed.id}>{ed.name}</option>
-                  ))}
-                </select>
-              </div>
-
               <div className="pp-form__row">
                 <div className="pp-form__field">
                   <label className="pp-form__label" htmlFor="roundFromId">Fecha inicial</label>

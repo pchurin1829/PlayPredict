@@ -17,6 +17,15 @@ public static class DataSeeder
     private const string FaseDeGruposEditionName = "Fase de Grupos 2026";
 
     private static readonly string[] RoundNames = { "Fecha 1", "Fecha 2", "Fecha 3", "Fecha 4", "Fecha 5" };
+    private static readonly (string Name, string ShortName)[] ArgentineTeams =
+    {
+        ("Boca Juniors", "Boca"), ("River Plate", "River"), ("Racing Club", "Racing"),
+        ("Independiente", "Independiente"), ("Estudiantes", "Estudiantes"), ("Gimnasia", "Gimnasia"),
+        ("San Lorenzo", "San Lorenzo"), ("Huracán", "Huracán"), ("Vélez", "Vélez"),
+        ("Rosario Central", "Rosario Central"), ("Newell's", "Newell's"), ("Talleres", "Talleres"),
+        ("Belgrano", "Belgrano"), ("Argentinos Juniors", "Argentinos"), ("Lanús", "Lanús"),
+        ("Banfield", "Banfield"), ("Defensa y Justicia", "Defensa"), ("Tigre", "Tigre")
+    };
     private const string DefaultCompanyName = "PlayPredict";
     private const string DemoExperienceName = "PlayPredict Demo";
     private const string DemoLeagueName = "Liga General - Liga Profesional (demo)";
@@ -106,6 +115,12 @@ public static class DataSeeder
             {
                 db.Roles.Add(new Role { Name = roleName });
             }
+        }
+
+        var existingTeamNames = await db.Teams.Select(t => t.Name).ToListAsync();
+        foreach (var (name, shortName) in ArgentineTeams.Where(t => !existingTeamNames.Contains(t.Name)))
+        {
+            db.Teams.Add(new Team { Name = name, ShortName = shortName, Sport = "Fútbol", Active = true });
         }
 
         await db.SaveChangesAsync();
@@ -244,10 +259,16 @@ public static class DataSeeder
         }
 
         var now = DateTime.UtcNow;
+        var editionId = await db.Editions
+            .Where(e => e.CompetitionId == competitionId)
+            .OrderByDescending(e => e.StartDateUtc)
+            .Select(e => e.Id)
+            .FirstAsync();
         league = new League
         {
             Name = DemoLeagueName,
             CompetitionId = competitionId,
+            EditionId = editionId,
             ScopeType = LeagueScopeType.FullCompetition,
             LeagueType = LeagueType.Official,
             InviteCode = "DEMO-LIGA-01",
@@ -298,6 +319,16 @@ public static class DataSeeder
         string editionName,
         (string Home, string Away)[][] roundMatchups)
     {
+        var matchupNames = roundMatchups.SelectMany(r => r).SelectMany(m => new[] { m.Home, m.Away }).Distinct().ToList();
+        var teams = await db.Teams.Where(t => matchupNames.Contains(t.Name)).ToDictionaryAsync(t => t.Name);
+        foreach (var name in matchupNames.Where(name => !teams.ContainsKey(name)))
+        {
+            var team = new Team { Name = name, ShortName = name.Length <= 50 ? name : name[..50], Sport = "Fútbol", Active = true };
+            db.Teams.Add(team);
+            teams[name] = team;
+        }
+        await db.SaveChangesAsync();
+
         var competition = await db.Competitions
             .Include(c => c.Editions)
             .ThenInclude(e => e.Rounds)
@@ -344,6 +375,8 @@ public static class DataSeeder
                     db.Matches.Add(new Match
                     {
                         Round = round,
+                        HomeTeamId = teams[matchups[i].Home].Id,
+                        AwayTeamId = teams[matchups[i].Away].Id,
                         ParticipantHome = matchups[i].Home,
                         ParticipantAway = matchups[i].Away,
                         StartsAtUtc = roundIndex < 3
@@ -402,6 +435,8 @@ public static class DataSeeder
                     db.Matches.Add(new Match
                     {
                         RoundId = round.Id,
+                        HomeTeamId = teams[matchups[i].Home].Id,
+                        AwayTeamId = teams[matchups[i].Away].Id,
                         ParticipantHome = matchups[i].Home,
                         ParticipantAway = matchups[i].Away,
                         StartsAtUtc = roundIndex < 3
@@ -564,6 +599,11 @@ public static class DataSeeder
             .FirstOrDefaultAsync(c => c.Name == CopaLibertadoresName);
         if (copaCompetition is not null)
         {
+            var copaEditionId = await db.Editions
+                .Where(e => e.CompetitionId == copaCompetition.Id)
+                .OrderByDescending(e => e.StartDateUtc)
+                .Select(e => e.Id)
+                .FirstAsync();
             var copaLeagueExists = await db.Leagues
                 .AnyAsync(l => l.CompetitionId == copaCompetition.Id && l.LeagueType == LeagueType.Official);
             if (!copaLeagueExists)
@@ -572,6 +612,7 @@ public static class DataSeeder
                 {
                     Name = CopaLibertadoresOfficialLeagueName,
                     CompetitionId = copaCompetition.Id,
+                    EditionId = copaEditionId,
                     ScopeType = LeagueScopeType.FullCompetition,
                     LeagueType = LeagueType.Official,
                     InviteCode = "DEMO-COPA-01",

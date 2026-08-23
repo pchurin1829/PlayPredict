@@ -47,10 +47,18 @@ public static class PredictionEndpoints
                 return Results.Json(new { message = "No pertenecés a esta Liga." }, statusCode: StatusCodes.Status403Forbidden);
             }
 
-            var roundExists = await db.Rounds.AnyAsync(r => r.Id == roundId);
-            if (!roundExists)
+            var round = await db.Rounds.FindAsync(roundId);
+            if (round is null)
             {
                 return Results.NotFound();
+            }
+
+            if (!await IsRoundWithinLeagueScopeAsync(db, league, round))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["roundId"] = ["La Fecha indicada está fuera del alcance de esta Liga."]
+                });
             }
 
             var matches = await db.Matches
@@ -297,22 +305,25 @@ public static class PredictionEndpoints
 
     private static async Task<bool> IsMatchWithinLeagueScopeAsync(PlayPredictDbContext db, League league, Round matchRound)
     {
-        if (league.ScopeType == LeagueScopeType.FullCompetition)
-        {
-            return true;
-        }
+        return await IsRoundWithinLeagueScopeAsync(db, league, matchRound);
+    }
+
+    private static async Task<bool> IsRoundWithinLeagueScopeAsync(PlayPredictDbContext db, League league, Round round)
+    {
+        if (round.EditionId != league.EditionId) return false;
+        if (league.ScopeType == LeagueScopeType.FullCompetition) return true;
 
         // RoundRange: RoundFromId/RoundToId son obligatorios y ya fueron validados como
         // coherentes (misma Edición, desde <= hasta) al crear la Liga.
         var roundFrom = await db.Rounds.FindAsync(league.RoundFromId!.Value);
         var roundTo = await db.Rounds.FindAsync(league.RoundToId!.Value);
 
-        if (roundFrom is null || roundTo is null || matchRound.EditionId != roundFrom.EditionId)
+        if (roundFrom is null || roundTo is null || roundFrom.EditionId != league.EditionId || roundTo.EditionId != league.EditionId)
         {
             return false;
         }
 
-        return matchRound.Order >= roundFrom.Order && matchRound.Order <= roundTo.Order;
+        return round.Order >= roundFrom.Order && round.Order <= roundTo.Order;
     }
 
     // Regla definitiva: un pronóstico solo puede crearse o modificarse si el partido

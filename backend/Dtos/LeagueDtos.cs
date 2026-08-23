@@ -4,6 +4,7 @@ public record CreateLeagueDto(
     string Name,
     string? Description,
     int CompetitionId,
+    int EditionId,
     string ScopeType,
     int? RoundFromId,
     int? RoundToId);
@@ -12,6 +13,46 @@ public record UpdateLeagueDto(
     string Name,
     string? Description,
     bool IsActive);
+
+public record CreateOfficialLeagueDto(
+    string Name,
+    string? Description,
+    int CompetitionId,
+    int EditionId,
+    string ScopeType,
+    int? RoundFromId,
+    int? RoundToId,
+    bool IsActive);
+
+public record UpdateOfficialLeagueDto(
+    string Name,
+    string? Description,
+    int CompetitionId,
+    int EditionId,
+    string ScopeType,
+    int? RoundFromId,
+    int? RoundToId,
+    bool IsActive);
+
+public record AdminOfficialLeagueDto(
+    int Id,
+    string Name,
+    string? Description,
+    int CompetitionId,
+    string CompetitionName,
+    int EditionId,
+    string EditionName,
+    string ScopeType,
+    int? RoundFromId,
+    int? RoundToId,
+    string? RoundFromName,
+    string? RoundToName,
+    bool IsActive,
+    int ParticipantsCount,
+    int RoundsCount,
+    int MatchesCount,
+    DateTime CreatedAtUtc,
+    DateTime UpdatedAtUtc);
 
 public record JoinLeagueDto(string InviteCode);
 
@@ -23,6 +64,8 @@ public record LeagueSummaryDto(
     string? Description,
     int CompetitionId,
     string CompetitionName,
+    int EditionId,
+    string EditionName,
     string ScopeType,
     string LeagueType,
     int? RoundFromId,
@@ -42,6 +85,8 @@ public record LeagueDetailDto(
     string? Description,
     int CompetitionId,
     string CompetitionName,
+    int EditionId,
+    string EditionName,
     string ScopeType,
     string LeagueType,
     int? RoundFromId,

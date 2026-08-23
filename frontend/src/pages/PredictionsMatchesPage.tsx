@@ -321,6 +321,7 @@ export default function PredictionsMatchesPage() {
                         placeholder="-"
                         aria-label={`Goles ${m.participantHome}`}
                         value={row.homeInput}
+                        onFocus={(e) => e.currentTarget.select()}
                         onChange={(e) => handleInputChange(m.id, 'homeInput', e.target.value)}
                         onKeyDown={(e) => handlePredictionEnter(e, m.id)}
                         data-prediction-score
@@ -334,6 +335,7 @@ export default function PredictionsMatchesPage() {
                         placeholder="-"
                         aria-label={`Goles ${m.participantAway}`}
                         value={row.awayInput}
+                        onFocus={(e) => e.currentTarget.select()}
                         onChange={(e) => handleInputChange(m.id, 'awayInput', e.target.value)}
                         onKeyDown={(e) => handlePredictionEnter(e, m.id)}
                         data-prediction-score

@@ -19,3 +19,7 @@ public record UpdateRoundDto(
     int Order,
     DateTime? StartDateUtc,
     DateTime? EndDateUtc);
+
+public record GenerateRoundsDto(int Count);
+
+public record GenerateRoundsResultDto(int ExistingCount, int CreatedCount, int TotalCount, string Message, List<RoundDto> Rounds);

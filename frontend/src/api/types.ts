@@ -34,8 +34,12 @@ export type MatchStatus = 'Scheduled' | 'InProgress' | 'Finished' | 'Suspended' 
 export interface Match {
   id: number
   roundId: number
+  homeTeamId: number
+  awayTeamId: number
   participantHome: string
   participantAway: string
+  homeTeamLogoUrl: string | null
+  awayTeamLogoUrl: string | null
   startsAtUtc: string
   status: MatchStatus
   homeGoals: number | null
@@ -233,6 +237,8 @@ export interface LeagueSummary {
   description: string | null
   competitionId: number
   competitionName: string
+  editionId: number
+  editionName: string
   scopeType: LeagueScopeType
   leagueType: LeagueType
   roundFromId: number | null
@@ -245,6 +251,36 @@ export interface LeagueSummary {
   isActive: boolean
   inviteCode: string | null
   isParticipant: boolean
+}
+
+export interface Team {
+  id: number
+  name: string
+  shortName: string
+  logoUrl: string | null
+  sport: string
+  active: boolean
+}
+
+export interface AdminOfficialLeague {
+  id: number
+  name: string
+  description: string | null
+  competitionId: number
+  competitionName: string
+  editionId: number
+  editionName: string
+  scopeType: LeagueScopeType
+  roundFromId: number | null
+  roundToId: number | null
+  roundFromName: string | null
+  roundToName: string | null
+  isActive: boolean
+  participantsCount: number
+  roundsCount: number
+  matchesCount: number
+  createdAtUtc: string
+  updatedAtUtc: string
 }
 
 export interface LeagueDetail extends LeagueSummary {

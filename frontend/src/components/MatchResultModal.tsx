@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FocusEvent, type FormEvent, type MouseEvent } from 'react'
 import { api, ApiError } from '../api/client'
 import type { Match } from '../api/types'
 
@@ -39,45 +39,53 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
     }
   }
 
+  function selectValue(event: FocusEvent<HTMLInputElement> | MouseEvent<HTMLInputElement>) {
+    event.currentTarget.select()
+  }
+
+  function team(name: string, logoUrl: string | null, reverse = false) {
+    const mark = logoUrl ? <img src={logoUrl} alt="" /> : <span aria-hidden="true">{name.slice(0, 2).toUpperCase()}</span>
+    return <div className={`result-team ${reverse ? 'result-team--reverse' : ''}`}>{mark}<strong>{name}</strong></div>
+  }
+
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()} onMouseUp={(e) => e.stopPropagation()}>
         <h2>Resultado Oficial</h2>
-        <p>
-          {match.participantHome} vs {match.participantAway}
-        </p>
+        {match.status === 'Finished' && (
+          <p className="admin-help">Al confirmar se recalcularán los puntos existentes con el nuevo resultado, sin acumular evaluaciones.</p>
+        )}
 
         {error && <p className="form-field-error">{error}</p>}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-field">
-              <label htmlFor="homeGoals">Goles local</label>
+          <div className="result-scoreboard">
+            {team(match.participantHome, match.homeTeamLogoUrl)}
+            <div className="result-scoreboard__score">
               <input
                 id="homeGoals"
+                aria-label={`Goles de ${match.participantHome}`}
                 type="number"
                 min={0}
+                max={99}
+                inputMode="numeric"
                 value={homeGoals}
-                onChange={(e) => setHomeGoals(Number(e.target.value))}
+                onFocus={selectValue}
+                onClick={selectValue}
+                onChange={(e) => setHomeGoals(Math.min(99, Math.max(0, Number(e.target.value))))}
               />
+              <strong>−</strong>
+              <input id="awayGoals" aria-label={`Goles de ${match.participantAway}`} type="number" min={0} max={99} inputMode="numeric" value={awayGoals} onFocus={selectValue} onClick={selectValue} onChange={(e) => setAwayGoals(Math.min(99, Math.max(0, Number(e.target.value))))} />
+            </div>
+            {team(match.participantAway, match.awayTeamLogoUrl, true)}
+          </div>
+          <div className="result-field-errors">
               {fieldErrors.homeGoals && (
                 <span className="form-field-error">{fieldErrors.homeGoals[0]}</span>
               )}
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="awayGoals">Goles visitante</label>
-              <input
-                id="awayGoals"
-                type="number"
-                min={0}
-                value={awayGoals}
-                onChange={(e) => setAwayGoals(Number(e.target.value))}
-              />
               {fieldErrors.awayGoals && (
                 <span className="form-field-error">{fieldErrors.awayGoals[0]}</span>
               )}
-            </div>
           </div>
 
           <div className="form-actions">

@@ -62,6 +62,7 @@ public static class EditionEndpoints
 
             db.Editions.Add(edition);
 
+
             // Toda Edición debe contar con configuración de puntuación desde su creación,
             // con los valores iniciales editables (6 / 3 / 0).
             db.EditionScoringConfigurations.Add(new EditionScoringConfiguration
@@ -97,6 +98,7 @@ public static class EditionEndpoints
             edition.StartDateUtc = dto.StartDateUtc;
             edition.EndDateUtc = dto.EndDateUtc;
             edition.Status = status;
+
 
             await db.SaveChangesAsync();
 

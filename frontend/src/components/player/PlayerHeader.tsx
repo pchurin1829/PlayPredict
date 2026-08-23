@@ -17,7 +17,13 @@ const PLAYER_NAV: NavItem[] = [
   { label: 'Premios', to: '/prizes' },
 ]
 
-export default function PlayerHeader() {
+interface PlayerHeaderProps {
+  menuOpen?: boolean
+  onMenuToggle?: () => void
+  onAdminReturn?: () => void
+}
+
+export default function PlayerHeader({ menuOpen = false, onMenuToggle, onAdminReturn }: PlayerHeaderProps) {
   const { user, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -29,6 +35,15 @@ export default function PlayerHeader() {
 
   return (
     <header className="pheader">
+      <button
+        type="button"
+        className="pheader__menu-btn"
+        aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+        aria-expanded={menuOpen}
+        onClick={onMenuToggle}
+      >
+        <span aria-hidden="true">{menuOpen ? '×' : '☰'}</span>
+      </button>
       <div className="pheader__left">
         <Link to="/" className="pheader__brand">
           <svg width="28" height="28" viewBox="0 0 48 46" fill="none" className="pheader__logo">
@@ -87,6 +102,11 @@ export default function PlayerHeader() {
             </span>
           </div>
           <div className="pheader__user-menu">
+            {onAdminReturn && (
+              <button type="button" className="pheader__user-menu-item pheader__user-menu-item--admin" onClick={onAdminReturn}>
+                Volver a Administración
+              </button>
+            )}
             <Link to="/profile" className="pheader__user-menu-item">Mi Perfil</Link>
             <button type="button" className="pheader__user-menu-item pheader__user-menu-item--logout" onClick={logout}>
               Salir

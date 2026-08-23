@@ -88,6 +88,13 @@ export default function EditionsListPage() {
                       >
                         Editar
                       </Link>
+                      <Link
+                        to={`/editions/${ed.id}/rounds`}
+                        className="btn btn-primary"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Ver Fixture / Partidos
+                      </Link>
                       {isAdmin && (
                         <Link
                           to={`/editions/${ed.id}/scoring-configuration`}

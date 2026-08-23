@@ -246,6 +246,9 @@ namespace PlayPredict.Api.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<int>("EditionId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("InviteCode")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -279,6 +282,8 @@ namespace PlayPredict.Api.Migrations
                     b.HasIndex("CompetitionId");
 
                     b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("EditionId");
 
                     b.HasIndex("InviteCode")
                         .IsUnique();
@@ -328,10 +333,16 @@ namespace PlayPredict.Api.Migrations
                     b.Property<int?>("AwayGoals")
                         .HasColumnType("integer");
 
+                    b.Property<int>("AwayTeamId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("HomeGoals")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("HomeTeamId")
                         .HasColumnType("integer");
 
                     b.Property<string>("ParticipantAway")
@@ -356,6 +367,10 @@ namespace PlayPredict.Api.Migrations
                         .HasColumnType("character varying(20)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AwayTeamId");
+
+                    b.HasIndex("HomeTeamId");
 
                     b.HasIndex("RoundId");
 
@@ -568,6 +583,46 @@ namespace PlayPredict.Api.Migrations
                     b.ToTable("Rounds", (string)null);
                 });
 
+            modelBuilder.Entity("PlayPredict.Api.Domain.Entities.Team", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("ShortName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Sport")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Active");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Teams", (string)null);
+                });
+
             modelBuilder.Entity("PlayPredict.Api.Domain.Entities.User", b =>
                 {
                     b.Property<int>("Id")
@@ -679,6 +734,12 @@ namespace PlayPredict.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("PlayPredict.Api.Domain.Entities.Edition", "Edition")
+                        .WithMany()
+                        .HasForeignKey("EditionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("PlayPredict.Api.Domain.Entities.Round", "RoundFrom")
                         .WithMany()
                         .HasForeignKey("RoundFromId")
@@ -692,6 +753,8 @@ namespace PlayPredict.Api.Migrations
                     b.Navigation("Competition");
 
                     b.Navigation("CreatedByUser");
+
+                    b.Navigation("Edition");
 
                     b.Navigation("RoundFrom");
 
@@ -719,11 +782,27 @@ namespace PlayPredict.Api.Migrations
 
             modelBuilder.Entity("PlayPredict.Api.Domain.Entities.Match", b =>
                 {
+                    b.HasOne("PlayPredict.Api.Domain.Entities.Team", "AwayTeam")
+                        .WithMany("AwayMatches")
+                        .HasForeignKey("AwayTeamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PlayPredict.Api.Domain.Entities.Team", "HomeTeam")
+                        .WithMany("HomeMatches")
+                        .HasForeignKey("HomeTeamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("PlayPredict.Api.Domain.Entities.Round", "Round")
                         .WithMany("Matches")
                         .HasForeignKey("RoundId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("AwayTeam");
+
+                    b.Navigation("HomeTeam");
 
                     b.Navigation("Round");
                 });
@@ -858,6 +937,13 @@ namespace PlayPredict.Api.Migrations
             modelBuilder.Entity("PlayPredict.Api.Domain.Entities.Round", b =>
                 {
                     b.Navigation("Matches");
+                });
+
+            modelBuilder.Entity("PlayPredict.Api.Domain.Entities.Team", b =>
+                {
+                    b.Navigation("AwayMatches");
+
+                    b.Navigation("HomeMatches");
                 });
 
             modelBuilder.Entity("PlayPredict.Api.Domain.Entities.User", b =>

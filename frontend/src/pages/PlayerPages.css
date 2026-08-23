@@ -73,7 +73,7 @@
 
 .pp-btn--primary {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--pp-on-color);
 }
 
 .pp-btn--primary:hover {
@@ -92,9 +92,9 @@
 
 /* ── Saved / confirmed state (e.g. "Pronosticado") ── */
 .pp-btn--saved {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: var(--pp-success-soft);
+  color: var(--pp-success);
+  border: 1px solid color-mix(in srgb, var(--pp-success) 30%, transparent);
   cursor: default;
 }
 
@@ -153,19 +153,21 @@
 }
 
 .pp-league-card__badge--official {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-  color: #fff;
+  background: #d6eaff;
+  color: var(--pp-league-official);
+  border: 1px solid color-mix(in srgb, var(--pp-league-official) 28%, transparent);
 }
 
 .pp-league-card__badge--mine {
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-  color: #fff;
+  background: #d6f0df;
+  color: var(--pp-league-private);
+  border: 1px solid color-mix(in srgb, var(--pp-league-private) 28%, transparent);
 }
 
 .pp-league-card__badge--private {
-  background: var(--color-bg);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
+  background: #d6f0df;
+  color: var(--pp-league-private);
+  border: 1px solid color-mix(in srgb, var(--pp-league-private) 28%, transparent);
 }
 
 .pp-league-card__comp {
@@ -211,24 +213,24 @@
 
 .pp-league-card__status--active {
   background: var(--color-success-light);
-  color: #155724;
+  color: var(--pp-success);
 }
 
 .pp-league-card__status--inactive {
   background: var(--color-danger-light);
-  color: #721c24;
+  color: var(--pp-danger);
 }
 
 .pp-league-card__status--suspended {
-  background: rgba(250, 204, 21, 0.18);
-  color: #facc15;
+  background: var(--pp-warning-soft);
+  color: var(--pp-warning);
 }
 
 .pp-league-card__action {
   padding: 0.4rem 1rem;
   border-radius: var(--radius-sm);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--pp-on-color);
   font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
@@ -240,7 +242,7 @@
 
 .pp-league-card__action:hover {
   background: var(--color-primary-dark);
-  color: #fff;
+  color: var(--pp-on-color);
 }
 
 /* ── Competition card ──────────────────────────────────────── */
@@ -329,17 +331,17 @@
 }
 
 .pp-comp-card__official-state--available {
-  background: rgba(139, 92, 246, 0.08);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--pp-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--pp-accent) 22%, transparent);
 }
 
 .pp-comp-card__official-state--joined {
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.24);
+  background: var(--pp-success-soft);
+  border: 1px solid color-mix(in srgb, var(--pp-success) 24%, transparent);
 }
 
 .pp-comp-card__official-state--joined strong {
-  color: #4ade80;
+  color: var(--pp-success);
 }
 
 .pp-comp-card__action--view {
@@ -365,13 +367,54 @@
 }
 
 .pp-btn--danger {
-  background: rgba(239, 68, 68, 0.12);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: var(--pp-danger-soft);
+  color: var(--pp-danger);
+  border: 1px solid color-mix(in srgb, var(--pp-danger) 32%, transparent);
 }
 
 .pp-btn--danger:hover {
-  background: rgba(239, 68, 68, 0.22);
+  background: color-mix(in srgb, var(--pp-danger-soft) 70%, var(--pp-danger) 12%);
+}
+
+.pp-comp-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pp-comp-card__title-row .pp-comp-card__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pp-comp-card__source-note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.pp-comp-card--official-league {
+  border-color: color-mix(in srgb, var(--pp-league-official) 45%, var(--pp-border));
+  background: var(--pp-league-official-soft);
+}
+
+.pp-btn--card-secondary {
+  background: #e5e7eb;
+  color: var(--pp-text-primary);
+  border-color: #aeb7c2;
+}
+
+.pp-btn--card-secondary:hover {
+  background: #d5d9df;
+  border-color: #8994a3;
+}
+
+.pp-btn--card-secondary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--pp-primary) 35%, transparent);
+  outline-offset: 2px;
+  background: #d5d9df;
+  border-color: var(--pp-primary);
 }
 
 /* ── Empty state ───────────────────────────────────────────── */
@@ -695,7 +738,51 @@
 
 .pp-prize-card__badge--published {
   background: var(--color-success-light);
-  color: #155724;
+  color: var(--pp-success);
+}
+
+.pp-league-workspace--official {
+  --pp-league-accent: var(--pp-league-official);
+  --pp-league-accent-soft: var(--pp-league-official-soft);
+}
+
+.pp-league-workspace--private {
+  --pp-league-accent: var(--pp-league-private);
+  --pp-league-accent-soft: var(--pp-league-private-soft);
+}
+
+.pp-league-workspace .pp-workspace__header {
+  border-left: 4px solid var(--pp-league-accent);
+  border-color: color-mix(in srgb, var(--pp-league-accent) 55%, var(--pp-border));
+  border-left-color: var(--pp-league-accent);
+  background: linear-gradient(90deg, var(--pp-league-accent-soft), var(--pp-bg-surface) 65%);
+}
+
+.pp-league-workspace .pp-tab--active {
+  color: var(--pp-league-accent);
+  background: var(--pp-league-accent-soft);
+}
+
+.pp-league-workspace .pp-tabs {
+  border-bottom-color: var(--pp-league-accent);
+}
+
+.pp-league-workspace .pp-tab--active::after {
+  background: var(--pp-league-accent);
+}
+
+.pp-league-workspace .pp-prediction-round__status--abierta {
+  color: var(--pp-league-accent);
+  background: var(--pp-league-accent-soft);
+}
+
+.pp-league-workspace .pp-workspace__invite-section {
+  background: var(--pp-league-accent-soft);
+  border-left: 3px solid var(--pp-league-accent);
+}
+
+.pp-league-workspace .pp-workspace__invite-code-row strong {
+  color: var(--pp-league-accent);
 }
 
 .pp-prize-card__badge--other {
@@ -973,7 +1060,7 @@
 
 /* ── Match card (PredictionsMatchesPage) ──────────────────── */
 .pp-match-card {
-  background: var(--color-surface);
+  background: #f3f4f6;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   padding: 1.25rem;
@@ -1196,7 +1283,7 @@
 
 .pp-prediction-round__toggle:hover,
 .pp-prediction-round__toggle:focus-visible {
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--pp-bg-surface-alt);
 }
 
 .pp-prediction-round__toggle:focus-visible {
@@ -1217,18 +1304,18 @@
 }
 
 .pp-prediction-round__status--cerrada {
-  background: rgba(255, 255, 255, 0.055);
+  background: var(--pp-bg-surface-alt);
   color: var(--color-text-muted);
 }
 
 .pp-prediction-round__status--abierta {
-  background: rgba(134, 118, 255, 0.18);
-  color: #b6adff;
+  background: var(--pp-primary-soft);
+  color: var(--pp-primary-hover);
 }
 
 .pp-prediction-round__status--pronosticada {
-  background: rgba(45, 190, 125, 0.15);
-  color: #63d9a3;
+  background: var(--pp-success-soft);
+  color: var(--pp-success);
 }
 
 .pp-prediction-round__action {
@@ -1334,7 +1421,8 @@
   flex-wrap: wrap;
 }
 
-.pp-league-card__actions-row--official {
+.pp-league-card__actions-row--official,
+.pp-league-card__actions-row--private {
   width: 100%;
   justify-content: space-between;
 }
@@ -1386,6 +1474,211 @@
   }
 }
 
+@media (max-width: 768px) {
+  .pp-header {
+    align-items: stretch;
+  }
+
+  .pp-header__actions,
+  .pp-empty__actions,
+  .pp-form__actions {
+    width: 100%;
+  }
+
+  .pp-header__actions .pp-btn,
+  .pp-empty__actions .pp-btn,
+  .pp-form__actions .pp-btn {
+    min-height: 44px;
+  }
+
+  .pp-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .pp-tab {
+    flex: 1 1 30%;
+    padding: 0.7rem 0.55rem;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+
+  .pp-workspace__header,
+  .pp-info-card,
+  .pp-form,
+  .pp-league-card,
+  .pp-comp-card {
+    padding: 1rem;
+  }
+
+  .pp-workspace__meta,
+  .pp-info-card__meta {
+    gap: 0.55rem 1rem;
+  }
+
+  .pp-ranking {
+    overflow: visible;
+    background: transparent;
+    border: 0;
+  }
+
+  .pp-ranking__header {
+    padding: 0 0 0.75rem;
+  }
+
+  .pp-ranking thead {
+    display: none;
+  }
+
+  .pp-ranking table,
+  .pp-ranking tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .pp-ranking tr {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 0.25rem 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+
+  .pp-ranking th,
+  .pp-ranking td {
+    display: block;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .pp-ranking td:nth-child(1) {
+    grid-row: 1 / span 2;
+  }
+
+  .pp-ranking td:nth-child(2) {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .pp-ranking td:nth-child(3) {
+    font-weight: 800;
+    color: var(--color-primary);
+    white-space: nowrap;
+  }
+
+  .pp-ranking td:nth-child(3)::after {
+    content: ' pts';
+  }
+
+  .pp-ranking td:nth-child(n+4) {
+    grid-column: 2 / -1;
+    display: inline-block;
+    color: var(--color-text-secondary);
+    font-size: 0.78rem;
+  }
+
+  .pp-ranking td:nth-child(4)::before { content: 'Exactos: '; font-weight: 600; }
+  .pp-ranking td:nth-child(5)::before { content: 'Correctos: '; font-weight: 600; }
+  .pp-ranking td:nth-child(6)::before { content: 'Evaluados: '; font-weight: 600; }
+
+  .pp-match-card__input {
+    width: 3rem;
+    height: 2.75rem;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.05rem;
+  }
+
+  .pp-match-card .pp-btn,
+  .pp-prediction-round__toggle,
+  .pp-league-card__actions-row .pp-btn,
+  .pp-league-card__actions-row .pp-league-card__action {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 430px) {
+  .pp-header h1,
+  .pp-workspace__title {
+    font-size: 1.2rem;
+  }
+
+  .pp-grid,
+  .pp-matches,
+  .pp-participants {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pp-league-card__header {
+    gap: 0.75rem;
+  }
+
+  .pp-league-card__name {
+    overflow-wrap: anywhere;
+  }
+
+  .pp-league-card__actions-row {
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .pp-league-card__actions-row .pp-btn,
+  .pp-league-card__actions-row .pp-league-card__action {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  .pp-match-card {
+    padding: 0.9rem;
+  }
+
+  .pp-match-card__teams {
+    gap: 0.35rem;
+  }
+
+  .pp-match-card__team {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .pp-match-card__info,
+  .pp-match-card__result-row {
+    flex-wrap: wrap;
+  }
+
+  .pp-prediction-round__toggle {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 0.6rem;
+    padding: 0.7rem 0.75rem;
+  }
+
+  .pp-prediction-round__action {
+    grid-column: 2;
+  }
+
+  .pp-prediction-round__content {
+    padding: 0 0.5rem 0.6rem;
+  }
+
+  .pp-scope-selector,
+  .pp-form__row {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .pp-form__actions {
+    flex-direction: column;
+  }
+
+  .pp-form__actions .pp-btn {
+    width: 100%;
+  }
+}
+
 /* ── Section titles ── */
 .pp-section-title {
   margin: 2rem 0 1rem;
@@ -1404,22 +1697,23 @@
 
 /* ── Official league card highlight (available to join) ── */
 .pp-league-card--official {
-  border-color: var(--color-primary);
+  background: #eaf4ff;
+  border-color: color-mix(in srgb, var(--pp-league-official) 58%, var(--pp-border));
   border-width: 2px;
-  box-shadow: 0 2px 12px rgba(134, 118, 255, 0.15);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--pp-league-official) 12%, transparent);
 }
 
 /* ── Mine / participating league cards (celeste tint, clearly lighter) ── */
 .pp-league-card--mine {
-  background: #1e2e50;
-  border-color: rgba(6, 182, 212, 0.25);
+  background: #eaf8ef;
+  border-color: color-mix(in srgb, var(--pp-league-private) 42%, var(--pp-border));
 }
 
 /* ── Success message ── */
 .status-message--success {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: var(--pp-success-soft);
+  color: var(--pp-success);
+  border: 1px solid color-mix(in srgb, var(--pp-success) 28%, transparent);
   padding: 0.75rem 1rem;
   border-radius: 8px;
   margin-bottom: 1rem;

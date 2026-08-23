@@ -6,29 +6,57 @@
    ────────────────────────────────────────────────────────────── */
 
 .playout {
-  --color-bg: #0e0e1a;
-  --color-surface: #1a1a2e;
-  --color-text: #f5f5fa;
-  --color-text-secondary: #a3a3c2;
-  --color-text-muted: #6f6f90;
-  --color-border: #2c2c46;
-  --color-border-light: #23233a;
+  --pp-bg-page: #f5f7fa;
+  --pp-bg-surface: #ffffff;
+  --pp-bg-surface-alt: #f8fafc;
+  --pp-bg-sidebar: #eef1f4;
+  --pp-text-primary: #202936;
+  --pp-text-secondary: #5e6b7a;
+  --pp-text-muted: #8793a3;
+  --pp-border: #dfe5ec;
+  --pp-border-strong: #c9d3df;
+  --pp-primary: #3182ce;
+  --pp-primary-hover: #2567aa;
+  --pp-primary-soft: #e9f3fb;
+  --pp-accent: #7667d9;
+  --pp-accent-hover: #6354c4;
+  --pp-accent-soft: #f0edff;
+  --pp-league-official: #3182ce;
+  --pp-league-official-soft: #e3f1ff;
+  --pp-league-private: #27855c;
+  --pp-league-private-soft: #e3f5e9;
+  --pp-success: #27855c;
+  --pp-success-soft: #e8f7ef;
+  --pp-warning: #946711;
+  --pp-warning-soft: #fff5d6;
+  --pp-danger: #be3f4a;
+  --pp-danger-soft: #fcebed;
+  --pp-on-color: #ffffff;
 
-  --color-primary: #8676ff;
-  --color-primary-dark: #6a5aeb;
-  --color-primary-light: rgba(134, 118, 255, 0.16);
-  --color-primary-gradient-start: #12122a;
-  --color-primary-gradient-end: #6a5aeb;
+  --color-bg: var(--pp-bg-page);
+  --color-surface: var(--pp-bg-surface);
+  --color-text: var(--pp-text-primary);
+  --color-text-secondary: var(--pp-text-secondary);
+  --color-text-muted: var(--pp-text-muted);
+  --color-border: var(--pp-border);
+  --color-border-light: var(--pp-bg-surface-alt);
+  --color-primary: var(--pp-primary);
+  --color-primary-dark: var(--pp-primary-hover);
+  --color-primary-light: var(--pp-primary-soft);
+  --color-primary-gradient-start: #397fbd;
+  --color-primary-gradient-end: #7667d9;
+  --color-success: var(--pp-success);
+  --color-success-light: var(--pp-success-soft);
+  --color-warning: var(--pp-warning);
+  --color-warning-light: var(--pp-warning-soft);
+  --color-danger: var(--pp-danger);
+  --color-danger-light: var(--pp-danger-soft);
+  --color-gold: #a87312;
+  --color-silver: #687386;
+  --color-bronze: #9a5b32;
+  --shadow-sm: 0 1px 3px rgba(31, 41, 55, 0.08);
+  --shadow-md: 0 8px 22px rgba(31, 65, 92, 0.1);
+  --shadow-lg: 0 18px 45px rgba(31, 65, 92, 0.14);
 
-  --color-gold: #ffd166;
-  --color-silver: #c9cbe0;
-  --color-bronze: #e0995f;
-
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.55);
-
-  background:
-    radial-gradient(1200px 480px at 15% -10%, rgba(134, 118, 255, 0.14), transparent 60%),
-    var(--color-bg);
+  background: var(--pp-bg-page);
 }

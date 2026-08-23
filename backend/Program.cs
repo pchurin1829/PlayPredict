@@ -91,6 +91,7 @@ app.MapCompetitionEndpoints();
 app.MapEditionEndpoints();
 app.MapRoundEndpoints();
 app.MapMatchEndpoints();
+app.MapTeamEndpoints();
 app.MapPredictionEndpoints();
 app.MapEditionScoringConfigurationEndpoints();
 app.MapRankingEndpoints();
@@ -98,6 +99,7 @@ app.MapAdminPrizeEndpoints();
 app.MapPrizeEndpoints();
 app.MapAdminExperienceEndpoints();
 app.MapLeagueEndpoints();
+app.MapAdminOfficialLeagueEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {

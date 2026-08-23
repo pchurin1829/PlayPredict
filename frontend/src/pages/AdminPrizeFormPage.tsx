@@ -158,7 +158,7 @@ export default function AdminPrizeFormPage() {
   return (
     <div>
       <div className="breadcrumb">
-        <Link to="/admin/prizes">← Premios</Link>
+        <Link to="/admin/prizes">← Volver a Premios</Link>
       </div>
       <div className="admin-header">
         <h1>{isEdit ? 'Editar Premio' : 'Nuevo Premio'}</h1>
@@ -351,7 +351,7 @@ export default function AdminPrizeFormPage() {
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
           <Link to="/admin/prizes" className="btn btn-secondary">
-            Volver a Premios
+            Cancelar
           </Link>
         </div>
       </form>

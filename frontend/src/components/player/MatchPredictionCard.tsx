@@ -120,6 +120,7 @@ export default function MatchPredictionCard({
                 placeholder="-"
                 aria-label={`Goles ${match.participantHome}`}
                 value={homeInput}
+                onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => {
                   setHomeInput(sanitizeDigits(e.target.value))
                   setSavedMessage(null)
@@ -135,6 +136,7 @@ export default function MatchPredictionCard({
                 placeholder="-"
                 aria-label={`Goles ${match.participantAway}`}
                 value={awayInput}
+                onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => {
                   setAwayInput(sanitizeDigits(e.target.value))
                   setSavedMessage(null)

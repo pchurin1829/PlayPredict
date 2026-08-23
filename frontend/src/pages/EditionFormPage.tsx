@@ -24,9 +24,7 @@ export default function EditionFormPage() {
 
   useEffect(() => {
     if (!isEdit) return
-    api
-      .get<Edition>(`/editions/${editionId}`)
-      .then((ed) => {
+    api.get<Edition>(`/editions/${editionId}`).then((ed) => {
         setCompetitionId(String(ed.competitionId))
         setName(ed.name)
         setStartDateUtc(isoToLocalInput(ed.startDateUtc))
@@ -80,7 +78,7 @@ export default function EditionFormPage() {
   return (
     <div>
       <div className="breadcrumb">
-        <Link to={`/competitions/${competitionId}/editions`}>← Ediciones</Link>
+        <Link to={`/competitions/${competitionId}/editions`}>← Volver a Ediciones</Link>
       </div>
       <div className="admin-header">
         <h1>{isEdit ? 'Editar Edición' : 'Nueva Edición'}</h1>
@@ -140,8 +138,9 @@ export default function EditionFormPage() {
           <button type="submit" className="btn btn-primary" disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
+          <Link to={`/competitions/${competitionId}/editions`} className="btn btn-secondary">Cancelar</Link>
           {isEdit && (
-            <Link to={`/editions/${editionId}/rounds`} className="btn btn-secondary">
+            <Link to={`/editions/${editionId}/rounds`} className="btn btn-tertiary form-actions__contextual">
               Ver Fechas
             </Link>
           )}

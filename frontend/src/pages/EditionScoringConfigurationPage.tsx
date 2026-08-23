@@ -86,7 +86,7 @@ export default function EditionScoringConfigurationPage() {
     <div>
       <div className="breadcrumb">
         {edition && (
-          <Link to={`/competitions/${edition.competitionId}/editions`}>← Ediciones</Link>
+          <Link to={`/competitions/${edition.competitionId}/editions`}>← Volver a Ediciones</Link>
         )}
       </div>
       <div className="admin-header">
@@ -168,7 +168,7 @@ export default function EditionScoringConfigurationPage() {
           </button>
           {edition && (
             <Link to={`/competitions/${edition.competitionId}/editions`} className="btn btn-secondary">
-              Volver a Ediciones
+              Cancelar
             </Link>
           )}
         </div>

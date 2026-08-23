@@ -40,6 +40,8 @@ import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminOperationEntryPage from './pages/AdminOperationEntryPage'
 import TeamsListPage from './pages/TeamsListPage'
 import TeamFormPage from './pages/TeamFormPage'
+import TeamRosterPage from './pages/TeamRosterPage'
+import TeamPlayerFormPage from './pages/TeamPlayerFormPage'
 import './components/admin.css'
 import './components/player/ComingSoonBadge.css'
 
@@ -90,6 +92,9 @@ function App() {
         <Route path="/admin/teams" element={<RequireAdmin><TeamsListPage /></RequireAdmin>} />
         <Route path="/admin/teams/new" element={<RequireAdmin><TeamFormPage /></RequireAdmin>} />
         <Route path="/admin/teams/:teamId/edit" element={<RequireAdmin><TeamFormPage /></RequireAdmin>} />
+        <Route path="/admin/teams/:teamId/players" element={<RequireAdmin><TeamRosterPage /></RequireAdmin>} />
+        <Route path="/admin/teams/:teamId/players/new" element={<RequireAdmin><TeamPlayerFormPage /></RequireAdmin>} />
+        <Route path="/admin/team-players/:playerId/edit" element={<RequireAdmin><TeamPlayerFormPage /></RequireAdmin>} />
         <Route path="/competitions" element={<RequireAdmin><CompetitionsListPage /></RequireAdmin>} />
         <Route path="/competitions/new" element={<RequireAdmin><CompetitionFormPage /></RequireAdmin>} />
         <Route path="/competitions/:competitionId/edit" element={<RequireAdmin><CompetitionFormPage /></RequireAdmin>} />

@@ -13,6 +13,8 @@ public class PredictionEvaluationConfiguration : IEntityTypeConfiguration<Predic
         builder.HasKey(e => e.Id);
 
         builder.Property(e => e.Points).IsRequired();
+        builder.Property(e => e.ResultPoints).IsRequired().HasDefaultValue(0);
+        builder.Property(e => e.PreferredPlayerPoints).IsRequired().HasDefaultValue(0);
 
         builder.Property(e => e.EvaluationType)
             .IsRequired()

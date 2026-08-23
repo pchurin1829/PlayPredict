@@ -408,16 +408,20 @@ public static class LeagueEndpoints
             var matchIds = matches.Select(m => m.Id).ToList();
 
             var predictions = await db.Predictions
+                .Include(p => p.PreferredPlayer)
                 .Where(p => p.LeagueId == id && p.UserId == user.Id && matchIds.Contains(p.MatchId))
                 .ToListAsync();
 
             var evaluations = await PredictionEndpoints.GetEvaluationsForPredictionsAsync(db, predictions);
+            var teamIds = matches.SelectMany(m => new[] { m.HomeTeamId, m.AwayTeamId }).Distinct().ToList();
+            var players = await db.TeamPlayers.Where(p => teamIds.Contains(p.TeamId) && p.Active).OrderBy(p => p.DisplayName).ToListAsync();
+            var preferredEnabled = await db.EditionScoringConfigurations.Where(c => c.EditionId == league.EditionId).Select(c => c.PreferredPlayerEnabled).FirstOrDefaultAsync();
 
             var result = matches.Select(m =>
             {
                 var prediction = predictions.FirstOrDefault(p => p.MatchId == m.Id);
                 var evaluation = prediction is null ? null : evaluations.GetValueOrDefault(prediction.Id);
-                return PredictionEndpoints.ToMatchWithPredictionDto(m, prediction, evaluation, league.IsActive);
+                return PredictionEndpoints.ToMatchWithPredictionDto(m, prediction, evaluation, league.IsActive, players, preferredEnabled);
             });
 
             return Results.Ok(result);

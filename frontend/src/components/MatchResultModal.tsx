@@ -1,6 +1,6 @@
-import { useState, type FocusEvent, type FormEvent, type MouseEvent } from 'react'
+import { useEffect, useState, type FocusEvent, type FormEvent, type MouseEvent } from 'react'
 import { api, ApiError } from '../api/client'
-import type { Match } from '../api/types'
+import type { Match, TeamPlayer } from '../api/types'
 
 interface MatchResultModalProps {
   match: Match
@@ -14,6 +14,10 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+  const [players, setPlayers] = useState<TeamPlayer[]>([])
+  const [scorers, setScorers] = useState(match.scorers.map(s => ({ teamPlayerId: s.teamPlayerId, goals: s.goals })))
+
+  useEffect(() => { Promise.all([api.get<TeamPlayer[]>(`/teams/${match.homeTeamId}/players`), api.get<TeamPlayer[]>(`/teams/${match.awayTeamId}/players`)]).then(([home, away]) => setPlayers([...home, ...away].filter(p => p.active))).catch(() => setPlayers([])) }, [match.homeTeamId, match.awayTeamId])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -25,6 +29,7 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
       const updated = await api.put<Match>(`/matches/${match.id}/result`, {
         homeGoals,
         awayGoals,
+        scorers: scorers.filter(s => s.teamPlayerId > 0 && s.goals > 0),
       })
       onSaved(updated)
     } catch (err) {
@@ -87,6 +92,12 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
                 <span className="form-field-error">{fieldErrors.awayGoals[0]}</span>
               )}
           </div>
+
+          {players.length > 0 && <section className="result-scorers"><h3>Goleadores <small>(opcional)</small></h3><p className="admin-help">Si no se informan, Jugador Preferido queda en 0 puntos hasta completar el detalle.</p>
+            {scorers.map((row,index) => <div className="result-scorer-row" key={index}><select aria-label={`Goleador ${index + 1}`} value={row.teamPlayerId} onChange={e => setScorers(current => current.map((x,i) => i===index ? {...x,teamPlayerId:Number(e.target.value)} : x))}><option value={0}>Seleccionar jugador</option><optgroup label={match.participantHome}>{players.filter(p=>p.teamId===match.homeTeamId).map(p=><option value={p.id} key={p.id}>{p.displayName}</option>)}</optgroup><optgroup label={match.participantAway}>{players.filter(p=>p.teamId===match.awayTeamId).map(p=><option value={p.id} key={p.id}>{p.displayName}</option>)}</optgroup></select><input aria-label="Cantidad de goles" type="number" min={1} max={99} inputMode="numeric" value={row.goals} onFocus={selectValue} onChange={e=>setScorers(current=>current.map((x,i)=>i===index?{...x,goals:Math.max(1,Number(e.target.value))}:x))}/><button type="button" className="btn btn-tertiary" onClick={()=>setScorers(current=>current.filter((_,i)=>i!==index))}>Quitar</button></div>)}
+            <button type="button" className="btn btn-secondary" onClick={()=>setScorers(current=>[...current,{teamPlayerId:0,goals:1}])}>+ Agregar goleador</button>
+            {fieldErrors.scorers && <span className="form-field-error">{fieldErrors.scorers[0]}</span>}
+          </section>}
 
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={saving}>

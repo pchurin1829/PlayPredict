@@ -163,6 +163,33 @@ public static class DataSeeder
         await db.SaveChangesAsync();
     }
 
+    // Catálogo mínimo, explícitamente ficticio, para probar Jugador Preferido sin atribuir
+    // planteles reales desactualizados. Es idempotente y sólo completa los equipos del fixture demo.
+    public static async Task SeedDemoTeamPlayersAsync(PlayPredictDbContext db)
+    {
+        var demoTeamNames = ClausuraMatchups.SelectMany(r => r.SelectMany(m => new[] { m.Home, m.Away })).Distinct().ToList();
+        var teams = await db.Teams.Where(t => demoTeamNames.Contains(t.Name)).ToListAsync();
+        foreach (var team in teams)
+        {
+            for (var number = 1; number <= 3; number++)
+            {
+                var displayName = $"Jugador Demo {team.ShortName} {number}";
+                if (await db.TeamPlayers.AnyAsync(p => p.TeamId == team.Id && p.DisplayName == displayName)) continue;
+                db.TeamPlayers.Add(new TeamPlayer
+                {
+                    TeamId = team.Id,
+                    FirstName = "Jugador",
+                    LastName = $"Demo {number}",
+                    DisplayName = displayName,
+                    ShirtNumber = number,
+                    Position = number == 1 ? "Delantero" : number == 2 ? "Mediocampista" : "Defensor",
+                    Active = true
+                });
+            }
+        }
+        await db.SaveChangesAsync();
+    }
+
     // Sólo en Development: 3 usuarios ADMIN de ejemplo para poder entrar al panel sin
     // registro previo (Sprint 8.5, decisión 2: la instalación inicial contiene 3 ADMIN).
     // Contraseña tomada de configuración/variable de entorno (DevSeed:AdminPassword);

@@ -19,4 +19,5 @@ public class Match
     public Round Round { get; set; } = null!;
     public Team HomeTeam { get; set; } = null!;
     public Team AwayTeam { get; set; } = null!;
+    public ICollection<MatchScorer> Scorers { get; set; } = new List<MatchScorer>();
 }

@@ -13,6 +13,8 @@ public class EditionScoringConfiguration
     // Sin mezcla parcial: la herencia es total. Por defecto false, para no alterar el
     // comportamiento de ninguna Edición existente de los Sprints 1 a 7.
     public bool UseExperienceDefaults { get; set; }
+    public bool PreferredPlayerEnabled { get; set; } = true;
+    public int PreferredPlayerPointsPerGoal { get; set; } = 2;
 
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }

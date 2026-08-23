@@ -43,5 +43,10 @@ public class PredictionConfiguration : IEntityTypeConfiguration<Prediction>
             .WithMany()
             .HasForeignKey(p => p.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(p => p.PreferredPlayer)
+            .WithMany()
+            .HasForeignKey(p => p.PreferredPlayerId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

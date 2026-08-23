@@ -12,6 +12,8 @@ export default function EditionScoringConfigurationPage() {
   const [correctOutcomePoints, setCorrectOutcomePoints] = useState(0)
   const [incorrectPoints, setIncorrectPoints] = useState(0)
   const [useExperienceDefaults, setUseExperienceDefaults] = useState(false)
+  const [preferredPlayerEnabled, setPreferredPlayerEnabled] = useState(true)
+  const [preferredPlayerPointsPerGoal, setPreferredPlayerPointsPerGoal] = useState(2)
   const [effective, setEffective] = useState<{ exact: number; correct: number; incorrect: number } | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -31,6 +33,8 @@ export default function EditionScoringConfigurationPage() {
         setCorrectOutcomePoints(cfg.correctOutcomePoints)
         setIncorrectPoints(cfg.incorrectPoints)
         setUseExperienceDefaults(cfg.useExperienceDefaults)
+        setPreferredPlayerEnabled(cfg.preferredPlayerEnabled)
+        setPreferredPlayerPointsPerGoal(cfg.preferredPlayerPointsPerGoal)
         setEffective({
           exact: cfg.effectiveExactScorePoints,
           correct: cfg.effectiveCorrectOutcomePoints,
@@ -59,6 +63,8 @@ export default function EditionScoringConfigurationPage() {
         correctOutcomePoints,
         incorrectPoints,
         useExperienceDefaults,
+        preferredPlayerEnabled,
+        preferredPlayerPointsPerGoal,
       })
       setEffective({
         exact: updated.effectiveExactScorePoints,
@@ -129,6 +135,9 @@ export default function EditionScoringConfigurationPage() {
             <span className="form-field-error">{fieldErrors.exactScorePoints[0]}</span>
           )}
         </div>
+
+        <div className="form-field form-checkbox"><input id="preferredPlayerEnabled" type="checkbox" checked={preferredPlayerEnabled} onChange={e=>setPreferredPlayerEnabled(e.target.checked)}/><label htmlFor="preferredPlayerEnabled">Jugador Preferido habilitado</label></div>
+        <div className="form-field"><label htmlFor="preferredPlayerPointsPerGoal">Puntos por gol del Jugador Preferido</label><input id="preferredPlayerPointsPerGoal" type="number" min={0} step={1} disabled={!preferredPlayerEnabled} value={preferredPlayerPointsPerGoal} onChange={e=>setPreferredPlayerPointsPerGoal(clampNonNegative(e.target.value))}/>{fieldErrors.preferredPlayerPointsPerGoal&&<span className="form-field-error">{fieldErrors.preferredPlayerPointsPerGoal[0]}</span>}</div>
 
         <div className="form-field">
           <label htmlFor="correctOutcomePoints">Puntos por resultado correcto (configuración propia)</label>

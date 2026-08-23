@@ -92,6 +92,7 @@ app.MapEditionEndpoints();
 app.MapRoundEndpoints();
 app.MapMatchEndpoints();
 app.MapTeamEndpoints();
+app.MapTeamPlayerEndpoints();
 app.MapPredictionEndpoints();
 app.MapEditionScoringConfigurationEndpoints();
 app.MapRankingEndpoints();
@@ -137,6 +138,7 @@ using (var scope = app.Services.CreateScope())
 
     // --- Seeders: solo después de que el schema esté completo ---
     await DataSeeder.SeedCoreDataAsync(db);
+    await DataSeeder.SeedDemoTeamPlayersAsync(db);
 
     if (app.Environment.IsDevelopment())
     {

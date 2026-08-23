@@ -22,6 +22,7 @@ public static class MatchEndpoints
             var matches = await db.Matches
                 .Include(m => m.HomeTeam)
                 .Include(m => m.AwayTeam)
+                .Include(m => m.Scorers).ThenInclude(s => s.TeamPlayer)
                 .Where(m => m.RoundId == roundId)
                 .OrderBy(m => m.StartsAtUtc)
                 .Select(m => ToDto(m))
@@ -32,7 +33,7 @@ public static class MatchEndpoints
 
         app.MapGet("/api/matches/{id:int}", async (int id, PlayPredictDbContext db) =>
         {
-            var match = await db.Matches.Include(m => m.HomeTeam).Include(m => m.AwayTeam).FirstOrDefaultAsync(m => m.Id == id);
+            var match = await db.Matches.Include(m => m.HomeTeam).Include(m => m.AwayTeam).Include(m => m.Scorers).ThenInclude(s => s.TeamPlayer).FirstOrDefaultAsync(m => m.Id == id);
             return match is null
                 ? Results.NotFound()
                 : Results.Ok(ToDto(match));
@@ -132,7 +133,7 @@ public static class MatchEndpoints
                 return Results.ValidationProblem(errors);
             }
 
-            var match = await db.Matches.Include(m => m.HomeTeam).Include(m => m.AwayTeam).FirstOrDefaultAsync(m => m.Id == id);
+            var match = await db.Matches.Include(m => m.HomeTeam).Include(m => m.AwayTeam).Include(m => m.Scorers).ThenInclude(s => s.TeamPlayer).FirstOrDefaultAsync(m => m.Id == id);
             if (match is null)
             {
                 return Results.NotFound();
@@ -146,9 +147,31 @@ public static class MatchEndpoints
                 });
             }
 
+            var scorerInputs = (dto.Scorers ?? []).Where(s => s.Goals > 0).ToList();
+            if (scorerInputs.Select(s => s.TeamPlayerId).Distinct().Count() != scorerInputs.Count)
+                errors["scorers"] = ["Cada jugador debe aparecer una sola vez."];
+            var playerIds = scorerInputs.Select(s => s.TeamPlayerId).ToList();
+            var scorerPlayers = await db.TeamPlayers.Where(p => playerIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
+            if (scorerPlayers.Count != playerIds.Distinct().Count() || scorerPlayers.Values.Any(p => p.TeamId != match.HomeTeamId && p.TeamId != match.AwayTeamId))
+                errors["scorers"] = ["Cada goleador debe pertenecer a uno de los equipos del partido."];
+            var homeScorerGoals = scorerInputs.Where(s => scorerPlayers.TryGetValue(s.TeamPlayerId, out var p) && p.TeamId == match.HomeTeamId).Sum(s => s.Goals);
+            var awayScorerGoals = scorerInputs.Where(s => scorerPlayers.TryGetValue(s.TeamPlayerId, out var p) && p.TeamId == match.AwayTeamId).Sum(s => s.Goals);
+            if (homeScorerGoals > dto.HomeGoals) errors["scorers"] = ["Los goles individuales del equipo local superan el resultado oficial."];
+            if (awayScorerGoals > dto.AwayGoals) errors["scorers"] = ["Los goles individuales del equipo visitante superan el resultado oficial."];
+            if (errors.Count > 0) return Results.ValidationProblem(errors);
+
             match.HomeGoals = dto.HomeGoals;
             match.AwayGoals = dto.AwayGoals;
             match.Status = MatchStatus.Finished;
+
+            db.MatchScorers.RemoveRange(match.Scorers);
+            match.Scorers = scorerInputs.Select(s => new MatchScorer
+            {
+                MatchId = match.Id,
+                TeamPlayerId = s.TeamPlayerId,
+                TeamPlayer = scorerPlayers[s.TeamPlayerId],
+                Goals = s.Goals
+            }).ToList();
 
             // Evalúa (crea o recalcula) los Pronósticos de este partido con la configuración
             // de puntuación de su Edición. Todo se persiste en un único SaveChanges, junto con
@@ -240,5 +263,6 @@ public static class MatchEndpoints
 
     internal static MatchDto ToDto(Match m) =>
         new(m.Id, m.RoundId, m.HomeTeamId, m.AwayTeamId, m.ParticipantHome, m.ParticipantAway,
-            m.HomeTeam?.LogoUrl, m.AwayTeam?.LogoUrl, m.StartsAtUtc, m.Status.ToString(), m.HomeGoals, m.AwayGoals, m.CreatedAtUtc);
+            m.HomeTeam?.LogoUrl, m.AwayTeam?.LogoUrl, m.StartsAtUtc, m.Status.ToString(), m.HomeGoals, m.AwayGoals,
+            m.Scorers.Select(s => new MatchScorerDto(s.TeamPlayerId, s.TeamPlayer.DisplayName, s.TeamPlayer.TeamId, s.Goals)).ToList(), m.CreatedAtUtc);
 }

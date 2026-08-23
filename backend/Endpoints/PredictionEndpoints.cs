@@ -68,16 +68,20 @@ public static class PredictionEndpoints
 
             var matchIds = matches.Select(m => m.Id).ToList();
             var predictions = await db.Predictions
+                .Include(p => p.PreferredPlayer)
                 .Where(p => p.LeagueId == leagueId.Value && p.UserId == user.Id && matchIds.Contains(p.MatchId))
                 .ToListAsync();
 
             var evaluations = await GetEvaluationsForPredictionsAsync(db, predictions);
+            var teamIds = matches.SelectMany(m => new[] { m.HomeTeamId, m.AwayTeamId }).Distinct().ToList();
+            var players = await db.TeamPlayers.Where(p => teamIds.Contains(p.TeamId) && p.Active).OrderBy(p => p.DisplayName).ToListAsync();
+            var preferredEnabled = await db.EditionScoringConfigurations.Where(c => c.EditionId == round.EditionId).Select(c => c.PreferredPlayerEnabled).FirstOrDefaultAsync();
 
             var result = matches.Select(m =>
             {
                 var prediction = predictions.FirstOrDefault(p => p.MatchId == m.Id);
                 var evaluation = prediction is null ? null : evaluations.GetValueOrDefault(prediction.Id);
-                return ToMatchWithPredictionDto(m, prediction, evaluation);
+                return ToMatchWithPredictionDto(m, prediction, evaluation, true, players, preferredEnabled);
             });
 
             return Results.Ok(result);
@@ -94,6 +98,7 @@ public static class PredictionEndpoints
             }
 
             var predictions = await db.Predictions
+                .Include(p => p.PreferredPlayer)
                 .Where(p => p.UserId == user.Id)
                 .OrderByDescending(p => p.UpdatedAtUtc)
                 .ToListAsync();
@@ -125,6 +130,9 @@ public static class PredictionEndpoints
                 return validationError;
             }
 
+            var preferredError = await ValidatePreferredPlayerAsync(db, dto.MatchId, dto.PreferredPlayerId);
+            if (preferredError is not null) return preferredError;
+
             var alreadyExists = await db.Predictions
                 .AnyAsync(p => p.LeagueId == dto.LeagueId && p.UserId == user.Id && p.MatchId == dto.MatchId);
             if (alreadyExists)
@@ -140,6 +148,7 @@ public static class PredictionEndpoints
                 UserId = user.Id,
                 PredictedHomeScore = dto.PredictedHomeScore,
                 PredictedAwayScore = dto.PredictedAwayScore,
+                PreferredPlayerId = dto.PreferredPlayerId,
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             };
@@ -194,6 +203,10 @@ public static class PredictionEndpoints
 
             prediction.PredictedHomeScore = dto.PredictedHomeScore;
             prediction.PredictedAwayScore = dto.PredictedAwayScore;
+            var preferredError = await ValidatePreferredPlayerAsync(db, prediction.MatchId, dto.PreferredPlayerId);
+            if (preferredError is not null) return preferredError;
+
+            prediction.PreferredPlayerId = dto.PreferredPlayerId;
             prediction.UpdatedAtUtc = DateTime.UtcNow;
 
             await db.SaveChangesAsync();
@@ -209,7 +222,7 @@ public static class PredictionEndpoints
                 return Results.Unauthorized();
             }
 
-            var prediction = await db.Predictions.FindAsync(id);
+            var prediction = await db.Predictions.Include(p => p.PreferredPlayer).FirstOrDefaultAsync(p => p.Id == id);
             if (prediction is null)
             {
                 return Results.NotFound();
@@ -333,6 +346,18 @@ public static class PredictionEndpoints
     private static bool CanCreateOrEditPrediction(Match match) =>
         match.Status == MatchStatus.Scheduled && DateTime.UtcNow < match.StartsAtUtc;
 
+    private static async Task<IResult?> ValidatePreferredPlayerAsync(PlayPredictDbContext db, int matchId, int? playerId)
+    {
+        if (playerId is null) return null;
+        var match = await db.Matches.FindAsync(matchId);
+        var player = await db.TeamPlayers.FindAsync(playerId.Value);
+        if (match is null || player is null || !player.Active || (player.TeamId != match.HomeTeamId && player.TeamId != match.AwayTeamId))
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["preferredPlayerId"] = ["El Jugador Preferido debe pertenecer a uno de los equipos del partido."] });
+        var editionId = await db.Rounds.Where(r => r.Id == match.RoundId).Select(r => r.EditionId).FirstAsync();
+        var enabled = await db.EditionScoringConfigurations.Where(c => c.EditionId == editionId).Select(c => c.PreferredPlayerEnabled).FirstOrDefaultAsync();
+        return enabled ? null : Results.ValidationProblem(new Dictionary<string, string[]> { ["preferredPlayerId"] = ["Jugador Preferido no está habilitado para esta Edición."] });
+    }
+
     private static Dictionary<string, string[]> ValidateScores(int homeScore, int awayScore)
     {
         var errors = new Dictionary<string, string[]>();
@@ -367,14 +392,21 @@ public static class PredictionEndpoints
     }
 
     private static PredictionDto ToDto(Prediction p, PredictionEvaluation? evaluation = null) =>
-        new(p.Id, p.LeagueId, p.MatchId, p.UserId, p.PredictedHomeScore, p.PredictedAwayScore, p.CreatedAtUtc, p.UpdatedAtUtc,
+        new(p.Id, p.LeagueId, p.MatchId, p.UserId, p.PredictedHomeScore, p.PredictedAwayScore,
+            p.PreferredPlayerId, p.PreferredPlayer?.DisplayName, p.CreatedAtUtc, p.UpdatedAtUtc,
             evaluation?.Points,
+            evaluation?.ResultPoints,
+            evaluation?.PreferredPlayerPoints,
             evaluation?.EvaluationType.ToString(),
             evaluation is null ? null : PredictionEvaluationService.GetLabel(evaluation.EvaluationType),
             evaluation?.OfficialHomeScore,
             evaluation?.OfficialAwayScore);
 
-    internal static MatchWithPredictionDto ToMatchWithPredictionDto(Match m, Prediction? prediction, PredictionEvaluation? evaluation, bool leagueIsActive = true) =>
-        new(m.Id, m.RoundId, m.ParticipantHome, m.ParticipantAway, m.StartsAtUtc, m.Status.ToString(),
-            m.HomeGoals, m.AwayGoals, prediction is null ? null : ToDto(prediction, evaluation), leagueIsActive && CanCreateOrEditPrediction(m));
+    internal static MatchWithPredictionDto ToMatchWithPredictionDto(Match m, Prediction? prediction, PredictionEvaluation? evaluation,
+        bool leagueIsActive = true, IReadOnlyList<TeamPlayer>? players = null, bool preferredEnabled = false) =>
+        new(m.Id, m.RoundId, m.HomeTeamId, m.AwayTeamId, m.ParticipantHome, m.ParticipantAway, m.StartsAtUtc, m.Status.ToString(),
+            m.HomeGoals, m.AwayGoals,
+            (players ?? []).Where(p => p.TeamId == m.HomeTeamId).Select(p => new AvailablePlayerDto(p.Id, p.TeamId, p.DisplayName, p.ShirtNumber)).ToList(),
+            (players ?? []).Where(p => p.TeamId == m.AwayTeamId).Select(p => new AvailablePlayerDto(p.Id, p.TeamId, p.DisplayName, p.ShirtNumber)).ToList(),
+            preferredEnabled, prediction is null ? null : ToDto(prediction, evaluation), leagueIsActive && CanCreateOrEditPrediction(m));
 }

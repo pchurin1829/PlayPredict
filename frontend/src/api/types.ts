@@ -44,8 +44,11 @@ export interface Match {
   status: MatchStatus
   homeGoals: number | null
   awayGoals: number | null
+  scorers: MatchScorer[]
   createdAtUtc: string
 }
+
+export interface MatchScorer { teamPlayerId:number; playerName:string; teamId:number; goals:number }
 
 export const EDITION_STATUSES: EditionStatus[] = ['Draft', 'Active', 'Finished', 'Cancelled']
 export const MATCH_STATUSES: MatchStatus[] = ['Scheduled', 'InProgress', 'Suspended', 'Cancelled']
@@ -91,9 +94,13 @@ export interface Prediction {
   userId: number
   predictedHomeScore: number
   predictedAwayScore: number
+  preferredPlayerId: number | null
+  preferredPlayerName: string | null
   createdAtUtc: string
   updatedAtUtc: string
   points: number | null
+  resultPoints: number | null
+  preferredPlayerPoints: number | null
   evaluationType: EvaluationType | null
   evaluationLabel: string | null
   officialHomeScore: number | null
@@ -110,6 +117,8 @@ export interface EditionScoringConfiguration {
   effectiveExactScorePoints: number
   effectiveCorrectOutcomePoints: number
   effectiveIncorrectPoints: number
+  preferredPlayerEnabled: boolean
+  preferredPlayerPointsPerGoal: number
   createdAtUtc: string
   updatedAtUtc: string
 }
@@ -142,12 +151,17 @@ export interface Experience {
 export interface MatchWithPrediction {
   id: number
   roundId: number
+  homeTeamId: number
+  awayTeamId: number
   participantHome: string
   participantAway: string
   startsAtUtc: string
   status: MatchStatus
   homeGoals: number | null
   awayGoals: number | null
+  homePlayers: AvailablePlayer[]
+  awayPlayers: AvailablePlayer[]
+  preferredPlayerEnabled: boolean
   myPrediction: Prediction | null
   canPredict: boolean
 }
@@ -261,6 +275,9 @@ export interface Team {
   sport: string
   active: boolean
 }
+
+export interface TeamPlayer { id:number; teamId:number; firstName:string; lastName:string; displayName:string; shirtNumber:number|null; position:string|null; active:boolean; photoUrl:string|null }
+export interface AvailablePlayer { id:number; teamId:number; displayName:string; shirtNumber:number|null }
 
 export interface AdminOfficialLeague {
   id: number

@@ -61,6 +61,7 @@ public class PredictionEvaluationService
         }
 
         var predictions = await db.Predictions
+            .Include(p => p.PreferredPlayer)
             .Where(p => p.MatchId == match.Id)
             .ToListAsync();
 
@@ -82,6 +83,10 @@ public class PredictionEvaluationService
                 prediction.PredictedHomeScore, prediction.PredictedAwayScore,
                 match.HomeGoals.Value, match.AwayGoals.Value,
                 exactPoints, correctPoints, incorrectPoints);
+            var preferredGoals = config.PreferredPlayerEnabled && prediction.PreferredPlayerId.HasValue
+                ? match.Scorers.Where(s => s.TeamPlayerId == prediction.PreferredPlayerId.Value).Sum(s => s.Goals)
+                : 0;
+            var preferredPoints = preferredGoals * config.PreferredPlayerPointsPerGoal;
 
             var evaluation = existingEvaluations.FirstOrDefault(e => e.PredictionId == prediction.Id);
             if (evaluation is null)
@@ -91,7 +96,9 @@ public class PredictionEvaluationService
             }
 
             evaluation.EvaluationType = type;
-            evaluation.Points = points;
+            evaluation.ResultPoints = points;
+            evaluation.PreferredPlayerPoints = preferredPoints;
+            evaluation.Points = points + preferredPoints;
             evaluation.AppliedRuleValue = points;
             evaluation.OfficialHomeScore = match.HomeGoals.Value;
             evaluation.OfficialAwayScore = match.AwayGoals.Value;

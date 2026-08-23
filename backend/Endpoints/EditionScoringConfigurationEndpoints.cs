@@ -37,6 +37,8 @@ public static class EditionScoringConfigurationEndpoints
                     CorrectOutcomePoints = 3,
                     IncorrectPoints = 0,
                     UseExperienceDefaults = false,
+                    PreferredPlayerEnabled = true,
+                    PreferredPlayerPointsPerGoal = 2,
                     CreatedAtUtc = now,
                     UpdatedAtUtc = now
                 };
@@ -79,6 +81,8 @@ public static class EditionScoringConfigurationEndpoints
             config.CorrectOutcomePoints = dto.CorrectOutcomePoints;
             config.IncorrectPoints = dto.IncorrectPoints;
             config.UseExperienceDefaults = dto.UseExperienceDefaults;
+            config.PreferredPlayerEnabled = dto.PreferredPlayerEnabled;
+            config.PreferredPlayerPointsPerGoal = dto.PreferredPlayerPointsPerGoal;
             config.UpdatedAtUtc = now;
 
             await db.SaveChangesAsync();
@@ -105,6 +109,8 @@ public static class EditionScoringConfigurationEndpoints
         {
             errors["incorrectPoints"] = ["Debe ser un valor entero mayor o igual a 0."];
         }
+        if (dto.PreferredPlayerPointsPerGoal < 0)
+            errors["preferredPlayerPointsPerGoal"] = ["Debe ser un valor entero mayor o igual a 0."];
 
         return errors;
     }
@@ -143,6 +149,7 @@ public static class EditionScoringConfigurationEndpoints
         return new EditionScoringConfigurationDto(
             config.Id, config.EditionId, config.ExactScorePoints, config.CorrectOutcomePoints, config.IncorrectPoints,
             config.UseExperienceDefaults, effectiveExact, effectiveCorrect, effectiveIncorrect,
+            config.PreferredPlayerEnabled, config.PreferredPlayerPointsPerGoal,
             config.CreatedAtUtc, config.UpdatedAtUtc);
     }
 }

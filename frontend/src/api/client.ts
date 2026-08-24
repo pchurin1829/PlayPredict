@@ -64,4 +64,10 @@ export const api = {
     request<T>(path, { method: 'POST', body }),
   del: <T>(path: string) =>
     request<T>(path, { method: 'DELETE' }),
+  download: async (path: string): Promise<Blob> => {
+    const token = getToken()
+    const response = await fetch(`/api${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (!response.ok) throw new ApiError(`Error ${response.status}`, response.status)
+    return response.blob()
+  },
 }

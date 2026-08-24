@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Dtos;
+using PlayPredict.Api.Domain.Constants;
 
 namespace PlayPredict.Api.Endpoints;
 
@@ -109,6 +110,41 @@ public static class CompetitionEndpoints
 
             return Results.Ok(ToDto(competition));
         });
+
+        group.MapGet("/{id:int}/dependencies", async (int id, PlayPredictDbContext db) =>
+        {
+            if (!await db.Competitions.AnyAsync(c => c.Id == id)) return Results.NotFound();
+            return Results.Ok(await GetDependenciesAsync(id, db));
+        }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
+
+        group.MapDelete("/{id:int}", async (int id, PlayPredictDbContext db) =>
+        {
+            var competition = await db.Competitions.FindAsync(id);
+            if (competition is null) return Results.NotFound();
+            var dependencies = await GetDependenciesAsync(id, db);
+            if (!dependencies.CanDelete)
+                return Results.Conflict(new { message = "No se puede eliminar esta competencia de referencia porque tiene datos relacionados.", dependencies });
+
+            db.Competitions.Remove(competition);
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
+    }
+
+    private static async Task<CompetitionDependenciesDto> GetDependenciesAsync(int competitionId, PlayPredictDbContext db)
+    {
+        var editionIds = db.Editions.Where(e => e.CompetitionId == competitionId).Select(e => e.Id);
+        var roundIds = db.Rounds.Where(r => editionIds.Contains(r.EditionId)).Select(r => r.Id);
+        var matchIds = db.Matches.Where(m => roundIds.Contains(m.RoundId)).Select(m => m.Id);
+        var leagueIds = db.Leagues.Where(l => l.CompetitionId == competitionId).Select(l => l.Id);
+        var predictionIds = db.Predictions.Where(p => leagueIds.Contains(p.LeagueId) || matchIds.Contains(p.MatchId)).Select(p => p.Id);
+        return new CompetitionDependenciesDto(
+            await editionIds.CountAsync(), await roundIds.CountAsync(), await matchIds.CountAsync(),
+            await leagueIds.CountAsync(), await db.LeagueParticipants.CountAsync(p => leagueIds.Contains(p.LeagueId)),
+            await predictionIds.CountAsync(), await db.PredictionEvaluations.CountAsync(e => predictionIds.Contains(e.PredictionId)),
+            await db.MatchScorers.CountAsync(s => matchIds.Contains(s.MatchId)),
+            await db.Prizes.CountAsync(p => editionIds.Contains(p.EditionId)),
+            await db.EditionScoringConfigurations.CountAsync(c => editionIds.Contains(c.EditionId)));
     }
 
     private const string DemoExperienceName = "PlayPredict Demo";
@@ -140,4 +176,12 @@ public static class CompetitionEndpoints
 
     internal static CompetitionDto ToDto(Competition c) =>
         new(c.Id, c.ExperienceId, c.Name, c.Description, c.Sport, c.IsActive, c.CreatedAtUtc);
+}
+
+public record CompetitionDependenciesDto(int Editions, int Rounds, int Matches, int Leagues,
+    int Participants, int Predictions, int Evaluations, int MatchScorers, int Prizes, int ScoringConfigurations)
+{
+    public bool CanDelete => Editions == 0 && Rounds == 0 && Matches == 0 && Leagues == 0
+        && Participants == 0 && Predictions == 0 && Evaluations == 0 && MatchScorers == 0
+        && Prizes == 0 && ScoringConfigurations == 0;
 }

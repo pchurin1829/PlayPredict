@@ -65,6 +65,19 @@ export default function RoundsListPage() {
     }
   }
 
+  async function exportFixture() {
+    if (!edition) return
+    try {
+      const blob = await api.download(`/editions/${edition.id}/fixture.csv`)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url; link.download = `fixture-${edition.id}.csv`; link.click()
+      URL.revokeObjectURL(url)
+    } catch (reason) {
+      setError(reason instanceof ApiError ? reason.message : 'No se pudo exportar el fixture.')
+    }
+  }
+
   return (
     <div>
       <div className="breadcrumb">
@@ -74,6 +87,7 @@ export default function RoundsListPage() {
       </div>
       <div className="admin-header">
         <div><h1>{adminFlow === 'results' ? 'Resultados' : 'Fixture / Partidos'} {edition ? `— ${edition.name}` : ''}</h1>{rounds && <p className="admin-help">Fechas actuales: <strong>{rounds.length}</strong></p>}</div>
+        {edition && <button type="button" className="btn btn-secondary" onClick={exportFixture}>Exportar fixture CSV</button>}
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}

@@ -72,10 +72,13 @@ export default function CompetitionFormPage() {
   return (
     <div>
       <div className="breadcrumb">
-        <Link to="/competitions">← Volver a Competencias</Link>
+        <Link to="/competitions">← Volver a Competencias de referencia</Link>
       </div>
       <div className="admin-header">
-        <h1>{isEdit ? 'Editar Competencia' : 'Nueva Competencia'}</h1>
+        <div>
+          <h1>{isEdit ? 'Editar Competencia de referencia' : 'Nueva Competencia de referencia'}</h1>
+          <p className="admin-help">Esta competencia representa una competencia deportiva real, por ejemplo Copa Libertadores, Copa Argentina o Liga Profesional Argentina.</p>
+        </div>
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}
@@ -83,7 +86,7 @@ export default function CompetitionFormPage() {
 
       <form className="form-card" onSubmit={handleSubmit}>
         <div className="form-field">
-          <label htmlFor="name">Nombre</label>
+          <label htmlFor="name">Nombre de la competencia de referencia</label>
           <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
           {fieldErrors.name && <span className="form-field-error">{fieldErrors.name[0]}</span>}
         </div>

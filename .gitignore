@@ -9,6 +9,7 @@ backend/obj/
 **/obj/
 *.user
 backend/wwwroot/uploads/
+backend/storage/uploads/
 
 # Frontend (Node / Vite)
 frontend/node_modules/
@@ -28,3 +29,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Backups locales de PostgreSQL (nunca versionar datos de una PC)
+backups/*.dump

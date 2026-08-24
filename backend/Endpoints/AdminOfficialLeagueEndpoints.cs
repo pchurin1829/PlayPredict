@@ -103,6 +103,24 @@ public static class AdminOfficialLeagueEndpoints
             await db.SaveChangesAsync();
             return Results.Ok(await ToDtoAsync(db, league));
         });
+
+        group.MapGet("/{id:int}/dependencies", async (int id, PlayPredictDbContext db) =>
+        {
+            var league = await db.Leagues.FirstOrDefaultAsync(l => l.Id == id && l.LeagueType == LeagueType.Official);
+            return league is null ? Results.NotFound() : Results.Ok(await GetDependenciesAsync(db, league));
+        });
+
+        group.MapDelete("/{id:int}", async (int id, PlayPredictDbContext db) =>
+        {
+            var league = await db.Leagues.FirstOrDefaultAsync(l => l.Id == id && l.LeagueType == LeagueType.Official);
+            if (league is null) return Results.NotFound();
+            var dependencies = await GetDependenciesAsync(db, league);
+            if (!dependencies.CanDelete)
+                return Results.Conflict(new { message = "No se puede eliminar esta competencia porque tiene participantes, pronósticos o evaluaciones relacionadas.", dependencies });
+            db.Leagues.Remove(league);
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        });
     }
 
     private static async Task<(Dictionary<string, string[]> Errors, LeagueScopeType Scope)> ValidateAsync(
@@ -162,8 +180,10 @@ public static class AdminOfficialLeagueEndpoints
 
     private static async Task<AdminOfficialLeagueDto> ToDtoAsync(PlayPredictDbContext db, League league)
     {
-        var competitionName = await db.Competitions.Where(c => c.Id == league.CompetitionId).Select(c => c.Name).FirstAsync();
-        var editionName = await db.Editions.Where(e => e.Id == league.EditionId).Select(e => e.Name).FirstAsync();
+        var competitionName = await db.Competitions.Where(c => c.Id == league.CompetitionId).Select(c => c.Name).FirstOrDefaultAsync()
+            ?? $"Competencia no disponible (ID {league.CompetitionId})";
+        var editionName = await db.Editions.Where(e => e.Id == league.EditionId).Select(e => e.Name).FirstOrDefaultAsync()
+            ?? $"Edición no disponible (ID {league.EditionId})";
         var participants = await db.LeagueParticipants.CountAsync(p => p.LeagueId == league.Id);
         var scopedRounds = db.Rounds.Where(r => r.EditionId == league.EditionId);
         if (league.ScopeType == LeagueScopeType.RoundRange && league.RoundFromId.HasValue && league.RoundToId.HasValue)
@@ -181,4 +201,32 @@ public static class AdminOfficialLeagueEndpoints
             competitionName, league.EditionId, editionName, league.ScopeType.ToString(), league.RoundFromId,
             league.RoundToId, fromName, toName, league.IsActive, participants, roundsCount, matchesCount, league.CreatedAtUtc, league.UpdatedAtUtc);
     }
+
+    private static async Task<OfficialLeagueDependenciesDto> GetDependenciesAsync(PlayPredictDbContext db, League league)
+    {
+        var predictionIds = db.Predictions.Where(p => p.LeagueId == league.Id).Select(p => p.Id);
+        var matchIds = GetScopedMatchIds(db, league);
+        return new OfficialLeagueDependenciesDto(
+            await db.LeagueParticipants.CountAsync(p => p.LeagueId == league.Id),
+            await predictionIds.CountAsync(),
+            await db.PredictionEvaluations.CountAsync(e => predictionIds.Contains(e.PredictionId)),
+            await db.Matches.CountAsync(m => matchIds.Contains(m.Id) && m.HomeGoals != null && m.AwayGoals != null));
+    }
+
+    private static IQueryable<int> GetScopedMatchIds(PlayPredictDbContext db, League league)
+    {
+        var rounds = db.Rounds.Where(r => r.EditionId == league.EditionId);
+        if (league.ScopeType == LeagueScopeType.RoundRange && league.RoundFromId.HasValue && league.RoundToId.HasValue)
+        {
+            var fromOrder = db.Rounds.Where(r => r.Id == league.RoundFromId.Value).Select(r => (int?)r.Order).FirstOrDefault();
+            var toOrder = db.Rounds.Where(r => r.Id == league.RoundToId.Value).Select(r => (int?)r.Order).FirstOrDefault();
+            if (fromOrder.HasValue && toOrder.HasValue) rounds = rounds.Where(r => r.Order >= fromOrder && r.Order <= toOrder);
+        }
+        return db.Matches.Where(m => rounds.Select(r => r.Id).Contains(m.RoundId)).Select(m => m.Id);
+    }
+}
+
+public record OfficialLeagueDependenciesDto(int Participants, int Predictions, int Evaluations, int OfficialResults)
+{
+    public bool CanDelete => Participants == 0 && Predictions == 0 && Evaluations == 0;
 }

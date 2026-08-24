@@ -16,6 +16,12 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
             .IsRequired()
             .HasMaxLength(150);
 
+        builder.Property(c => c.ShortName)
+            .HasMaxLength(80);
+
+        builder.Property(c => c.LogoUrl)
+            .HasMaxLength(500);
+
         builder.Property(c => c.CreatedAtUtc)
             .IsRequired();
 

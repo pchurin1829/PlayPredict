@@ -12,6 +12,7 @@ import type {
   LeagueDetail,
 } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
+import { useCompanySettings } from '../company/CompanySettingsContext'
 import DashboardHero from '../components/player/DashboardHero'
 import MatchPredictionCard from '../components/player/MatchPredictionCard'
 import RankingPreview from '../components/player/RankingPreview'
@@ -23,6 +24,8 @@ import './PlayerDashboardPage.css'
 
 export default function PlayerDashboardPage() {
   const { user } = useAuth()
+  const { company } = useCompanySettings()
+  const companyName = company.shortName || 'PlayPredict'
 
   const [leagues, setLeagues] = useState<LeagueSummary[]>([])
   const [leagueContexts, setLeagueContexts] = useState<Array<{ league: LeagueDetail; matches: MatchWithPrediction[] }>>([])
@@ -160,11 +163,11 @@ export default function PlayerDashboardPage() {
             <span className="pdash__empty-icon">⚽</span>
             <h2 className="pdash__empty-title">¡Bienvenido a PlayPredict!</h2>
             <p className="pdash__empty-text">
-              Para empezar a pronosticar, participá en una Liga Oficial de PlayPredict o creá tu propia Liga con amigos sobre una Competencia.
+              Para empezar a pronosticar, participá en una competencia {companyName} o creá tu propia Liga con amigos sobre una competencia de referencia.
             </p>
             <div className="pdash__empty-actions">
               <Link to="/competitions/explore" className="pp-btn pp-btn--primary" style={{ fontSize: '1rem', padding: '0.7rem 1.5rem' }}>
-                Explorar Competencias Oficiales
+                Explorar Competencias
               </Link>
               <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
                 ✋ Unirme a una Liga de amigos

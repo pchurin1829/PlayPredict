@@ -64,7 +64,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "uploads", "team-players"));
+var uploadRoot = ManagedImageStorage.GetRoot(builder.Configuration, builder.Environment);
+Directory.CreateDirectory(uploadRoot);
+ManagedImageStorage.CopyLegacyFiles(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
@@ -76,7 +78,7 @@ app.UseCors(FrontendCorsPolicy);
 app.UseStaticFiles();
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "uploads")),
+    FileProvider = new PhysicalFileProvider(uploadRoot),
     RequestPath = "/api/uploads"
 });
 
@@ -111,6 +113,7 @@ app.MapPrizeEndpoints();
 app.MapAdminExperienceEndpoints();
 app.MapLeagueEndpoints();
 app.MapAdminOfficialLeagueEndpoints();
+app.MapCompanySettingsEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -148,11 +151,9 @@ using (var scope = app.Services.CreateScope())
 
     // --- Seeders: solo después de que el schema esté completo ---
     await DataSeeder.SeedCoreDataAsync(db);
-    await DataSeeder.SeedDemoTeamPlayersAsync(db);
 
     if (app.Environment.IsDevelopment())
     {
-        await DataSeeder.SeedAsync(db);
         await DataSeeder.SeedAdminUsersAsync(db, app.Configuration, app.Environment);
     }
 
@@ -161,9 +162,7 @@ using (var scope = app.Services.CreateScope())
     if (app.Environment.IsDevelopment())
     {
         var evaluationService = scope.ServiceProvider.GetRequiredService<PredictionEvaluationService>();
-        await DataSeeder.SeedRankingDemoAsync(db, evaluationService);
-        await DataSeeder.RefreshDemoScheduleAsync(db);
-        await DataSeeder.SeedPrizesDemoAsync(db);
+        await DemoDatasetV1Seeder.SeedAsync(db, evaluationService);
     }
 }
 

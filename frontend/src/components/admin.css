@@ -379,10 +379,20 @@ button.admin-selection__option {
 
 .form-actions {
   display: flex;
-  gap: 1rem;
+  gap: 1.75rem;
   margin-top: 1.25rem;
   flex-wrap: wrap;
 }
+
+.image-upload-field { display: grid; gap: .6rem; }
+.image-upload-field > label { color: var(--pp-text-primary); font-weight: 600; }
+.image-upload-field__drop { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 2px dashed var(--pp-border-strong); border-radius: 10px; background: var(--pp-bg-surface-alt); }
+.image-upload-field__drop--dragging { border-color: var(--pp-primary); background: var(--pp-primary-soft); }
+.image-upload-field__preview { width: 92px; height: 92px; flex: 0 0 92px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--pp-border); border-radius: 10px; background: var(--pp-bg-surface); color: var(--pp-text-secondary); }
+.image-upload-field__preview img { width: 100%; height: 100%; object-fit: contain; }
+.image-upload-field__drop > div { display: grid; justify-items: start; gap: .4rem; }
+.image-upload-field__drop small { color: var(--pp-text-secondary); }
+.image-upload-field__remove { justify-self: start; }
 
 .match-row-actions {
   display: flex;
@@ -698,6 +708,7 @@ button.admin-selection__option {
 .btn-tertiary:focus-visible { border-color: var(--pp-border-strong); background: var(--pp-bg-surface-alt); }
 
 @media (max-width: 600px) {
+  .image-upload-field__drop { align-items: stretch; flex-direction: column; }
   .round-generator__controls,
   .round-row-actions,
   .round-generator__manual { align-items: stretch; flex-direction: column; }

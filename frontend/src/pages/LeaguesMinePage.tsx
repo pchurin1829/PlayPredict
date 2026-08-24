@@ -4,6 +4,7 @@ import { api, ApiError } from '../api/client'
 import { LEAGUE_SCOPE_LABELS, type LeagueSummary } from '../api/types'
 import ConfirmModal from '../components/ConfirmModal'
 import StatusMessage from '../components/StatusMessage'
+import { useCompanySettings } from '../company/CompanySettingsContext'
 import './PlayerPages.css'
 
 interface ModalTarget {
@@ -13,6 +14,8 @@ interface ModalTarget {
 }
 
 export default function LeaguesMinePage() {
+  const { company } = useCompanySettings()
+  const companyName = company.shortName || 'PlayPredict'
   const [myLeagues, setMyLeagues] = useState<LeagueSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [actingId, setActingId] = useState<number | null>(null)
@@ -105,8 +108,8 @@ export default function LeaguesMinePage() {
   const leagueGroups = myLeagues
     ? [
         {
-          title: 'Ligas Oficiales',
-          subtitle: 'Competencias oficiales en las que participás',
+          title: `Competencias ${companyName}`,
+          subtitle: `Competencias propias de ${companyName} en las que participás`,
           leagues: myLeagues.filter((league) => league.leagueType === 'Official'),
         },
         {
@@ -129,7 +132,7 @@ export default function LeaguesMinePage() {
     <div>
       <div className="pp-header">
         <h1>Mis Ligas</h1>
-        <p className="pp-header__subtitle">Tus Ligas de amigos y las Ligas Oficiales de PlayPredict en las que participás</p>
+        <p className="pp-header__subtitle">Tus Ligas de amigos y las competencias {companyName} en las que participás</p>
         <div className="pp-header__actions">
           <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
             ✋ Unirme a Liga de Amigos con código
@@ -150,11 +153,11 @@ export default function LeaguesMinePage() {
               <p className="pp-empty__text">
                 Aún no participás en ninguna Liga.
                 <br />
-                Explorá competencias para participar en una Liga Oficial de PlayPredict o creá tu propia Liga con amigos.
+                Explorá competencias para participar en una competencia {companyName} o creá tu propia Liga con amigos.
               </p>
               <div className="pp-empty__actions">
                 <Link to="/competitions/explore" className="pp-btn pp-btn--primary">
-                  Explorar Competencias Oficiales
+                  Explorar Competencias
                 </Link>
                 <Link to="/leagues/join" className="pp-btn pp-btn--secondary">
                   ✋ Unirme a Liga de Amigos con código

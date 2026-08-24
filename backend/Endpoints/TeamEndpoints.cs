@@ -3,6 +3,7 @@ using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Dtos;
+using PlayPredict.Api.Services;
 
 namespace PlayPredict.Api.Endpoints;
 
@@ -19,6 +20,50 @@ public static class TeamEndpoints
         });
         group.MapPost("/", async (SaveTeamDto dto, PlayPredictDbContext db) => await Save(null, dto, db));
         group.MapPut("/{id:int}", async (int id, SaveTeamDto dto, PlayPredictDbContext db) => await Save(id, dto, db));
+        group.MapPost("/{id:int}/logo", async (int id, IFormFile file, PlayPredictDbContext db, IWebHostEnvironment environment, IConfiguration configuration) =>
+        {
+            var team = await db.Teams.FindAsync(id);
+            if (team is null) return Results.NotFound();
+            var (url, uploadError) = await ManagedImageStorage.SaveAsync(file, "teams", $"team-{id}", configuration, environment);
+            if (uploadError is not null) return Results.BadRequest(new { message = uploadError });
+            ManagedImageStorage.Delete(team.LogoUrl, "teams", configuration, environment);
+            team.LogoUrl = url;
+            await db.SaveChangesAsync();
+            return Results.Ok(ToDto(team));
+        }).DisableAntiforgery();
+        group.MapDelete("/{id:int}/logo", async (int id, PlayPredictDbContext db, IWebHostEnvironment environment, IConfiguration configuration) =>
+        {
+            var team = await db.Teams.FindAsync(id);
+            if (team is null) return Results.NotFound();
+            ManagedImageStorage.Delete(team.LogoUrl, "teams", configuration, environment);
+            team.LogoUrl = null;
+            await db.SaveChangesAsync();
+            return Results.Ok(ToDto(team));
+        });
+        group.MapDelete("/{id:int}", async (int id, PlayPredictDbContext db, IWebHostEnvironment environment, IConfiguration configuration) =>
+        {
+            var team = await db.Teams.FindAsync(id);
+            if (team is null) return Results.NotFound();
+
+            var usedInMatches = await db.Matches.AnyAsync(m => m.HomeTeamId == id || m.AwayTeamId == id);
+            var hasPlayers = await db.TeamPlayers.AnyAsync(p => p.TeamId == id);
+            if (usedInMatches || hasPlayers)
+            {
+                return Results.Conflict(new
+                {
+                    message = "No se puede eliminar este equipo porque está siendo utilizado en partidos, fixture u otros datos de la competencia."
+                });
+            }
+
+            db.Teams.Remove(team);
+            try { await db.SaveChangesAsync(); }
+            catch (DbUpdateException)
+            {
+                return Results.Conflict(new { message = "No se puede eliminar este equipo porque tiene referencias relacionadas que deben revisarse." });
+            }
+            ManagedImageStorage.Delete(team.LogoUrl, "teams", configuration, environment);
+            return Results.NoContent();
+        });
     }
 
     private static async Task<IResult> Save(int? id, SaveTeamDto dto, PlayPredictDbContext db)

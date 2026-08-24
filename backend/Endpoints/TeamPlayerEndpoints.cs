@@ -3,19 +3,12 @@ using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Dtos;
+using PlayPredict.Api.Services;
 
 namespace PlayPredict.Api.Endpoints;
 
 public static class TeamPlayerEndpoints
 {
-    private const long MaxPhotoBytes = 1_500_000;
-    private static readonly Dictionary<string, string> PhotoExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["image/jpeg"] = ".jpg",
-        ["image/png"] = ".png",
-        ["image/webp"] = ".webp"
-    };
-
     public static void MapTeamPlayerEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api").WithTags("Team Players").RequireAuthorization();
@@ -51,49 +44,29 @@ public static class TeamPlayerEndpoints
             return Results.Ok(ToDto(player));
         }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
 
-        group.MapPost("/team-players/{id:int}/photo", async (int id, IFormFile file, PlayPredictDbContext db, IWebHostEnvironment environment) =>
+        group.MapPost("/team-players/{id:int}/photo", async (int id, IFormFile file, PlayPredictDbContext db, IWebHostEnvironment environment, IConfiguration configuration) =>
         {
             var player = await db.TeamPlayers.FindAsync(id);
             if (player is null) return Results.NotFound();
-            if (file.Length == 0 || file.Length > MaxPhotoBytes)
-                return Results.BadRequest(new { message = "La foto optimizada debe pesar menos de 1,5 MB." });
-            if (!PhotoExtensions.TryGetValue(file.ContentType, out var extension))
-                return Results.BadRequest(new { message = "Usá una imagen JPG, PNG o WEBP." });
-
-            await using var source = file.OpenReadStream();
-            await using var input = new MemoryStream();
-            await source.CopyToAsync(input);
-            input.Position = 0;
-            var signature = new byte[12];
-            var bytesRead = await input.ReadAsync(signature);
-            if (!HasValidImageSignature(signature.AsSpan(0, bytesRead), file.ContentType))
-                return Results.BadRequest(new { message = "El archivo no contiene una imagen válida." });
-            input.Position = 0;
-
-            var relativeDirectory = Path.Combine("uploads", "team-players");
-            var directory = Path.Combine(environment.ContentRootPath, "wwwroot", relativeDirectory);
-            Directory.CreateDirectory(directory);
-            var fileName = $"player-{id}-{Guid.NewGuid():N}{extension}";
-            var destination = Path.Combine(directory, fileName);
-            await using (var output = File.Create(destination)) await input.CopyToAsync(output);
-
-            DeleteManagedPhoto(player.PhotoUrl, environment.ContentRootPath);
-            player.PhotoUrl = $"/api/uploads/team-players/{fileName}";
+            var (url, uploadError) = await ManagedImageStorage.SaveAsync(file, "team-players", $"player-{id}", configuration, environment);
+            if (uploadError is not null) return Results.BadRequest(new { message = uploadError });
+            ManagedImageStorage.Delete(player.PhotoUrl, "team-players", configuration, environment);
+            player.PhotoUrl = url;
             await db.SaveChangesAsync();
             return Results.Ok(ToDto(player));
         }).DisableAntiforgery().RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
 
-        group.MapDelete("/team-players/{id:int}/photo", async (int id, PlayPredictDbContext db, IWebHostEnvironment environment) =>
+        group.MapDelete("/team-players/{id:int}/photo", async (int id, PlayPredictDbContext db, IWebHostEnvironment environment, IConfiguration configuration) =>
         {
             var player = await db.TeamPlayers.FindAsync(id);
             if (player is null) return Results.NotFound();
-            DeleteManagedPhoto(player.PhotoUrl, environment.ContentRootPath);
+            ManagedImageStorage.Delete(player.PhotoUrl, "team-players", configuration, environment);
             player.PhotoUrl = null;
             await db.SaveChangesAsync();
             return Results.Ok(ToDto(player));
         }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
 
-        group.MapDelete("/team-players/{id:int}", async (int id, PlayPredictDbContext db, IWebHostEnvironment environment) =>
+        group.MapDelete("/team-players/{id:int}", async (int id, PlayPredictDbContext db, IWebHostEnvironment environment, IConfiguration configuration) =>
         {
             var player = await db.TeamPlayers.FindAsync(id);
             if (player is null) return Results.NotFound();
@@ -103,7 +76,7 @@ public static class TeamPlayerEndpoints
                 return Results.Conflict(new { message = "No se puede eliminar este jugador porque ya está utilizado en pronósticos o resultados." });
             db.TeamPlayers.Remove(player);
             await db.SaveChangesAsync();
-            DeleteManagedPhoto(player.PhotoUrl, environment.ContentRootPath);
+            ManagedImageStorage.Delete(player.PhotoUrl, "team-players", configuration, environment);
             return Results.NoContent();
         }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
     }
@@ -130,20 +103,4 @@ public static class TeamPlayerEndpoints
 
     private static TeamPlayerDto ToDto(TeamPlayer x) => new(x.Id, x.TeamId, x.FirstName, x.LastName, x.DisplayName, x.ShirtNumber, x.Position, x.Active, x.PhotoUrl);
 
-    private static bool HasValidImageSignature(ReadOnlySpan<byte> bytes, string contentType) => contentType switch
-    {
-        "image/jpeg" => bytes.Length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF,
-        "image/png" => bytes.Length >= 8 && bytes[..8].SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }),
-        "image/webp" => bytes.Length >= 12 && bytes[..4].SequenceEqual("RIFF"u8) && bytes[8..12].SequenceEqual("WEBP"u8),
-        _ => false
-    };
-
-    private static void DeleteManagedPhoto(string? photoUrl, string contentRootPath)
-    {
-        const string prefix = "/api/uploads/team-players/";
-        if (string.IsNullOrWhiteSpace(photoUrl) || !photoUrl.StartsWith(prefix, StringComparison.Ordinal)) return;
-        var fileName = Path.GetFileName(photoUrl);
-        var path = Path.Combine(contentRootPath, "wwwroot", "uploads", "team-players", fileName);
-        if (File.Exists(path)) File.Delete(path);
-    }
 }

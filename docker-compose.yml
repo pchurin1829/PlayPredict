@@ -37,12 +37,14 @@ services:
       # (queda trackeado por Git): se toma de .env (gitignored). Si no está definida,
       # DataSeeder cae a un valor por defecto documentado solo para desarrollo.
       DevSeed__AdminPassword: ${DEV_ADMIN_PASSWORD:-}
+      UploadStorage__RootPath: /data/uploads
     ports:
       - "${BACKEND_PORT:-8006}:8080"
     volumes:
       - ./backend:/app
       - playpredict_backend_bin:/app/bin
       - playpredict_backend_obj:/app/obj
+      - playpredict_uploads:/data/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -74,4 +76,5 @@ volumes:
   playpredict_db_data:
   playpredict_backend_bin:
   playpredict_backend_obj:
+  playpredict_uploads:
   playpredict_frontend_node_modules:

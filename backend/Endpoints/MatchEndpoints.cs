@@ -4,6 +4,8 @@ using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Dtos;
 using PlayPredict.Api.Services;
+using System.Text;
+using PlayPredict.Api.Domain.Constants;
 
 namespace PlayPredict.Api.Endpoints;
 
@@ -11,6 +13,29 @@ public static class MatchEndpoints
 {
     public static void MapMatchEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/api/editions/{editionId:int}/fixture.csv", async (int editionId, PlayPredictDbContext db) =>
+        {
+            var edition = await db.Editions.Include(e => e.Competition).FirstOrDefaultAsync(e => e.Id == editionId);
+            if (edition is null) return Results.NotFound();
+
+            var rows = await db.Matches
+                .Where(m => m.Round.EditionId == editionId)
+                .OrderBy(m => m.Round.Order).ThenBy(m => m.StartsAtUtc)
+                .Select(m => new { Round = m.Round.Name, m.Id, m.ParticipantHome, m.ParticipantAway, m.StartsAtUtc, m.Status })
+                .ToListAsync();
+            static string Csv(string value) => $"\"{value.Replace("\"", "\"\"")}\"";
+            var csv = new StringBuilder("Competition,Edition,Round,MatchId,HomeTeam,AwayTeam,ScheduledAt,Status\r\n");
+            foreach (var row in rows)
+            {
+                csv.Append(Csv(edition.Competition.Name)).Append(',').Append(Csv(edition.Name)).Append(',')
+                    .Append(Csv(row.Round)).Append(',').Append(row.Id).Append(',')
+                    .Append(Csv(row.ParticipantHome)).Append(',').Append(Csv(row.ParticipantAway)).Append(',')
+                    .Append(row.StartsAtUtc.ToUniversalTime().ToString("O")).Append(',').Append(row.Status).Append("\r\n");
+            }
+            return Results.File(Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray(),
+                "text/csv; charset=utf-8", $"fixture-{editionId}.csv");
+        }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin)).WithTags("Matches");
+
         app.MapGet("/api/rounds/{roundId:int}/matches", async (int roundId, PlayPredictDbContext db) =>
         {
             var roundExists = await db.Rounds.AnyAsync(r => r.Id == roundId);

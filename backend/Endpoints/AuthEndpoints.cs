@@ -10,7 +10,6 @@ namespace PlayPredict.Api.Endpoints;
 
 public static class AuthEndpoints
 {
-    private const string DefaultCompanyName = "PlayPredict";
 
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
@@ -35,7 +34,7 @@ public static class AuthEndpoints
                 });
             }
 
-            var company = await db.Companies.FirstOrDefaultAsync(c => c.Name == DefaultCompanyName);
+            var company = await db.Companies.OrderBy(c => c.Id).FirstOrDefaultAsync(c => c.IsActive);
             if (company is null)
             {
                 return Results.Problem("No hay una empresa configurada.", statusCode: StatusCodes.Status500InternalServerError);

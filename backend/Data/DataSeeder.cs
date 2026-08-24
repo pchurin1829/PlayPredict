@@ -20,9 +20,9 @@ public static class DataSeeder
     private static readonly (string Name, string ShortName)[] ArgentineTeams =
     {
         ("Boca Juniors", "Boca"), ("River Plate", "River"), ("Racing Club", "Racing"),
-        ("Independiente", "Independiente"), ("Estudiantes", "Estudiantes"), ("Gimnasia", "Gimnasia"),
-        ("San Lorenzo", "San Lorenzo"), ("Huracán", "Huracán"), ("Vélez", "Vélez"),
-        ("Rosario Central", "Rosario Central"), ("Newell's", "Newell's"), ("Talleres", "Talleres"),
+        ("Independiente", "Independiente"), ("Estudiantes de La Plata", "Estudiantes"), ("Gimnasia y Esgrima La Plata", "Gimnasia"),
+        ("San Lorenzo", "San Lorenzo"), ("Huracán", "Huracán"), ("Vélez Sarsfield", "Vélez"),
+        ("Rosario Central", "Rosario Central"), ("Newell's Old Boys", "Newell's"), ("Talleres", "Talleres"),
         ("Belgrano", "Belgrano"), ("Argentinos Juniors", "Argentinos"), ("Lanús", "Lanús"),
         ("Banfield", "Banfield"), ("Defensa y Justicia", "Defensa"), ("Tigre", "Tigre")
     };
@@ -99,7 +99,7 @@ public static class DataSeeder
     // Corre en todos los entornos: Registro/Login necesitan la Empresa y los Roles ya existentes.
     public static async Task SeedCoreDataAsync(PlayPredictDbContext db)
     {
-        if (!await db.Companies.AnyAsync(c => c.Name == DefaultCompanyName))
+        if (!await db.Companies.AnyAsync())
         {
             db.Companies.Add(new Company
             {
@@ -209,7 +209,7 @@ public static class DataSeeder
             password = DefaultDevAdminPassword;
         }
 
-        var company = await db.Companies.FirstAsync(c => c.Name == DefaultCompanyName);
+        var company = await db.Companies.OrderBy(c => c.Id).FirstAsync(c => c.IsActive);
         var adminRole = await db.Roles.FirstAsync(r => r.Name == RoleNames.Admin);
         var hasher = new PasswordHasher<User>();
 
@@ -522,7 +522,7 @@ public static class DataSeeder
 
         await db.SaveChangesAsync();
 
-        var company = await db.Companies.FirstAsync(c => c.Name == DefaultCompanyName);
+        var company = await db.Companies.OrderBy(c => c.Id).FirstAsync(c => c.IsActive);
         var playerRole = await db.Roles.FirstAsync(r => r.Name == RoleNames.Player);
         var hasher = new PasswordHasher<User>();
 

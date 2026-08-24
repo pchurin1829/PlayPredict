@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { Competition, Edition, Round, LeagueSummary } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import { useCompanySettings } from '../company/CompanySettingsContext'
 import './PlayerPages.css'
 
 interface ExploreItem {
@@ -13,6 +14,8 @@ interface ExploreItem {
 }
 
 export default function ExploreCompetitionsPage() {
+  const { company } = useCompanySettings()
+  const companyName = company.shortName || 'PlayPredict'
   const [items, setItems] = useState<ExploreItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [joiningId, setJoiningId] = useState<number | null>(null)
@@ -47,7 +50,7 @@ export default function ExploreCompetitionsPage() {
       if (leaguesResult.status === 'fulfilled') {
         officialLeagues = leaguesResult.value
       } else {
-        setError(leaguesResult.reason?.message ?? 'No se pudieron cargar las Ligas Oficiales.')
+        setError(leaguesResult.reason?.message ?? `No se pudieron cargar las competencias ${companyName}.`)
         return
       }
 
@@ -105,9 +108,9 @@ export default function ExploreCompetitionsPage() {
   return (
     <div>
       <div className="pp-header">
-        <h1>Explorar Competencias Oficiales</h1>
+        <h1>Explorar Competencias</h1>
         <p className="pp-header__subtitle">
-          Participá en las Ligas Oficiales de PlayPredict o creá tu propia Liga con amigos usando los partidos de una competencia oficial.
+          Participá en las competencias {companyName} o creá tu propia Liga con amigos usando los partidos de una competencia de referencia.
         </p>
       </div>
 
@@ -142,7 +145,7 @@ export default function ExploreCompetitionsPage() {
                 <div key={`competition-${competition.id}`} className="pp-comp-card">
                   <h3 className="pp-comp-card__name">{competition.name}</h3>
                   <span className="pp-comp-card__edition">{activeEdition?.name ?? 'Sin edición activa'}</span>
-                  <p className="pp-comp-card__source-note">Todavía no tiene una Liga Oficial PlayPredict activa.</p>
+                  <p className="pp-comp-card__source-note">Todavía no tiene una competencia {companyName} activa.</p>
                   <div className="pp-comp-card__actions">{sourceDetails}</div>
                 </div>
               )]

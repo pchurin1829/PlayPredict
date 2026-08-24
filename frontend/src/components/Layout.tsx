@@ -2,30 +2,37 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import PlayerHeader from './player/PlayerHeader'
 import PlayerSidebar from './player/PlayerSidebar'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useCompanySettings } from '../company/CompanySettingsContext'
 import './Layout.css'
 import './player/PlayerHeader.css'
 import './player/PlayerSidebar.css'
 import './player/PlayerLayout.css'
 import './player/PlayerTheme.css'
 
-const ADMIN_NAV = [
+function getAdminNav(companyShortName: string) { return [
   { title: 'ADMINISTRACIÓN', items: [{ label: 'Dashboard', to: '/admin' }] },
   { title: 'FUENTES DEPORTIVAS', items: [
     { label: 'Organizaciones deportivas', soon: true },
-    { label: 'Competencias', to: '/competitions' },
+    { label: 'Competencias de referencia', to: '/competitions' },
     { label: 'Equipos', to: '/admin/teams' },
   ] },
   { title: 'OPERACIÓN', items: [
     { label: 'Fixture / Partidos', to: '/admin/fixture' },
-    { label: 'Ligas Oficiales', to: '/admin/official-leagues' },
+    { label: `Competencias ${companyShortName}`, to: '/admin/official-leagues' },
     { label: 'Resultados', to: '/admin/results' },
   ] },
   { title: 'JUEGO', items: [
     { label: 'Rankings', to: '/rankings' },
-    { label: 'Configuración', to: '/admin/scoring' },
+    { label: 'Configuración', to: '/admin/settings' },
   ] },
-]
+] }
+
+const PLAYER_SIDEBAR_BREAKPOINT = 1024
+
+function isMobilePlayerViewport(): boolean {
+  return typeof window !== 'undefined' && window.innerWidth <= PLAYER_SIDEBAR_BREAKPOINT
+}
 
 export default function Layout() {
   const { user, logout, viewMode, setViewMode } = useAuth()
@@ -33,14 +40,28 @@ export default function Layout() {
   const navigate = useNavigate()
   const isAdmin = user?.roles.includes('ADMIN') ?? false
   const showAdminLayout = isAdmin && viewMode === 'admin'
+  const { company } = useCompanySettings()
+  const adminNav = getAdminNav(company.shortName || 'PlayPredict')
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
-    typeof window !== 'undefined' && window.innerWidth <= 1024,
-  )
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobilePlayerViewport)
+  const wasMobileViewport = useRef(isMobilePlayerViewport())
 
   useEffect(() => {
-    if (window.innerWidth <= 1024) setSidebarCollapsed(true)
+    if (isMobilePlayerViewport()) setSidebarCollapsed(true)
   }, [location.pathname])
+
+  useEffect(() => {
+    function handleResize() {
+      const isMobile = isMobilePlayerViewport()
+      if (isMobile !== wasMobileViewport.current) {
+        setSidebarCollapsed(isMobile)
+        wasMobileViewport.current = isMobile
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     if (isAdmin && location.pathname.startsWith('/admin') && viewMode !== 'admin') {
@@ -80,7 +101,7 @@ export default function Layout() {
         <div className="layout__body">
           <aside className="layout__sidebar" aria-label="Navegación administrativa">
             <nav className="layout__admin-nav">
-              {ADMIN_NAV.map((group) => (
+              {adminNav.map((group) => (
                 <div key={group.title} className="layout__admin-group">
                   <div className="layout__sidebar-title">{group.title}</div>
                   {group.items.map((item) => item.to ? (
@@ -109,7 +130,9 @@ export default function Layout() {
         <PlayerSidebar
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed((v) => !v)}
-          onNavigate={() => setSidebarCollapsed(true)}
+          onNavigate={() => {
+            if (isMobilePlayerViewport()) setSidebarCollapsed(true)
+          }}
         />
         {!sidebarCollapsed && (
           <button

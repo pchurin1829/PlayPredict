@@ -85,6 +85,34 @@ export interface AuthResponse {
   user: User
 }
 
+export interface CompetitionDependencies {
+  editions: number
+  rounds: number
+  matches: number
+  leagues: number
+  participants: number
+  predictions: number
+  evaluations: number
+  matchScorers: number
+  prizes: number
+  scoringConfigurations: number
+  canDelete: boolean
+}
+
+export interface OfficialLeagueDependencies {
+  participants: number
+  predictions: number
+  evaluations: number
+  officialResults: number
+  canDelete: boolean
+}
+
+export interface CompanySettings {
+  name: string
+  shortName: string
+  logoUrl: string | null
+}
+
 export type EvaluationType = 'ExactScore' | 'CorrectOutcome' | 'Incorrect'
 
 export interface Prediction {

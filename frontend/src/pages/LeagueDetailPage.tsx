@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, type KeyboardEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import { LEAGUE_SCOPE_LABELS, type LeagueDetail, type LeagueParticipantInfo, type RankingEntry, type MatchWithPrediction } from '../api/types'
+import { LEAGUE_SCOPE_LABELS, type AvailablePlayer, type LeagueDetail, type LeagueParticipantInfo, type RankingEntry, type MatchWithPrediction } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 import ComingSoonBadge from '../components/player/ComingSoonBadge'
 import ConfirmModal from '../components/ConfirmModal'
@@ -16,6 +16,8 @@ interface RowState {
   awayInput: string
   savedHome: string
   savedAway: string
+  preferredPlayerId: string
+  savedPreferredPlayerId: string
   hasPrediction: boolean
   saving: boolean
   error: string | null
@@ -29,11 +31,14 @@ function sanitizeDigits(value: string): string {
 function buildInitialRow(match: MatchWithPrediction): RowState {
   const home = match.myPrediction ? String(match.myPrediction.predictedHomeScore) : ''
   const away = match.myPrediction ? String(match.myPrediction.predictedAwayScore) : ''
+  const preferredPlayerId = match.myPrediction?.preferredPlayerId ? String(match.myPrediction.preferredPlayerId) : ''
   return {
     homeInput: home,
     awayInput: away,
     savedHome: home,
     savedAway: away,
+    preferredPlayerId,
+    savedPreferredPlayerId: preferredPlayerId,
     hasPrediction: !!match.myPrediction,
     saving: false,
     error: null,
@@ -42,7 +47,16 @@ function buildInitialRow(match: MatchWithPrediction): RowState {
 }
 
 function isDirty(row: RowState): boolean {
-  return row.hasPrediction && (row.homeInput !== row.savedHome || row.awayInput !== row.savedAway)
+  return row.hasPrediction && (
+    row.homeInput !== row.savedHome
+    || row.awayInput !== row.savedAway
+    || row.preferredPlayerId !== row.savedPreferredPlayerId
+  )
+}
+
+function playerLabel(player: AvailablePlayer): string {
+  const name = `${player.firstName} ${player.lastName}`.trim()
+  return `${name}${player.nickname ? ` · “${player.nickname}”` : ''}${player.shirtNumber == null ? '' : ` · #${player.shirtNumber}`}`
 }
 
 function hasBothScores(row: RowState): boolean {
@@ -233,13 +247,14 @@ export default function LeagueDetailPage() {
     try {
       const isUpdate = row.hasPrediction
       const updated = isUpdate
-        ? await api.put<MatchWithPrediction['myPrediction']>(`/predictions/${match.myPrediction!.id}`, { predictedHomeScore: homeScore, predictedAwayScore: awayScore })
-        : await api.post<MatchWithPrediction['myPrediction']>('/predictions', { leagueId: Number(leagueId), matchId: match.id, predictedHomeScore: homeScore, predictedAwayScore: awayScore })
+        ? await api.put<MatchWithPrediction['myPrediction']>(`/predictions/${match.myPrediction!.id}`, { predictedHomeScore: homeScore, predictedAwayScore: awayScore, preferredPlayerId: row.preferredPlayerId ? Number(row.preferredPlayerId) : null })
+        : await api.post<MatchWithPrediction['myPrediction']>('/predictions', { leagueId: Number(leagueId), matchId: match.id, predictedHomeScore: homeScore, predictedAwayScore: awayScore, preferredPlayerId: row.preferredPlayerId ? Number(row.preferredPlayerId) : null })
       setMatches((prev) => prev ? prev.map((m) => m.id === match.id ? { ...m, myPrediction: updated } : m) : prev)
       updateRow(match.id, {
         saving: false,
         savedHome: String(homeScore),
         savedAway: String(awayScore),
+        savedPreferredPlayerId: row.preferredPlayerId,
         hasPrediction: true,
         savedMessage: isUpdate ? 'Pronóstico actualizado correctamente.' : 'Pronóstico guardado correctamente.',
       })
@@ -259,7 +274,7 @@ export default function LeagueDetailPage() {
       await api.del<void>(`/predictions/${match.myPrediction.id}`)
       setMatches((prev) => prev ? prev.map((m) => m.id === match.id ? { ...m, myPrediction: null } : m) : prev)
       updateRow(match.id, {
-        homeInput: '', awayInput: '', savedHome: '', savedAway: '', hasPrediction: false,
+        homeInput: '', awayInput: '', savedHome: '', savedAway: '', preferredPlayerId: '', savedPreferredPlayerId: '', hasPrediction: false,
         saving: false, savedMessage: 'Pronóstico eliminado correctamente.',
       })
       setTimeout(() => updateRow(match.id, { savedMessage: null }), 4000)
@@ -568,6 +583,25 @@ export default function LeagueDetailPage() {
                                   <span className="pp-match-card__separator">-</span>
                                   <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="-" aria-label={`Goles ${m.participantAway}`} value={row.awayInput} onFocus={(e) => e.currentTarget.select()} onChange={(e) => updateRow(m.id, { awayInput: sanitizeDigits(e.target.value), savedMessage: null, error: null })} onKeyDown={(e) => handlePredictionEnter(e, m.id)} data-prediction-score className="pp-match-card__input" />
                                 </div>
+                                {m.preferredPlayerEnabled && (
+                                  <label className="pp-match-card__preferred">
+                                    <span className="pp-match-card__preferred-label">Jugador Preferido <small>(opcional)</small></span>
+                                    {m.homePlayers.length > 0 || m.awayPlayers.length > 0 ? (
+                                      <select
+                                        className="pp-match-card__preferred-select"
+                                        aria-label={`Jugador Preferido para ${m.participantHome} vs ${m.participantAway}`}
+                                        value={row.preferredPlayerId}
+                                        onChange={(e) => updateRow(m.id, { preferredPlayerId: e.target.value, savedMessage: null, error: null })}
+                                      >
+                                        <option value="">Sin Jugador Preferido</option>
+                                        {m.homePlayers.length > 0 && <optgroup label={m.participantHome}>{m.homePlayers.map((player) => <option key={player.id} value={player.id}>{playerLabel(player)}</option>)}</optgroup>}
+                                        {m.awayPlayers.length > 0 && <optgroup label={m.participantAway}>{m.awayPlayers.map((player) => <option key={player.id} value={player.id}>{playerLabel(player)}</option>)}</optgroup>}
+                                      </select>
+                                    ) : (
+                                      <span className="pp-match-card__preferred-empty">No hay jugadores disponibles para seleccionar.</span>
+                                    )}
+                                  </label>
+                                )}
                                 <button
                                   type="button"
                                   className={saved ? 'pp-btn pp-btn--saved' : action.kind === 'delete' ? 'pp-btn pp-btn--danger' : 'pp-btn pp-btn--primary'}

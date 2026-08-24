@@ -1172,6 +1172,54 @@
   font-size: 0.9rem;
 }
 
+.pp-match-card__preferred {
+  width: min(100%, 22rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pp-match-card__preferred-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.pp-match-card__preferred-label small {
+  font-weight: 500;
+}
+
+.pp-match-card__preferred-select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: 0.5rem 2rem 0.5rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-bg);
+  font: inherit;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.pp-match-card__preferred-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.pp-match-card__preferred-empty {
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-border-light);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 .pp-match-card__error {
   font-size: 0.8rem;
   color: var(--color-danger);

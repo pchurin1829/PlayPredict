@@ -167,8 +167,7 @@ public static class DataSeeder
     // planteles reales desactualizados. Es idempotente y sólo completa los equipos del fixture demo.
     public static async Task SeedDemoTeamPlayersAsync(PlayPredictDbContext db)
     {
-        var demoTeamNames = ClausuraMatchups.SelectMany(r => r.SelectMany(m => new[] { m.Home, m.Away })).Distinct().ToList();
-        var teams = await db.Teams.Where(t => demoTeamNames.Contains(t.Name)).ToListAsync();
+        var teams = await db.Teams.Where(t => t.Active).ToListAsync();
         foreach (var team in teams)
         {
             for (var number = 1; number <= 3; number++)

@@ -393,7 +393,7 @@ public static class PredictionEndpoints
 
     private static PredictionDto ToDto(Prediction p, PredictionEvaluation? evaluation = null) =>
         new(p.Id, p.LeagueId, p.MatchId, p.UserId, p.PredictedHomeScore, p.PredictedAwayScore,
-            p.PreferredPlayerId, p.PreferredPlayer?.DisplayName, p.CreatedAtUtc, p.UpdatedAtUtc,
+            p.PreferredPlayerId, p.PreferredPlayer is null ? null : PlayerLabel(p.PreferredPlayer), p.CreatedAtUtc, p.UpdatedAtUtc,
             evaluation?.Points,
             evaluation?.ResultPoints,
             evaluation?.PreferredPlayerPoints,
@@ -406,7 +406,22 @@ public static class PredictionEndpoints
         bool leagueIsActive = true, IReadOnlyList<TeamPlayer>? players = null, bool preferredEnabled = false) =>
         new(m.Id, m.RoundId, m.HomeTeamId, m.AwayTeamId, m.ParticipantHome, m.ParticipantAway, m.StartsAtUtc, m.Status.ToString(),
             m.HomeGoals, m.AwayGoals,
-            (players ?? []).Where(p => p.TeamId == m.HomeTeamId).Select(p => new AvailablePlayerDto(p.Id, p.TeamId, p.DisplayName, p.ShirtNumber)).ToList(),
-            (players ?? []).Where(p => p.TeamId == m.AwayTeamId).Select(p => new AvailablePlayerDto(p.Id, p.TeamId, p.DisplayName, p.ShirtNumber)).ToList(),
+            (players ?? []).Where(p => p.TeamId == m.HomeTeamId).Select(ToAvailablePlayer).ToList(),
+            (players ?? []).Where(p => p.TeamId == m.AwayTeamId).Select(ToAvailablePlayer).ToList(),
             preferredEnabled, prediction is null ? null : ToDto(prediction, evaluation), leagueIsActive && CanCreateOrEditPrediction(m));
+
+    private static AvailablePlayerDto ToAvailablePlayer(TeamPlayer player)
+    {
+        var realName = $"{player.FirstName} {player.LastName}".Trim();
+        var nickname = string.Equals(player.DisplayName, realName, StringComparison.OrdinalIgnoreCase) ? null : player.DisplayName;
+        return new AvailablePlayerDto(player.Id, player.TeamId, player.FirstName, player.LastName, nickname, player.ShirtNumber);
+    }
+
+    private static string PlayerLabel(TeamPlayer player)
+    {
+        var realName = $"{player.FirstName} {player.LastName}".Trim();
+        return string.Equals(player.DisplayName, realName, StringComparison.OrdinalIgnoreCase)
+            ? realName
+            : $"{realName} · “{player.DisplayName}”";
+    }
 }

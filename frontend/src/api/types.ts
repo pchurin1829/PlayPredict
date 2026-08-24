@@ -277,7 +277,7 @@ export interface Team {
 }
 
 export interface TeamPlayer { id:number; teamId:number; firstName:string; lastName:string; displayName:string; shirtNumber:number|null; position:string|null; active:boolean; photoUrl:string|null }
-export interface AvailablePlayer { id:number; teamId:number; displayName:string; shirtNumber:number|null }
+export interface AvailablePlayer { id:number; teamId:number; firstName:string; lastName:string; nickname:string|null; shirtNumber:number|null }
 
 export interface AdminOfficialLeague {
   id: number

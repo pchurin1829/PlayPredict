@@ -17,7 +17,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(options?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
@@ -60,6 +60,8 @@ export const api = {
     request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
   put: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
+  upload: <T>(path: string, body: FormData) =>
+    request<T>(path, { method: 'POST', body }),
   del: <T>(path: string) =>
     request<T>(path, { method: 'DELETE' }),
 }

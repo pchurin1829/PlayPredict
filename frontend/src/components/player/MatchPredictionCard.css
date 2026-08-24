@@ -107,6 +107,8 @@
 .mpcard__preferred small { font-weight: 500; }
 .mpcard__preferred select { width: 100%; min-height: 44px; padding: .55rem; border: 1px solid var(--pp-border); border-radius: 8px; background: var(--pp-bg-surface); color: var(--pp-text-primary); }
 .mpcard__preferred-summary { display: block; margin-top: .35rem; color: var(--pp-text-secondary); font-size: .75rem; }
+.mpcard__preferred-empty { padding: .55rem; border-radius: 8px; background: var(--pp-bg-surface-alt); color: var(--pp-text-muted); font-size: .75rem; font-weight: 500; }
+.mpcard__closed-text small { display: block; margin-top: .35rem; }
 
 .mpcard__input:focus {
   outline: none;

@@ -5,11 +5,11 @@ Rama: `prueba-glm-ui`
 
 ## 1. Modelo de TeamPlayer
 
-`TeamPlayer` representa al deportista y no se mezcla con `User`. Contiene TeamId, nombre, apellido, nombre visible, dorsal y posición opcionales, estado y PhotoUrl opcional. La FK a Team usa `Restrict`.
+`TeamPlayer` representa al deportista y no se mezcla con `User`. Contiene TeamId, nombre y apellido obligatorios, apodo, dorsal, posición y PhotoUrl opcionales, además de estado. La FK a Team usa `Restrict`. Por compatibilidad, el campo persistido `DisplayName` se reutiliza como apodo: no reemplaza ni elimina `FirstName`/`LastName`.
 
 ## 2. Relación con Team y CRUD
 
-Cada Team expone `/api/teams/{teamId}/players`. ADMIN puede listar, crear y editar desde Equipos → Plantel. Los formularios conservan Volver, Guardar y Cancelar. No se agregó eliminación para preservar referencias históricas; se utiliza el estado Activo.
+Cada Team expone `/api/teams/{teamId}/players`. ADMIN puede listar, crear, editar y eliminar desde Equipos → Plantel. Los formularios conservan Volver, Guardar y Cancelar. La eliminación física sólo se permite sin referencias; pronósticos o goleadores asociados producen HTTP 409 y el estado Activo queda disponible como alternativa conservadora.
 
 ## 3. Datos demo
 
@@ -67,3 +67,51 @@ El MVP evita crear una abstracción prematura. La separación entre elección (`
 - Cargar planteles reales verificados cuando exista una fuente autorizada.
 - Historial/auditoría de correcciones de goleadores.
 - Generalización a otros tipos de pronóstico especial.
+
+## 14. Ajuste visual y exposición final
+
+### Causa del selector invisible
+
+La card condicionaba todo el bloque a que ya existiera al menos un jugador activo. Además, el seeder inicial sólo completaba los seis equipos del fixture de Liga Profesional; encuentros como Argentinos Juniors–Belgrano recibían planteles vacíos. Por eso la Edition informaba `PreferredPlayerEnabled=true`, pero la UI ocultaba silenciosamente el control.
+
+Se corrigió en dos niveles: la card muestra siempre el bloque cuando la función está habilitada y el Match está editable, informando “No hay jugadores disponibles para seleccionar” si corresponde; el seeder idempotente completa tres jugadores claramente ficticios para cada Team activo. El select conserva optgroups y sólo recibe planteles del local/visitante.
+
+### Predictions existentes
+
+POST y PUT comparten `PreferredPlayerId` nullable. Un marcador 1-2 existente puede incorporar, cambiar o quitar jugador sin recrearse ni alterar sus goles. La prueba real confirmó crear, refrescar, cambiar y limpiar manteniendo 1-2. Tras el cierre, PUT devuelve 400 y la elección queda sólo lectura.
+
+### TeamPlayer, apodo y foto
+
+Alta/edición usa controles uniformes de 44 px. Posición es un select MVP extensible en frontend (Arquero, Defensor, Mediocampista y Delantero, más vacío). La UI reemplaza “Nombre visible” por “Apodo (opcional)”. Administración siempre muestra Nombre + Apellido y, cuando existe, el apodo como información secundaria. Jugador Preferido usa el mismo formato inequívoco y no modifica scoring.
+
+La foto ya no se ingresa como URL. El formulario admite arrastrar o seleccionar JPG/JPEG, PNG o WEBP, muestra preview, permite cambiar y quitar, y usa iniciales como fallback. El navegador valida hasta 8 MB y recorta/redimensiona a 512×512, convirtiendo a WEBP con calidad 0,82 antes de subir. Backend vuelve a validar tipo, firma y un máximo optimizado de 1,5 MB.
+
+Los archivos se guardan en `backend/wwwroot/uploads/team-players`, excluido de Git, y la base conserva únicamente `PhotoUrl` bajo `/api/uploads/team-players/...`. Los endpoints autenticados de carga y eliminación están separados del CRUD, facilitando sustituir el filesystem por almacenamiento cloud sin cambiar el modelo funcional. Reemplazar o quitar una foto elimina solamente archivos administrados dentro de esa ruta; URLs históricas externas se preservan de forma compatible hasta que el usuario las reemplace o quite.
+
+### Eliminación
+
+El listado incorpora Editar/Eliminar con confirmación. DELETE comprueba `Prediction.PreferredPlayerId` y `MatchScorer.TeamPlayerId`; con referencias devuelve 409 y no borra. Sin dependencias devuelve 204. La desactivación mediante `Active` sigue disponible como alternativa conservadora.
+
+### Configuración general
+
+La UI reemplaza “Experience” por “configuración general de puntuación” y explica la herencia. Actualmente los valores generales provienen de la Experience asociada a la Competition; ese detalle interno queda documentado, no expuesto como jerga al ADMIN. El orden visual termina con un bloque separado de Jugador Preferido.
+
+### Inputs, botones y mobile
+
+Tokens ADMIN centralizados controlan fondo, borde, texto y foco de inputs/selects. Los campos ya no son blancos sobre blanco. Primarios y secundarios ganaron contraste, hover/focus y separación de 1 rem. Formulario de jugador y selector PLAYER se apilan sin overflow a 400–456 px; el select mantiene 44 px táctiles.
+
+### Pruebas del ajuste
+
+- Selección válida: persistió tras refrescar con nombre e ID correctos.
+- Cambio y limpieza: persistieron conservando el marcador 1-2.
+- Partido cerrado: actualización rechazada con 400.
+- Borrado sin dependencias: 204 y limpieza del registro temporal.
+- Borrado referenciado: 409, registro preservado.
+- Plantel utilizado por card: seis opciones, exclusivamente de ambos Teams.
+- Scoring confirmado en código: `PreferredPlayerPoints = Goals × PreferredPlayerPointsPerGoal`; `Points = ResultPoints + PreferredPlayerPoints`, independiente del tipo de acierto.
+- Alta temporal sin foto y fallback sin `PhotoUrl`.
+- Upload real y acceso de la imagen a través de `localhost:5175`: HTTP 200.
+- Reemplazo: nueva foto disponible y archivo administrado anterior eliminado (HTTP 404).
+- Quitar foto: `PhotoUrl=null` y archivo eliminado (HTTP 404).
+- Tipo no admitido y archivo optimizado demasiado grande: HTTP 400.
+- TypeScript, build frontend, build backend y `git diff --check` exitosos.

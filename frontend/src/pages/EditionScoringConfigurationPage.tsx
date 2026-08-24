@@ -110,18 +110,19 @@ export default function EditionScoringConfigurationPage() {
             checked={useExperienceDefaults}
             onChange={(e) => setUseExperienceDefaults(e.target.checked)}
           />
-          <label htmlFor="useExperienceDefaults">Usar configuración de la Experience</label>
+          <label htmlFor="useExperienceDefaults">Usar configuración general de puntuación</label>
         </div>
+        <p className="form-help">Si está activado, esta Edición utiliza la configuración general. Si lo desactivás, podés definir valores propios para esta Edición.</p>
 
         {useExperienceDefaults && effective && (
           <div className="empty-state">
-            Se aplicarán los valores de la Experience: {effective.exact} / {effective.correct} /{' '}
+            Se aplicarán los valores generales: {effective.exact} / {effective.correct} /{' '}
             {effective.incorrect} (exacto / correcto / incorrecto).
           </div>
         )}
 
         <div className="form-field">
-          <label htmlFor="exactScorePoints">Puntos por marcador exacto (configuración propia)</label>
+          <label htmlFor="exactScorePoints">Puntos por marcador exacto</label>
           <input
             id="exactScorePoints"
             type="number"
@@ -136,11 +137,8 @@ export default function EditionScoringConfigurationPage() {
           )}
         </div>
 
-        <div className="form-field form-checkbox"><input id="preferredPlayerEnabled" type="checkbox" checked={preferredPlayerEnabled} onChange={e=>setPreferredPlayerEnabled(e.target.checked)}/><label htmlFor="preferredPlayerEnabled">Jugador Preferido habilitado</label></div>
-        <div className="form-field"><label htmlFor="preferredPlayerPointsPerGoal">Puntos por gol del Jugador Preferido</label><input id="preferredPlayerPointsPerGoal" type="number" min={0} step={1} disabled={!preferredPlayerEnabled} value={preferredPlayerPointsPerGoal} onChange={e=>setPreferredPlayerPointsPerGoal(clampNonNegative(e.target.value))}/>{fieldErrors.preferredPlayerPointsPerGoal&&<span className="form-field-error">{fieldErrors.preferredPlayerPointsPerGoal[0]}</span>}</div>
-
         <div className="form-field">
-          <label htmlFor="correctOutcomePoints">Puntos por resultado correcto (configuración propia)</label>
+          <label htmlFor="correctOutcomePoints">Puntos por resultado correcto</label>
           <input
             id="correctOutcomePoints"
             type="number"
@@ -156,7 +154,7 @@ export default function EditionScoringConfigurationPage() {
         </div>
 
         <div className="form-field">
-          <label htmlFor="incorrectPoints">Puntos por resultado incorrecto (configuración propia)</label>
+          <label htmlFor="incorrectPoints">Puntos por resultado incorrecto</label>
           <input
             id="incorrectPoints"
             type="number"
@@ -170,6 +168,12 @@ export default function EditionScoringConfigurationPage() {
             <span className="form-field-error">{fieldErrors.incorrectPoints[0]}</span>
           )}
         </div>
+
+        <section className="scoring-special-section">
+          <h2>Jugador Preferido</h2>
+          <div className="form-field form-checkbox"><input id="preferredPlayerEnabled" type="checkbox" checked={preferredPlayerEnabled} onChange={e=>setPreferredPlayerEnabled(e.target.checked)}/><label htmlFor="preferredPlayerEnabled">Jugador Preferido habilitado</label></div>
+          <div className="form-field"><label htmlFor="preferredPlayerPointsPerGoal">Puntos por gol del Jugador Preferido</label><input id="preferredPlayerPointsPerGoal" type="number" min={0} step={1} disabled={!preferredPlayerEnabled} value={preferredPlayerPointsPerGoal} onChange={e=>setPreferredPlayerPointsPerGoal(clampNonNegative(e.target.value))}/>{fieldErrors.preferredPlayerPointsPerGoal&&<span className="form-field-error">{fieldErrors.preferredPlayerPointsPerGoal[0]}</span>}</div>
+        </section>
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={saving}>

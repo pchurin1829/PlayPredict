@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 
 const ADMIN_AREAS = [
   { title: 'Competencias', text: 'Fuentes deportivas reales.', to: '/competitions' },
+  { title: 'Equipos y Planteles', text: 'Gestionar equipos, jugadores y planteles disponibles para las competencias.', to: '/admin/teams' },
   { title: 'Fixture / Partidos', text: 'Fechas y encuentros de cada edición.', to: '/admin/fixture' },
   { title: 'Ligas Oficiales', text: 'Productos comerciales de PlayPredict.', to: '/admin/official-leagues' },
   { title: 'Resultados', text: 'Cargar y corregir resultados reales.', to: '/admin/results' },

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { api, ApiError } from '../../api/client'
-import type { MatchWithPrediction } from '../../api/types'
+import type { AvailablePlayer, MatchWithPrediction } from '../../api/types'
 import TeamBadge from './TeamBadge'
 import './MatchPredictionCard.css'
 
@@ -12,6 +12,11 @@ interface MatchPredictionCardProps {
 
 function sanitizeDigits(value: string): string {
   return value.replace(/\D/g, '')
+}
+
+function playerLabel(player: AvailablePlayer): string {
+  const name = `${player.firstName} ${player.lastName}`.trim()
+  return `${name}${player.nickname ? ` · “${player.nickname}”` : ''}${player.shirtNumber == null ? '' : ` · #${player.shirtNumber}`}`
 }
 
 export default function MatchPredictionCard({
@@ -147,15 +152,13 @@ export default function MatchPredictionCard({
                 className="mpcard__input"
               />
             </div>
-            {match.preferredPlayerEnabled && (match.homePlayers.length > 0 || match.awayPlayers.length > 0) && (
-              <label className="mpcard__preferred">Jugador Preferido <small>(opcional)</small>
-                <select value={preferredPlayerId} onChange={(e) => { setPreferredPlayerId(e.target.value); setSavedMessage(null) }}>
-                  <option value="">Sin selección</option>
-                  <optgroup label={match.participantHome}>{match.homePlayers.map(p => <option key={p.id} value={p.id}>{p.displayName}{p.shirtNumber == null ? '' : ` · #${p.shirtNumber}`}</option>)}</optgroup>
-                  <optgroup label={match.participantAway}>{match.awayPlayers.map(p => <option key={p.id} value={p.id}>{p.displayName}{p.shirtNumber == null ? '' : ` · #${p.shirtNumber}`}</option>)}</optgroup>
-                </select>
-              </label>
-            )}
+            {match.preferredPlayerEnabled && <div className="mpcard__preferred"><span>Jugador Preferido <small>(opcional)</small></span>
+              {match.homePlayers.length > 0 || match.awayPlayers.length > 0 ? <select aria-label="Jugador Preferido" value={preferredPlayerId} onChange={(e) => { setPreferredPlayerId(e.target.value); setSavedMessage(null) }}>
+                <option value="">Sin Jugador Preferido</option>
+                {match.homePlayers.length > 0 && <optgroup label={match.participantHome}>{match.homePlayers.map(p => <option key={p.id} value={p.id}>{playerLabel(p)}</option>)}</optgroup>}
+                {match.awayPlayers.length > 0 && <optgroup label={match.participantAway}>{match.awayPlayers.map(p => <option key={p.id} value={p.id}>{playerLabel(p)}</option>)}</optgroup>}
+              </select> : <span className="mpcard__preferred-empty">No hay jugadores disponibles para seleccionar.</span>}
+            </div>}
             <button
               type="button"
               className="mpcard__save-btn"
@@ -174,7 +177,7 @@ export default function MatchPredictionCard({
             <span className="mpcard__result-points">
               {match.myPrediction.points} pts
             </span>
-            {match.myPrediction.preferredPlayerName && <span className="mpcard__preferred-summary">Jugador Preferido: {match.myPrediction.preferredPlayerName} · {match.myPrediction.preferredPlayerPoints ?? 0} pts</span>}
+            {match.preferredPlayerEnabled && <span className="mpcard__preferred-summary">Jugador Preferido: {match.myPrediction.preferredPlayerName ? `${match.myPrediction.preferredPlayerName} · ${match.myPrediction.preferredPlayerPoints ?? 0} pts` : 'No seleccionado'}</span>}
           </div>
         ) : isCancelled ? (
           <span className="mpcard__cancelled-text">Cancelado</span>
@@ -183,6 +186,7 @@ export default function MatchPredictionCard({
             Pronóstico cerrado
             {match.myPrediction &&
               ` (${match.myPrediction.predictedHomeScore}-${match.myPrediction.predictedAwayScore})`}
+            {match.preferredPlayerEnabled && <small>Jugador Preferido: {match.myPrediction?.preferredPlayerName ?? 'No seleccionado'}</small>}
           </span>
         )}
       </div>

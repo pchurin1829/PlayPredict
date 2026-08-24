@@ -7,6 +7,11 @@
   --official-league-status-bg: #d9f1e2;
   --official-league-status-text: #1f6b43;
   --user-league-bg: #eaf4fc;
+  --admin-input-bg: #eef2f6;
+  --admin-input-border: #aeb9c6;
+  --admin-input-text: #1f2937;
+  --admin-input-focus: #347fc4;
+  --admin-secondary-bg: #e3e8ee;
   min-height: 100svh;
   display: flex;
   flex-direction: column;

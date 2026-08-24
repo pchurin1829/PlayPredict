@@ -31,7 +31,7 @@ public record UpdatePredictionDto(
     int PredictedAwayScore,
     int? PreferredPlayerId);
 
-public record AvailablePlayerDto(int Id, int TeamId, string DisplayName, int? ShirtNumber);
+public record AvailablePlayerDto(int Id, int TeamId, string FirstName, string LastName, string? Nickname, int? ShirtNumber);
 
 public record MatchWithPredictionDto(
     int Id,

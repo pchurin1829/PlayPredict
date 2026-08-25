@@ -27,6 +27,7 @@ public static class DemoDatasetV1Seeder
         ("Huracán", "Huracán"), ("Lanús", "Lanús"), ("Banfield", "Banfield"),
         ("Belgrano", "Belgrano"), ("Talleres", "Talleres"),
         ("Defensa y Justicia", "Defensa"), ("Barracas Central", "Barracas"),
+        ("Unión", "Unión"), ("Platense", "Platense"),
         ("Flamengo", "Flamengo"), ("Palmeiras", "Palmeiras"),
         ("Atlético Nacional", "Atlético Nacional"), ("Peñarol", "Peñarol")
     };
@@ -77,7 +78,7 @@ public static class DemoDatasetV1Seeder
         await EnsureReferenceCompetitionAsync(db, experience.Id, "Copa Argentina", "2026");
         await EnsureScoringAsync(db, ligaEdition.Id, preferredPlayerEnabled: true);
         await EnsureScoringAsync(db, copaEdition.Id, preferredPlayerEnabled: true);
-        await EnsureRostersAsync(db, teams, LigaProfesionalFixture.Concat(LibertadoresFixture));
+        await EnsureRostersAsync(db, teams);
 
         await EnsureUsersAsync(db);
 
@@ -257,11 +258,9 @@ public static class DemoDatasetV1Seeder
         await db.SaveChangesAsync();
     }
 
-    private static async Task EnsureRostersAsync(PlayPredictDbContext db, Dictionary<string, Team> teams,
-        IEnumerable<(string Home, string Away)[]> fixtureRounds)
+    private static async Task EnsureRostersAsync(PlayPredictDbContext db, Dictionary<string, Team> teams)
     {
-        var usedNames = fixtureRounds.SelectMany(x => x).SelectMany(x => new[] { x.Home, x.Away }).Distinct();
-        foreach (var teamName in usedNames)
+        foreach (var teamName in teams.Keys)
         {
             var team = teams[teamName];
             var activeCount = await db.TeamPlayers.CountAsync(p => p.TeamId == team.Id && p.Active);

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Domain.Entities;
+using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Dtos;
 
 namespace PlayPredict.Api.Endpoints;
@@ -39,6 +40,7 @@ public static class EditionScoringConfigurationEndpoints
                     UseExperienceDefaults = false,
                     PreferredPlayerEnabled = true,
                     PreferredPlayerPointsPerGoal = 2,
+                    PreferredPlayerPositions = PlayerPosition.Midfielder | PlayerPosition.Forward,
                     CreatedAtUtc = now,
                     UpdatedAtUtc = now
                 };
@@ -83,6 +85,7 @@ public static class EditionScoringConfigurationEndpoints
             config.UseExperienceDefaults = dto.UseExperienceDefaults;
             config.PreferredPlayerEnabled = dto.PreferredPlayerEnabled;
             config.PreferredPlayerPointsPerGoal = dto.PreferredPlayerPointsPerGoal;
+            config.PreferredPlayerPositions = ParsePositions(dto.PreferredPlayerPositions);
             config.UpdatedAtUtc = now;
 
             await db.SaveChangesAsync();
@@ -111,6 +114,9 @@ public static class EditionScoringConfigurationEndpoints
         }
         if (dto.PreferredPlayerPointsPerGoal < 0)
             errors["preferredPlayerPointsPerGoal"] = ["Debe ser un valor entero mayor o igual a 0."];
+
+        if (dto.PreferredPlayerPositions.Any(x => !PlayerPositionCatalog.TryParse(x, out _)))
+            errors["preferredPlayerPositions"] = ["Hay una posición no reconocida."];
 
         return errors;
     }
@@ -150,6 +156,15 @@ public static class EditionScoringConfigurationEndpoints
             config.Id, config.EditionId, config.ExactScorePoints, config.CorrectOutcomePoints, config.IncorrectPoints,
             config.UseExperienceDefaults, effectiveExact, effectiveCorrect, effectiveIncorrect,
             config.PreferredPlayerEnabled, config.PreferredPlayerPointsPerGoal,
+            PlayerPositionCatalog.ToLabels(config.PreferredPlayerPositions),
             config.CreatedAtUtc, config.UpdatedAtUtc);
+    }
+
+    private static PlayerPosition ParsePositions(IEnumerable<string> labels)
+    {
+        var result = PlayerPosition.None;
+        foreach (var label in labels)
+            if (PlayerPositionCatalog.TryParse(label, out var position)) result |= position;
+        return result;
     }
 }

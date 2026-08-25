@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useCallback, type KeyboardEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import { LEAGUE_SCOPE_LABELS, type AvailablePlayer, type LeagueDetail, type LeagueParticipantInfo, type RankingEntry, type MatchWithPrediction } from '../api/types'
+import { LEAGUE_SCOPE_LABELS, type LeagueDetail, type LeagueParticipantInfo, type RankingEntry, type MatchWithPrediction } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 import ComingSoonBadge from '../components/player/ComingSoonBadge'
 import ConfirmModal from '../components/ConfirmModal'
 import TeamBadge from '../components/player/TeamBadge'
+import PreferredPlayerPicker from '../components/player/PreferredPlayerPicker'
 import { useAuth } from '../auth/AuthContext'
 import './PlayerPages.css'
 
@@ -52,11 +53,6 @@ function isDirty(row: RowState): boolean {
     || row.awayInput !== row.savedAway
     || row.preferredPlayerId !== row.savedPreferredPlayerId
   )
-}
-
-function playerLabel(player: AvailablePlayer): string {
-  const name = `${player.firstName} ${player.lastName}`.trim()
-  return `${name}${player.nickname ? ` · “${player.nickname}”` : ''}${player.shirtNumber == null ? '' : ` · #${player.shirtNumber}`}`
 }
 
 function hasBothScores(row: RowState): boolean {
@@ -587,18 +583,9 @@ export default function LeagueDetailPage() {
                                   <label className="pp-match-card__preferred">
                                     <span className="pp-match-card__preferred-label">Jugador Preferido <small>(opcional)</small></span>
                                     {m.homePlayers.length > 0 || m.awayPlayers.length > 0 ? (
-                                      <select
-                                        className="pp-match-card__preferred-select"
-                                        aria-label={`Jugador Preferido para ${m.participantHome} vs ${m.participantAway}`}
-                                        value={row.preferredPlayerId}
-                                        onChange={(e) => updateRow(m.id, { preferredPlayerId: e.target.value, savedMessage: null, error: null })}
-                                      >
-                                        <option value="">Sin Jugador Preferido</option>
-                                        {m.homePlayers.length > 0 && <optgroup label={m.participantHome}>{m.homePlayers.map((player) => <option key={player.id} value={player.id}>{playerLabel(player)}</option>)}</optgroup>}
-                                        {m.awayPlayers.length > 0 && <optgroup label={m.participantAway}>{m.awayPlayers.map((player) => <option key={player.id} value={player.id}>{playerLabel(player)}</option>)}</optgroup>}
-                                      </select>
+                                      <PreferredPlayerPicker homeTeam={m.participantHome} awayTeam={m.participantAway} homePlayers={m.homePlayers} awayPlayers={m.awayPlayers} value={row.preferredPlayerId} ariaLabel={`Jugador Preferido para ${m.participantHome} vs ${m.participantAway}`} onChange={value => updateRow(m.id, { preferredPlayerId: value, savedMessage: null, error: null })} />
                                     ) : (
-                                      <span className="pp-match-card__preferred-empty">No hay jugadores disponibles para seleccionar.</span>
+                                      <span className="pp-match-card__preferred-empty">No hay jugadores disponibles para las posiciones habilitadas.</span>
                                     )}
                                   </label>
                                 )}

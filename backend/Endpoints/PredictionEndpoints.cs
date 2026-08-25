@@ -18,7 +18,7 @@ public static class PredictionEndpoints
         // exige indicar desde qué Liga se está consultando ("Mi pronóstico" ya no es un
         // concepto único por partido, puede haber uno distinto por Liga). No se elige
         // ninguna Liga por defecto ni en nombre del usuario: sin `leagueId` explícito, 400.
-        group.MapGet("/rounds/{roundId:int}", async (int roundId, int? leagueId, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        group.MapGet("/rounds/{roundId:int}", async (int roundId, int? leagueId, ClaimsPrincipal principal, PlayPredictDbContext db, LeagueScoringService scoring) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
             if (user is null)
@@ -74,8 +74,11 @@ public static class PredictionEndpoints
 
             var evaluations = await GetEvaluationsForPredictionsAsync(db, predictions);
             var teamIds = matches.SelectMany(m => new[] { m.HomeTeamId, m.AwayTeamId }).Distinct().ToList();
+            var preferredConfig = await scoring.GetEffectiveAsync(db, leagueId.Value);
+            var allowedPositions = preferredConfig?.PreferredPlayerPositions ?? PlayerPosition.None;
             var players = await db.TeamPlayers.Where(p => teamIds.Contains(p.TeamId) && p.Active).OrderBy(p => p.DisplayName).ToListAsync();
-            var preferredEnabled = await db.EditionScoringConfigurations.Where(c => c.EditionId == round.EditionId).Select(c => c.PreferredPlayerEnabled).FirstOrDefaultAsync();
+            players = players.Where(p => PlayerPositionCatalog.TryParse(p.Position, out var position) && allowedPositions.HasFlag(position)).ToList();
+            var preferredEnabled = preferredConfig?.PreferredPlayerEnabled ?? false;
 
             var result = matches.Select(m =>
             {
@@ -110,7 +113,7 @@ public static class PredictionEndpoints
             return Results.Ok(dtos);
         });
 
-        group.MapPost("/", async (CreatePredictionDto dto, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        group.MapPost("/", async (CreatePredictionDto dto, ClaimsPrincipal principal, PlayPredictDbContext db, LeagueScoringService scoring) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
             if (user is null)
@@ -130,7 +133,7 @@ public static class PredictionEndpoints
                 return validationError;
             }
 
-            var preferredError = await ValidatePreferredPlayerAsync(db, dto.MatchId, dto.PreferredPlayerId);
+            var preferredError = await ValidatePreferredPlayerAsync(db, scoring, dto.LeagueId, dto.MatchId, dto.PreferredPlayerId);
             if (preferredError is not null) return preferredError;
 
             var alreadyExists = await db.Predictions
@@ -167,7 +170,7 @@ public static class PredictionEndpoints
             return Results.Created($"/api/predictions/{prediction.Id}", ToDto(prediction));
         });
 
-        group.MapPut("/{id:int}", async (int id, UpdatePredictionDto dto, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        group.MapPut("/{id:int}", async (int id, UpdatePredictionDto dto, ClaimsPrincipal principal, PlayPredictDbContext db, LeagueScoringService scoring) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
             if (user is null)
@@ -203,7 +206,7 @@ public static class PredictionEndpoints
 
             prediction.PredictedHomeScore = dto.PredictedHomeScore;
             prediction.PredictedAwayScore = dto.PredictedAwayScore;
-            var preferredError = await ValidatePreferredPlayerAsync(db, prediction.MatchId, dto.PreferredPlayerId);
+            var preferredError = await ValidatePreferredPlayerAsync(db, scoring, prediction.LeagueId, prediction.MatchId, dto.PreferredPlayerId);
             if (preferredError is not null) return preferredError;
 
             prediction.PreferredPlayerId = dto.PreferredPlayerId;
@@ -346,16 +349,19 @@ public static class PredictionEndpoints
     private static bool CanCreateOrEditPrediction(Match match) =>
         match.Status == MatchStatus.Scheduled && DateTime.UtcNow < match.StartsAtUtc;
 
-    private static async Task<IResult?> ValidatePreferredPlayerAsync(PlayPredictDbContext db, int matchId, int? playerId)
+    private static async Task<IResult?> ValidatePreferredPlayerAsync(PlayPredictDbContext db, LeagueScoringService scoring, int leagueId, int matchId, int? playerId)
     {
         if (playerId is null) return null;
         var match = await db.Matches.FindAsync(matchId);
         var player = await db.TeamPlayers.FindAsync(playerId.Value);
         if (match is null || player is null || !player.Active || (player.TeamId != match.HomeTeamId && player.TeamId != match.AwayTeamId))
             return Results.ValidationProblem(new Dictionary<string, string[]> { ["preferredPlayerId"] = ["El Jugador Preferido debe pertenecer a uno de los equipos del partido."] });
-        var editionId = await db.Rounds.Where(r => r.Id == match.RoundId).Select(r => r.EditionId).FirstAsync();
-        var enabled = await db.EditionScoringConfigurations.Where(c => c.EditionId == editionId).Select(c => c.PreferredPlayerEnabled).FirstOrDefaultAsync();
-        return enabled ? null : Results.ValidationProblem(new Dictionary<string, string[]> { ["preferredPlayerId"] = ["Jugador Preferido no está habilitado para esta Edición."] });
+        var config = await scoring.GetEffectiveAsync(db, leagueId);
+        if (config is null || !config.PreferredPlayerEnabled)
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["preferredPlayerId"] = ["Jugador Preferido no está habilitado para esta Edición."] });
+        if (!PlayerPositionCatalog.TryParse(player.Position, out var position) || !config.PreferredPlayerPositions.HasFlag(position))
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["preferredPlayerId"] = ["La posición del jugador no está habilitada para esta Edición."] });
+        return null;
     }
 
     private static Dictionary<string, string[]> ValidateScores(int homeScore, int awayScore)
@@ -414,7 +420,7 @@ public static class PredictionEndpoints
     {
         var realName = $"{player.FirstName} {player.LastName}".Trim();
         var nickname = string.Equals(player.DisplayName, realName, StringComparison.OrdinalIgnoreCase) ? null : player.DisplayName;
-        return new AvailablePlayerDto(player.Id, player.TeamId, player.FirstName, player.LastName, nickname, player.ShirtNumber);
+        return new AvailablePlayerDto(player.Id, player.TeamId, player.FirstName, player.LastName, nickname, player.ShirtNumber, player.Position!);
     }
 
     private static string PlayerLabel(TeamPlayer player)

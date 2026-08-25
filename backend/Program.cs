@@ -45,6 +45,7 @@ builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddScoped<PredictionEvaluationService>();
 builder.Services.AddScoped<RankingService>();
 builder.Services.AddScoped<PrizeWinnerService>();
+builder.Services.AddScoped<LeagueScoringService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -155,6 +156,13 @@ using (var scope = app.Services.CreateScope())
     if (app.Environment.IsDevelopment())
     {
         await DataSeeder.SeedAdminUsersAsync(db, app.Configuration, app.Environment);
+    }
+
+    if (args.Contains("--reset-demo-game-data", StringComparer.OrdinalIgnoreCase))
+    {
+        await DemoGameDataResetter.ResetAsync(db);
+        logger.LogInformation("Demo game data reset completed.");
+        return;
     }
 
     await DataSeeder.SeedEditionScoringConfigurationsAsync(db);

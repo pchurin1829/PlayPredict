@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import type { Edition, EditionScoringConfiguration } from '../api/types'
+import { PLAYER_POSITIONS, type Edition, type EditionScoringConfiguration, type PlayerPosition } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 
 export default function EditionScoringConfigurationPage() {
@@ -14,6 +14,7 @@ export default function EditionScoringConfigurationPage() {
   const [useExperienceDefaults, setUseExperienceDefaults] = useState(false)
   const [preferredPlayerEnabled, setPreferredPlayerEnabled] = useState(true)
   const [preferredPlayerPointsPerGoal, setPreferredPlayerPointsPerGoal] = useState(2)
+  const [preferredPlayerPositions, setPreferredPlayerPositions] = useState<PlayerPosition[]>(['Mediocampista', 'Delantero'])
   const [effective, setEffective] = useState<{ exact: number; correct: number; incorrect: number } | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -35,6 +36,7 @@ export default function EditionScoringConfigurationPage() {
         setUseExperienceDefaults(cfg.useExperienceDefaults)
         setPreferredPlayerEnabled(cfg.preferredPlayerEnabled)
         setPreferredPlayerPointsPerGoal(cfg.preferredPlayerPointsPerGoal)
+        setPreferredPlayerPositions(cfg.preferredPlayerPositions)
         setEffective({
           exact: cfg.effectiveExactScorePoints,
           correct: cfg.effectiveCorrectOutcomePoints,
@@ -65,6 +67,7 @@ export default function EditionScoringConfigurationPage() {
         useExperienceDefaults,
         preferredPlayerEnabled,
         preferredPlayerPointsPerGoal,
+        preferredPlayerPositions,
       })
       setEffective({
         exact: updated.effectiveExactScorePoints,
@@ -173,6 +176,16 @@ export default function EditionScoringConfigurationPage() {
           <h2>Jugador Preferido</h2>
           <div className="form-field form-checkbox"><input id="preferredPlayerEnabled" type="checkbox" checked={preferredPlayerEnabled} onChange={e=>setPreferredPlayerEnabled(e.target.checked)}/><label htmlFor="preferredPlayerEnabled">Jugador Preferido habilitado</label></div>
           <div className="form-field"><label htmlFor="preferredPlayerPointsPerGoal">Puntos por gol del Jugador Preferido</label><input id="preferredPlayerPointsPerGoal" type="number" min={0} step={1} disabled={!preferredPlayerEnabled} value={preferredPlayerPointsPerGoal} onChange={e=>setPreferredPlayerPointsPerGoal(clampNonNegative(e.target.value))}/>{fieldErrors.preferredPlayerPointsPerGoal&&<span className="form-field-error">{fieldErrors.preferredPlayerPointsPerGoal[0]}</span>}</div>
+          <fieldset className="form-field" disabled={!preferredPlayerEnabled}>
+            <legend>Posiciones habilitadas</legend>
+            <div className="scoring-position-options">
+              {PLAYER_POSITIONS.map(position => <label className="form-checkbox" key={position}>
+                <input type="checkbox" checked={preferredPlayerPositions.includes(position)} onChange={event => setPreferredPlayerPositions(current => event.target.checked ? [...current, position] : current.filter(item => item !== position))} />
+                <span>{position}</span>
+              </label>)}
+            </div>
+            {fieldErrors.preferredPlayerPositions && <span className="form-field-error">{fieldErrors.preferredPlayerPositions[0]}</span>}
+          </fieldset>
         </section>
 
         <div className="form-actions">

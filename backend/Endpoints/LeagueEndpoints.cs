@@ -4,6 +4,7 @@ using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Dtos;
+using PlayPredict.Api.Services;
 
 namespace PlayPredict.Api.Endpoints;
 
@@ -383,7 +384,7 @@ public static class LeagueEndpoints
             return Results.Ok(dtos);
         });
 
-        group.MapGet("/{id:int}/matches", async (int id, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        group.MapGet("/{id:int}/matches", async (int id, ClaimsPrincipal principal, PlayPredictDbContext db, LeagueScoringService scoring) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
             if (user is null)
@@ -414,8 +415,11 @@ public static class LeagueEndpoints
 
             var evaluations = await PredictionEndpoints.GetEvaluationsForPredictionsAsync(db, predictions);
             var teamIds = matches.SelectMany(m => new[] { m.HomeTeamId, m.AwayTeamId }).Distinct().ToList();
+            var effective = await scoring.GetEffectiveAsync(db, league.Id);
+            var allowed = effective?.PreferredPlayerPositions ?? PlayerPosition.None;
             var players = await db.TeamPlayers.Where(p => teamIds.Contains(p.TeamId) && p.Active).OrderBy(p => p.DisplayName).ToListAsync();
-            var preferredEnabled = await db.EditionScoringConfigurations.Where(c => c.EditionId == league.EditionId).Select(c => c.PreferredPlayerEnabled).FirstOrDefaultAsync();
+            players = players.Where(p => PlayerPositionCatalog.TryParse(p.Position, out var position) && allowed.HasFlag(position)).ToList();
+            var preferredEnabled = effective?.PreferredPlayerEnabled ?? false;
 
             var result = matches.Select(m =>
             {

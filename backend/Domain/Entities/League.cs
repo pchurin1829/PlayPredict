@@ -18,6 +18,13 @@ public class League
     public int CreatedByUserId { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
+    public bool UseGeneralScoring { get; set; } = true;
+    public int ExactScorePoints { get; set; } = 6;
+    public int CorrectOutcomePoints { get; set; } = 3;
+    public int IncorrectPoints { get; set; }
+    public bool PreferredPlayerEnabled { get; set; } = true;
+    public int PreferredPlayerPointsPerGoal { get; set; } = 2;
+    public PlayerPosition PreferredPlayerPositions { get; set; } = PlayerPosition.Midfielder | PlayerPosition.Forward;
 
     public Competition Competition { get; set; } = null!;
     public Edition Edition { get; set; } = null!;

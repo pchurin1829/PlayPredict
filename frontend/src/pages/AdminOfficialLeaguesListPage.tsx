@@ -29,7 +29,6 @@ export default function AdminOfficialLeaguesListPage() {
 
   async function confirmDelete() {
     if (!deleteTarget || !dependencies) return
-    if (!dependencies.canDelete) { setDeleteTarget(null); setError(`No se puede eliminar esta competencia ${companyName}: tiene participantes, pronósticos o evaluaciones relacionadas.`); return }
     try {
       await api.del(`/admin/official-leagues/${deleteTarget.id}`)
       setLeagues(current => current?.filter(item => item.id !== deleteTarget.id) ?? current)
@@ -39,7 +38,7 @@ export default function AdminOfficialLeaguesListPage() {
   }
 
   const dependencyMessage = dependencies
-    ? `Participantes: ${dependencies.participants}\nPronósticos: ${dependencies.predictions}\nEvaluaciones/ranking derivado: ${dependencies.evaluations}\nResultados oficiales del fixture compartido: ${dependencies.officialResults}\n\n${dependencies.canDelete ? 'Puede eliminarse. El fixture y sus resultados no se modificarán.' : 'La eliminación está bloqueada para no borrar participantes, pronósticos ni ranking en cascada.'}`
+    ? `Se eliminará esta competencia y sus datos de participación, pronósticos y ranking. Los usuarios y el fixture de referencia no serán eliminados.\n\nParticipantes: ${dependencies.participants}\nPronósticos: ${dependencies.predictions}\nEvaluaciones/ranking derivado: ${dependencies.evaluations}\nResultados oficiales compartidos: ${dependencies.officialResults}`
     : 'Consultando dependencias...'
 
   return (
@@ -76,7 +75,7 @@ export default function AdminOfficialLeaguesListPage() {
           ))}
         </div>
       )}
-      <ConfirmModal open={Boolean(deleteTarget)} title={`Eliminar ${deleteTarget?.name ?? `competencia ${companyName}`}`} message={dependencyMessage} confirmLabel={!dependencies ? 'Consultando...' : dependencies.canDelete ? 'Eliminar' : 'Cerrar'} onConfirm={confirmDelete} onCancel={() => { setDeleteTarget(null); setDependencies(null) }} />
+      <ConfirmModal open={Boolean(deleteTarget)} title={`Eliminar ${deleteTarget?.name ?? `competencia ${companyName}`}`} message={dependencyMessage} confirmLabel={!dependencies ? 'Consultando...' : 'Eliminar'} onConfirm={confirmDelete} onCancel={() => { setDeleteTarget(null); setDependencies(null) }} />
     </div>
   )
 }

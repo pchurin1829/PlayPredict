@@ -1,3 +1,5 @@
+using PlayPredict.Api.Domain.Enums;
+
 namespace PlayPredict.Api.Domain.Entities;
 
 public class EditionScoringConfiguration
@@ -15,6 +17,7 @@ public class EditionScoringConfiguration
     public bool UseExperienceDefaults { get; set; }
     public bool PreferredPlayerEnabled { get; set; } = true;
     public int PreferredPlayerPointsPerGoal { get; set; } = 2;
+    public PlayerPosition PreferredPlayerPositions { get; set; } = PlayerPosition.Midfielder | PlayerPosition.Forward;
 
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }

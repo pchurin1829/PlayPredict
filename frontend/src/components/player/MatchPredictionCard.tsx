@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { api, ApiError } from '../../api/client'
-import type { AvailablePlayer, MatchWithPrediction } from '../../api/types'
+import type { MatchWithPrediction } from '../../api/types'
 import TeamBadge from './TeamBadge'
+import PreferredPlayerPicker from './PreferredPlayerPicker'
 import './MatchPredictionCard.css'
 
 interface MatchPredictionCardProps {
@@ -12,11 +13,6 @@ interface MatchPredictionCardProps {
 
 function sanitizeDigits(value: string): string {
   return value.replace(/\D/g, '')
-}
-
-function playerLabel(player: AvailablePlayer): string {
-  const name = `${player.firstName} ${player.lastName}`.trim()
-  return `${name}${player.nickname ? ` · “${player.nickname}”` : ''}${player.shirtNumber == null ? '' : ` · #${player.shirtNumber}`}`
 }
 
 export default function MatchPredictionCard({
@@ -153,11 +149,7 @@ export default function MatchPredictionCard({
               />
             </div>
             {match.preferredPlayerEnabled && <div className="mpcard__preferred"><span>Jugador Preferido <small>(opcional)</small></span>
-              {match.homePlayers.length > 0 || match.awayPlayers.length > 0 ? <select aria-label="Jugador Preferido" value={preferredPlayerId} onChange={(e) => { setPreferredPlayerId(e.target.value); setSavedMessage(null) }}>
-                <option value="">Sin Jugador Preferido</option>
-                {match.homePlayers.length > 0 && <optgroup label={match.participantHome}>{match.homePlayers.map(p => <option key={p.id} value={p.id}>{playerLabel(p)}</option>)}</optgroup>}
-                {match.awayPlayers.length > 0 && <optgroup label={match.participantAway}>{match.awayPlayers.map(p => <option key={p.id} value={p.id}>{playerLabel(p)}</option>)}</optgroup>}
-              </select> : <span className="mpcard__preferred-empty">No hay jugadores disponibles para seleccionar.</span>}
+              <PreferredPlayerPicker homeTeam={match.participantHome} awayTeam={match.participantAway} homePlayers={match.homePlayers} awayPlayers={match.awayPlayers} value={preferredPlayerId} onChange={value => { setPreferredPlayerId(value); setSavedMessage(null) }} />
             </div>}
             <button
               type="button"

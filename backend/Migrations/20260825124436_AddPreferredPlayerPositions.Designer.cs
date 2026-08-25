@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlayPredict.Api.Data;
@@ -11,9 +12,11 @@ using PlayPredict.Api.Data;
 namespace PlayPredict.Api.Migrations
 {
     [DbContext(typeof(PlayPredictDbContext))]
-    partial class PlayPredictDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260825124436_AddPreferredPlayerPositions")]
+    partial class AddPreferredPlayerPositions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -32,24 +35,6 @@ namespace PlayPredict.Api.Migrations
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("GeneralCorrectOutcomePoints")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("GeneralExactScorePoints")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("GeneralIncorrectPoints")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("GeneralPreferredPlayerEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("GeneralPreferredPlayerPointsPerGoal")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("GeneralPreferredPlayerPositions")
-                        .HasColumnType("integer");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -277,9 +262,6 @@ namespace PlayPredict.Api.Migrations
                     b.Property<int>("CompetitionId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CorrectOutcomePoints")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -291,12 +273,6 @@ namespace PlayPredict.Api.Migrations
                         .HasColumnType("character varying(1000)");
 
                     b.Property<int>("EditionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ExactScorePoints")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("IncorrectPoints")
                         .HasColumnType("integer");
 
                     b.Property<string>("InviteCode")
@@ -315,15 +291,6 @@ namespace PlayPredict.Api.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
-                    b.Property<bool>("PreferredPlayerEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("PreferredPlayerPointsPerGoal")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PreferredPlayerPositions")
-                        .HasColumnType("integer");
-
                     b.Property<int?>("RoundFromId")
                         .HasColumnType("integer");
 
@@ -335,9 +302,6 @@ namespace PlayPredict.Api.Migrations
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("UseGeneralScoring")
-                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 

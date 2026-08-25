@@ -111,6 +111,12 @@ export interface CompanySettings {
   name: string
   shortName: string
   logoUrl: string | null
+  generalExactScorePoints: number
+  generalCorrectOutcomePoints: number
+  generalIncorrectPoints: number
+  generalPreferredPlayerEnabled: boolean
+  generalPreferredPlayerPointsPerGoal: number
+  generalPreferredPlayerPositions: PlayerPosition[]
 }
 
 export type EvaluationType = 'ExactScore' | 'CorrectOutcome' | 'Incorrect'
@@ -147,6 +153,7 @@ export interface EditionScoringConfiguration {
   effectiveIncorrectPoints: number
   preferredPlayerEnabled: boolean
   preferredPlayerPointsPerGoal: number
+  preferredPlayerPositions: PlayerPosition[]
   createdAtUtc: string
   updatedAtUtc: string
 }
@@ -193,6 +200,9 @@ export interface MatchWithPrediction {
   myPrediction: Prediction | null
   canPredict: boolean
 }
+
+export type PlayerPosition = 'Arquero' | 'Defensor' | 'Mediocampista' | 'Delantero'
+export const PLAYER_POSITIONS: PlayerPosition[] = ['Arquero', 'Defensor', 'Mediocampista', 'Delantero']
 
 export interface RankingEntry {
   position: number
@@ -305,7 +315,7 @@ export interface Team {
 }
 
 export interface TeamPlayer { id:number; teamId:number; firstName:string; lastName:string; displayName:string; shirtNumber:number|null; position:string|null; active:boolean; photoUrl:string|null }
-export interface AvailablePlayer { id:number; teamId:number; firstName:string; lastName:string; nickname:string|null; shirtNumber:number|null }
+export interface AvailablePlayer { id:number; teamId:number; firstName:string; lastName:string; nickname:string|null; shirtNumber:number|null; position:PlayerPosition }
 
 export interface AdminOfficialLeague {
   id: number
@@ -324,6 +334,19 @@ export interface AdminOfficialLeague {
   participantsCount: number
   roundsCount: number
   matchesCount: number
+  useGeneralScoring: boolean
+  exactScorePoints: number
+  correctOutcomePoints: number
+  incorrectPoints: number
+  preferredPlayerEnabled: boolean
+  preferredPlayerPointsPerGoal: number
+  preferredPlayerPositions: PlayerPosition[]
+  effectiveExactScorePoints: number
+  effectiveCorrectOutcomePoints: number
+  effectiveIncorrectPoints: number
+  effectivePreferredPlayerEnabled: boolean
+  effectivePreferredPlayerPointsPerGoal: number
+  effectivePreferredPlayerPositions: PlayerPosition[]
   createdAtUtc: string
   updatedAtUtc: string
 }

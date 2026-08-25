@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Services;
+using PlayPredict.Api.Domain.Enums;
 
 namespace PlayPredict.Api.Endpoints;
 
@@ -22,8 +23,8 @@ public static class CompanySettingsEndpoints
                 : await db.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Id == companyId);
 
             return Results.Ok(company is null
-                ? new CompanySettingsDto("PlayPredict", "PlayPredict", null)
-                : new CompanySettingsDto(company.Name, company.ShortName ?? company.Name, company.LogoUrl));
+                ? new CompanySettingsDto("PlayPredict", "PlayPredict", null, 6, 3, 0, true, 2, ["Mediocampista", "Delantero"])
+                : ToDto(company));
         });
 
         group.MapPut("", async (UpdateCompanySettingsDto dto, ClaimsPrincipal principal, PlayPredictDbContext db) =>
@@ -42,9 +43,15 @@ public static class CompanySettingsEndpoints
             company.Name = dto.Name.Trim();
             company.ShortName = dto.ShortName.Trim();
             company.LogoUrl = string.IsNullOrWhiteSpace(dto.LogoUrl) ? null : dto.LogoUrl.Trim();
+            company.GeneralExactScorePoints = dto.GeneralExactScorePoints;
+            company.GeneralCorrectOutcomePoints = dto.GeneralCorrectOutcomePoints;
+            company.GeneralIncorrectPoints = dto.GeneralIncorrectPoints;
+            company.GeneralPreferredPlayerEnabled = dto.GeneralPreferredPlayerEnabled;
+            company.GeneralPreferredPlayerPointsPerGoal = dto.GeneralPreferredPlayerPointsPerGoal;
+            company.GeneralPreferredPlayerPositions = ParsePositions(dto.GeneralPreferredPlayerPositions);
             await db.SaveChangesAsync();
 
-            return Results.Ok(new CompanySettingsDto(company.Name, company.ShortName, company.LogoUrl));
+            return Results.Ok(ToDto(company));
         });
 
         group.MapPost("/logo", async (IFormFile file, ClaimsPrincipal principal, PlayPredictDbContext db, IWebHostEnvironment environment, IConfiguration configuration) =>
@@ -58,7 +65,7 @@ public static class CompanySettingsEndpoints
             ManagedImageStorage.Delete(company.LogoUrl, "companies", configuration, environment);
             company.LogoUrl = url;
             await db.SaveChangesAsync();
-            return Results.Ok(new CompanySettingsDto(company.Name, company.ShortName ?? company.Name, company.LogoUrl));
+            return Results.Ok(ToDto(company));
         }).DisableAntiforgery();
 
         group.MapDelete("/logo", async (ClaimsPrincipal principal, PlayPredictDbContext db, IWebHostEnvironment environment, IConfiguration configuration) =>
@@ -70,7 +77,7 @@ public static class CompanySettingsEndpoints
             ManagedImageStorage.Delete(company.LogoUrl, "companies", configuration, environment);
             company.LogoUrl = null;
             await db.SaveChangesAsync();
-            return Results.Ok(new CompanySettingsDto(company.Name, company.ShortName ?? company.Name, null));
+            return Results.Ok(ToDto(company));
         });
     }
 
@@ -85,9 +92,28 @@ public static class CompanySettingsEndpoints
         if (string.IsNullOrWhiteSpace(dto.ShortName)) errors["shortName"] = ["El nombre corto es obligatorio."];
         else if (dto.ShortName.Trim().Length > 80) errors["shortName"] = ["El nombre corto no puede superar 80 caracteres."];
         if (dto.LogoUrl?.Trim().Length > 500) errors["logoUrl"] = ["La referencia del logo no puede superar 500 caracteres."];
+        if (dto.GeneralExactScorePoints < 0 || dto.GeneralCorrectOutcomePoints < 0 || dto.GeneralIncorrectPoints < 0 || dto.GeneralPreferredPlayerPointsPerGoal < 0)
+            errors["generalScoring"] = ["Los puntos deben ser mayores o iguales a cero."];
+        if (dto.GeneralPreferredPlayerPositions.Any(x => !PlayerPositionCatalog.TryParse(x, out _)))
+            errors["generalPreferredPlayerPositions"] = ["Hay una posición no reconocida."];
         return errors;
+    }
+
+    private static CompanySettingsDto ToDto(PlayPredict.Api.Domain.Entities.Company company) => new(company.Name, company.ShortName ?? company.Name, company.LogoUrl,
+        company.GeneralExactScorePoints, company.GeneralCorrectOutcomePoints, company.GeneralIncorrectPoints,
+        company.GeneralPreferredPlayerEnabled, company.GeneralPreferredPlayerPointsPerGoal, PlayerPositionCatalog.ToLabels(company.GeneralPreferredPlayerPositions));
+
+    private static PlayerPosition ParsePositions(IEnumerable<string> labels)
+    {
+        var result = PlayerPosition.None;
+        foreach (var label in labels) if (PlayerPositionCatalog.TryParse(label, out var position)) result |= position;
+        return result;
     }
 }
 
-public record CompanySettingsDto(string Name, string ShortName, string? LogoUrl);
-public record UpdateCompanySettingsDto(string Name, string ShortName, string? LogoUrl);
+public record CompanySettingsDto(string Name, string ShortName, string? LogoUrl, int GeneralExactScorePoints,
+    int GeneralCorrectOutcomePoints, int GeneralIncorrectPoints, bool GeneralPreferredPlayerEnabled,
+    int GeneralPreferredPlayerPointsPerGoal, IReadOnlyList<string> GeneralPreferredPlayerPositions);
+public record UpdateCompanySettingsDto(string Name, string ShortName, string? LogoUrl, int GeneralExactScorePoints,
+    int GeneralCorrectOutcomePoints, int GeneralIncorrectPoints, bool GeneralPreferredPlayerEnabled,
+    int GeneralPreferredPlayerPointsPerGoal, IReadOnlyList<string> GeneralPreferredPlayerPositions);

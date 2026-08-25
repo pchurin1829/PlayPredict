@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import type { AdminOfficialLeague, Competition, Edition, LeagueScopeType, Round } from '../api/types'
+import { PLAYER_POSITIONS, type AdminOfficialLeague, type Competition, type Edition, type LeagueScopeType, type Round, type PlayerPosition } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 import { useCompanySettings } from '../company/CompanySettingsContext'
 
@@ -22,6 +22,8 @@ export default function AdminOfficialLeagueFormPage() {
   const [roundFromId, setRoundFromId] = useState<number | ''>('')
   const [roundToId, setRoundToId] = useState<number | ''>('')
   const [isActive, setIsActive] = useState(true)
+  const [useGeneralScoring,setUseGeneralScoring]=useState(true),[exact,setExact]=useState(6),[correct,setCorrect]=useState(3),[incorrect,setIncorrect]=useState(0)
+  const [preferred,setPreferred]=useState(true),[perGoal,setPerGoal]=useState(2),[positions,setPositions]=useState<PlayerPosition[]>(['Mediocampista','Delantero'])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,6 +40,7 @@ export default function AdminOfficialLeagueFormPage() {
         setCompetitionId(league.competitionId); setEditionId(league.editionId)
         setScopeType(league.scopeType); setRoundFromId(league.roundFromId ?? '')
         setRoundToId(league.roundToId ?? ''); setIsActive(league.isActive)
+        setUseGeneralScoring(league.useGeneralScoring);setExact(league.exactScorePoints);setCorrect(league.correctOutcomePoints);setIncorrect(league.incorrectPoints);setPreferred(league.preferredPlayerEnabled);setPerGoal(league.preferredPlayerPointsPerGoal);setPositions(league.preferredPlayerPositions)
       }
     }).catch((reason) => setError(reason.message ?? `No se pudo cargar la competencia ${companyName}.`))
       .finally(() => setLoading(false))
@@ -72,6 +75,8 @@ export default function AdminOfficialLeagueFormPage() {
       roundFromId: scopeType === 'RoundRange' ? roundFromId || null : null,
       roundToId: scopeType === 'RoundRange' ? roundToId || null : null,
       isActive,
+      useGeneralScoring, exactScorePoints:exact, correctOutcomePoints:correct, incorrectPoints:incorrect,
+      preferredPlayerEnabled:preferred, preferredPlayerPointsPerGoal:perGoal, preferredPlayerPositions:positions,
     }
     try {
       if (isEdit) await api.put(`/admin/official-leagues/${leagueId}`, payload)
@@ -100,6 +105,7 @@ export default function AdminOfficialLeagueFormPage() {
         <div className="form-field"><label htmlFor="officialScope">Alcance</label><select id="officialScope" value={scopeType} onChange={(e) => { const next = e.target.value as LeagueScopeType; setScopeType(next); if (next === 'FullCompetition') { setRoundFromId(''); setRoundToId('') } }}><option value="FullCompetition">Toda la Edición</option><option value="RoundRange">Rango de Fechas</option></select></div>
         {scopeType === 'RoundRange' && <div className="form-row"><div className="form-field"><label htmlFor="officialFrom">Desde fecha</label><select id="officialFrom" value={roundFromId} required onChange={(e) => setRoundFromId(e.target.value ? Number(e.target.value) : '')}><option value="">Seleccionar...</option>{rounds.map((round) => <option key={round.id} value={round.id}>{round.name}</option>)}</select>{fieldErrors.roundFromId && <span className="form-field-error">{fieldErrors.roundFromId[0]}</span>}</div><div className="form-field"><label htmlFor="officialTo">Hasta fecha</label><select id="officialTo" value={roundToId} required onChange={(e) => setRoundToId(e.target.value ? Number(e.target.value) : '')}><option value="">Seleccionar...</option>{rounds.map((round) => <option key={round.id} value={round.id}>{round.name}</option>)}</select>{fieldErrors.roundToId && <span className="form-field-error">{fieldErrors.roundToId[0]}</span>}</div></div>}
         <div className="form-field form-checkbox"><input id="officialActive" type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} /><label htmlFor="officialActive">Competencia activa</label></div>
+        <section className="scoring-special-section"><h2>Configuración de juego</h2><label className="form-field form-checkbox"><input type="checkbox" checked={useGeneralScoring} onChange={e=>setUseGeneralScoring(e.target.checked)}/><span>Usar configuración general</span></label>{useGeneralScoring&&<p className="form-help">Se aplicarán siempre los valores generales vigentes de la empresa.</p>}<fieldset disabled={useGeneralScoring}><legend>Configuración propia</legend><div className="form-row"><label className="form-field">Marcador exacto<input type="number" min="0" value={exact} onChange={e=>setExact(Math.max(0,Number(e.target.value)))}/></label><label className="form-field">Resultado correcto<input type="number" min="0" value={correct} onChange={e=>setCorrect(Math.max(0,Number(e.target.value)))}/></label><label className="form-field">Incorrecto<input type="number" min="0" value={incorrect} onChange={e=>setIncorrect(Math.max(0,Number(e.target.value)))}/></label></div><label className="form-field form-checkbox"><input type="checkbox" checked={preferred} onChange={e=>setPreferred(e.target.checked)}/><span>Jugador Preferido habilitado</span></label><label className="form-field">Puntos por gol<input type="number" min="0" disabled={!preferred} value={perGoal} onChange={e=>setPerGoal(Math.max(0,Number(e.target.value)))}/></label><div className="scoring-position-options">{PLAYER_POSITIONS.map(position=><label className="form-checkbox" key={position}><input type="checkbox" disabled={!preferred} checked={positions.includes(position)} onChange={e=>setPositions(current=>e.target.checked?[...current,position]:current.filter(x=>x!==position))}/><span>{position}</span></label>)}</div></fieldset></section>
         <div className="form-actions"><button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button><Link className="btn btn-secondary" to="/admin/official-leagues">Cancelar</Link></div>
       </form>
     </div>

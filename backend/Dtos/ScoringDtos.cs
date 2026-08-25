@@ -15,6 +15,7 @@ public record EditionScoringConfigurationDto(
     int EffectiveIncorrectPoints,
     bool PreferredPlayerEnabled,
     int PreferredPlayerPointsPerGoal,
+    IReadOnlyList<string> PreferredPlayerPositions,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc);
 
@@ -24,4 +25,5 @@ public record UpdateEditionScoringConfigurationDto(
     int IncorrectPoints,
     bool UseExperienceDefaults,
     bool PreferredPlayerEnabled,
-    int PreferredPlayerPointsPerGoal);
+    int PreferredPlayerPointsPerGoal,
+    IReadOnlyList<string> PreferredPlayerPositions);

@@ -2,7 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { api } from '../api/client'
 import type { CompanySettings } from '../api/types'
 
-const FALLBACK: CompanySettings = { name: 'PlayPredict', shortName: 'PlayPredict', logoUrl: null }
+const FALLBACK: CompanySettings = { name:'PlayPredict', shortName:'PlayPredict', logoUrl:null, generalExactScorePoints:6,
+  generalCorrectOutcomePoints:3, generalIncorrectPoints:0, generalPreferredPlayerEnabled:true,
+  generalPreferredPlayerPointsPerGoal:2, generalPreferredPlayerPositions:['Mediocampista','Delantero'] }
 
 interface CompanySettingsContextValue {
   company: CompanySettings

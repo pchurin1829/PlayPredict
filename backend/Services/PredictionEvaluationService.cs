@@ -5,133 +5,41 @@ using PlayPredict.Api.Domain.Enums;
 
 namespace PlayPredict.Api.Services;
 
-// Responsabilidad única: transformar un Pronóstico + Resultado Oficial + configuración
-// de la Edición en una PredictionEvaluation. No guarda cambios por sí mismo: deja las
-// entidades preparadas en el ChangeTracker para que el llamador las persista junto con
-// el resultado oficial en un único SaveChangesAsync (una sola transacción implícita).
 public class PredictionEvaluationService
 {
+    private readonly LeagueScoringService _scoring;
+    public PredictionEvaluationService(LeagueScoringService scoring) => _scoring = scoring;
+
     public async Task PrepareEvaluationsForMatchAsync(PlayPredictDbContext db, Match match)
     {
-        if (match.Status != MatchStatus.Finished || match.HomeGoals is null || match.AwayGoals is null)
-        {
-            return;
-        }
-
-        var editionInfo = await db.Rounds
-            .Where(r => r.Id == match.RoundId)
-            .Select(r => new { r.EditionId, r.Edition.CompetitionId })
-            .FirstOrDefaultAsync();
-
-        if (editionInfo is null)
-        {
-            // No debería ocurrir: todo Partido pertenece a una Fecha existente.
-            return;
-        }
-
-        var config = await db.EditionScoringConfigurations
-            .FirstOrDefaultAsync(c => c.EditionId == editionInfo.EditionId);
-
-        if (config is null)
-        {
-            // No debería ocurrir: toda Edición debe tener configuración (seed + alta automática).
-            return;
-        }
-
-        // Sprint 8: si la Edición usa la configuración de la Experience, la herencia es
-        // completa (nunca parcial) — se ignoran por completo los valores propios de `config`.
-        var (exactPoints, correctPoints, incorrectPoints) = (config.ExactScorePoints, config.CorrectOutcomePoints, config.IncorrectPoints);
-        if (config.UseExperienceDefaults)
-        {
-            var defaults = await db.Competitions
-                .Where(c => c.Id == editionInfo.CompetitionId)
-                .Select(c => new
-                {
-                    c.Experience.DefaultExactScorePoints,
-                    c.Experience.DefaultCorrectOutcomePoints,
-                    c.Experience.DefaultIncorrectPoints
-                })
-                .FirstOrDefaultAsync();
-
-            if (defaults is not null)
-            {
-                (exactPoints, correctPoints, incorrectPoints) =
-                    (defaults.DefaultExactScorePoints, defaults.DefaultCorrectOutcomePoints, defaults.DefaultIncorrectPoints);
-            }
-        }
-
-        var predictions = await db.Predictions
-            .Include(p => p.PreferredPlayer)
-            .Where(p => p.MatchId == match.Id)
-            .ToListAsync();
-
-        if (predictions.Count == 0)
-        {
-            return;
-        }
-
-        var predictionIds = predictions.Select(p => p.Id).ToList();
-        var existingEvaluations = await db.PredictionEvaluations
-            .Where(e => predictionIds.Contains(e.PredictionId))
-            .ToListAsync();
-
-        var now = DateTime.UtcNow;
-
+        if (match.Status != MatchStatus.Finished || match.HomeGoals is null || match.AwayGoals is null) return;
+        var predictions = await db.Predictions.Include(p => p.PreferredPlayer).Where(p => p.MatchId == match.Id).ToListAsync();
+        var ids = predictions.Select(p => p.Id).ToList();
+        var evaluations = await db.PredictionEvaluations.Where(e => ids.Contains(e.PredictionId)).ToListAsync();
         foreach (var prediction in predictions)
         {
-            var (type, points) = Evaluate(
-                prediction.PredictedHomeScore, prediction.PredictedAwayScore,
-                match.HomeGoals.Value, match.AwayGoals.Value,
-                exactPoints, correctPoints, incorrectPoints);
+            var config = await _scoring.GetEffectiveAsync(db, prediction.LeagueId);
+            if (config is null) continue;
+            var (type, resultPoints) = Evaluate(prediction.PredictedHomeScore, prediction.PredictedAwayScore,
+                match.HomeGoals.Value, match.AwayGoals.Value, config.ExactScorePoints, config.CorrectOutcomePoints, config.IncorrectPoints);
             var preferredGoals = config.PreferredPlayerEnabled && prediction.PreferredPlayerId.HasValue
-                ? match.Scorers.Where(s => s.TeamPlayerId == prediction.PreferredPlayerId.Value).Sum(s => s.Goals)
-                : 0;
+                ? match.Scorers.Where(s => s.TeamPlayerId == prediction.PreferredPlayerId.Value).Sum(s => s.Goals) : 0;
             var preferredPoints = preferredGoals * config.PreferredPlayerPointsPerGoal;
-
-            var evaluation = existingEvaluations.FirstOrDefault(e => e.PredictionId == prediction.Id);
-            if (evaluation is null)
-            {
-                evaluation = new PredictionEvaluation { PredictionId = prediction.Id };
-                db.PredictionEvaluations.Add(evaluation);
-            }
-
-            evaluation.EvaluationType = type;
-            evaluation.ResultPoints = points;
-            evaluation.PreferredPlayerPoints = preferredPoints;
-            evaluation.Points = points + preferredPoints;
-            evaluation.AppliedRuleValue = points;
-            evaluation.OfficialHomeScore = match.HomeGoals.Value;
-            evaluation.OfficialAwayScore = match.AwayGoals.Value;
-            evaluation.EvaluatedAtUtc = now;
+            var evaluation = evaluations.FirstOrDefault(e => e.PredictionId == prediction.Id);
+            if (evaluation is null) { evaluation = new PredictionEvaluation { PredictionId = prediction.Id }; db.PredictionEvaluations.Add(evaluation); }
+            evaluation.EvaluationType = type; evaluation.ResultPoints = resultPoints; evaluation.PreferredPlayerPoints = preferredPoints;
+            evaluation.Points = resultPoints + preferredPoints; evaluation.AppliedRuleValue = resultPoints;
+            evaluation.OfficialHomeScore = match.HomeGoals.Value; evaluation.OfficialAwayScore = match.AwayGoals.Value; evaluation.EvaluatedAtUtc = DateTime.UtcNow;
         }
     }
 
-    // Marcador exacto tiene prioridad sobre resultado correcto; solo se aplica una categoría.
-    internal static (EvaluationType Type, int Points) Evaluate(
-        int predictedHome, int predictedAway, int officialHome, int officialAway,
+    internal static (EvaluationType Type, int Points) Evaluate(int predictedHome, int predictedAway, int officialHome, int officialAway,
         int exactScorePoints, int correctOutcomePoints, int incorrectPoints)
     {
-        if (predictedHome == officialHome && predictedAway == officialAway)
-        {
-            return (EvaluationType.ExactScore, exactScorePoints);
-        }
-
-        var predictedOutcome = Math.Sign(predictedHome - predictedAway);
-        var officialOutcome = Math.Sign(officialHome - officialAway);
-
-        if (predictedOutcome == officialOutcome)
-        {
-            return (EvaluationType.CorrectOutcome, correctOutcomePoints);
-        }
-
-        return (EvaluationType.Incorrect, incorrectPoints);
+        if (predictedHome == officialHome && predictedAway == officialAway) return (EvaluationType.ExactScore, exactScorePoints);
+        return Math.Sign(predictedHome - predictedAway) == Math.Sign(officialHome - officialAway)
+            ? (EvaluationType.CorrectOutcome, correctOutcomePoints) : (EvaluationType.Incorrect, incorrectPoints);
     }
 
-    public static string GetLabel(EvaluationType type) => type switch
-    {
-        EvaluationType.ExactScore => "Marcador exacto",
-        EvaluationType.CorrectOutcome => "Resultado correcto",
-        EvaluationType.Incorrect => "Incorrecto",
-        _ => type.ToString()
-    };
+    public static string GetLabel(EvaluationType type) => type switch { EvaluationType.ExactScore => "Marcador exacto", EvaluationType.CorrectOutcome => "Resultado correcto", EvaluationType.Incorrect => "Incorrecto", _ => type.ToString() };
 }

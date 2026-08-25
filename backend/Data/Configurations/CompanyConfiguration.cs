@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PlayPredict.Api.Domain.Entities;
+using PlayPredict.Api.Domain.Enums;
 
 namespace PlayPredict.Api.Data.Configurations;
 
@@ -24,6 +25,7 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
 
         builder.Property(c => c.CreatedAtUtc)
             .IsRequired();
+        builder.Property(c => c.GeneralPreferredPlayerPositions).IsRequired();
 
         builder.HasIndex(c => c.Name)
             .IsUnique();

@@ -16,7 +16,6 @@ public static class DemoDatasetV1Seeder
 {
     public const string Version = "PlayPredict Demo v1";
     public const string PlayerPassword = "demo123";
-    private const string DemoLogo = "/assets/teams/demo-club.svg";
 
     private static readonly (string Name, string ShortName)[] CanonicalTeams =
     {
@@ -40,6 +39,9 @@ public static class DemoDatasetV1Seeder
         ("maria.lopez@playpredict.local", "María", "López"),
         ("pedro.gomez@playpredict.local", "Pedro", "Gómez")
     };
+
+    private static readonly string[] FullRosterTeams =
+        ["Boca Juniors", "River Plate", "Flamengo", "Palmeiras", "Atlético Nacional"];
 
     private static readonly (string Home, string Away)[][] LibertadoresFixture =
     {
@@ -69,27 +71,18 @@ public static class DemoDatasetV1Seeder
         await EnsureDemoCompanyAsync(db);
         var experience = await EnsureExperienceAsync(db);
         var teams = await EnsureTeamsAsync(db);
-        var ligaEdition = await EnsureCompetitionAsync(db, experience.Id, "Liga Profesional Argentina", "2026", LigaProfesionalFixture, teams);
+        await NormalizeDuplicateTeamsAsync(db, teams);
+        var ligaEdition = await EnsureCompetitionAsync(db, experience.Id, "Liga Profesional de Fútbol", "2026", LigaProfesionalFixture, teams);
         var copaEdition = await EnsureCompetitionAsync(db, experience.Id, "Copa Libertadores", "2026", LibertadoresFixture, teams);
         await EnsureReferenceCompetitionAsync(db, experience.Id, "Copa Argentina", "2026");
         await EnsureScoringAsync(db, ligaEdition.Id, preferredPlayerEnabled: true);
         await EnsureScoringAsync(db, copaEdition.Id, preferredPlayerEnabled: true);
         await EnsureRostersAsync(db, teams, LigaProfesionalFixture.Concat(LibertadoresFixture));
 
-        var users = await EnsureUsersAsync(db);
-        var copaRounds = await db.Rounds.Where(r => r.EditionId == copaEdition.Id).OrderBy(r => r.Order).ToListAsync();
-        var ligaRounds = await db.Rounds.Where(r => r.EditionId == ligaEdition.Id).OrderBy(r => r.Order).ToListAsync();
+        await EnsureUsersAsync(db);
 
-        var copaOfficial = await EnsureLeagueAsync(db, "COPA EL NENE", copaEdition, LeagueType.Official, users[0].Id, copaRounds);
-        var ligaOfficial = await EnsureLeagueAsync(db, "PRODE EMPRESA DEMO", ligaEdition, LeagueType.Official, users[0].Id, ligaRounds);
-        var copaPrivate = await EnsureLeagueAsync(db, "Los Sabaditos", copaEdition, LeagueType.Private, users[0].Id, copaRounds);
-        var ligaPrivate = await EnsureLeagueAsync(db, "Los del Trabajo", ligaEdition, LeagueType.Private, users[1].Id, ligaRounds);
-
-        foreach (var league in new[] { copaOfficial, ligaOfficial, copaPrivate, ligaPrivate })
-            await EnsureParticipantsAsync(db, league.Id, users);
-
-        await SeedPlayedRoundsAsync(db, copaEdition.Id, new[] { copaOfficial, copaPrivate }, users, evaluationService);
-        await SeedPlayedRoundsAsync(db, ligaEdition.Id, new[] { ligaOfficial, ligaPrivate }, users, evaluationService);
+        // Los datos de juego se dejan vacíos para que el circuito ADMIN + PLAYER pueda
+        // probarse desde cero. Resultados, pronósticos y evaluaciones se generan manualmente.
     }
 
     private static async Task EnsureDemoCompanyAsync(PlayPredictDbContext db)
@@ -163,7 +156,7 @@ public static class DemoDatasetV1Seeder
             var team = await db.Teams.FirstOrDefaultAsync(t => t.Name == name);
             if (team is null)
             {
-                team = new Team { Name = name, ShortName = shortName, Sport = "Fútbol", Active = true, LogoUrl = DemoLogo };
+                team = new Team { Name = name, ShortName = shortName, Sport = "Fútbol", Active = true };
                 db.Teams.Add(team);
                 await db.SaveChangesAsync();
             }
@@ -172,7 +165,6 @@ public static class DemoDatasetV1Seeder
                 team.ShortName = shortName;
                 team.Sport = "Fútbol";
                 team.Active = true;
-                if (string.IsNullOrWhiteSpace(team.LogoUrl)) team.LogoUrl = DemoLogo;
             }
             result[name] = team;
         }
@@ -287,7 +279,57 @@ public static class DemoDatasetV1Seeder
                 activeCount++;
             }
         }
+
+        foreach (var teamName in FullRosterTeams)
+        {
+            var team = teams[teamName];
+            var additions = new[] { ("Arquero", 2), ("Defensor", 6), ("Mediocampista", 6), ("Delantero", 3) };
+            var shirt = 20;
+            foreach (var (position, count) in additions)
+            for (var index = 1; index <= count; index++)
+            {
+                var displayName = $"{team.ShortName} {position} {index}";
+                if (await db.TeamPlayers.AnyAsync(p => p.TeamId == team.Id && p.DisplayName == displayName)) continue;
+                db.TeamPlayers.Add(new TeamPlayer
+                {
+                    TeamId = team.Id,
+                    FirstName = position,
+                    LastName = $"{team.ShortName} {index}",
+                    DisplayName = displayName,
+                    ShirtNumber = shirt++,
+                    Position = position,
+                    Active = true
+                });
+            }
+        }
         await db.SaveChangesAsync();
+    }
+
+    private static async Task NormalizeDuplicateTeamsAsync(PlayPredictDbContext db, IReadOnlyDictionary<string, Team> teams)
+    {
+        var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Argentinos Jrs"] = "Argentinos Juniors",
+            ["Belgrano (Córdoba)"] = "Belgrano",
+            ["Estudiantes"] = "Estudiantes de La Plata",
+            ["Gimnasia"] = "Gimnasia y Esgrima La Plata",
+            ["Newell's"] = "Newell's Old Boys",
+            ["Vélez"] = "Vélez Sarsfield"
+        };
+
+        foreach (var (alias, canonicalName) in aliases)
+        {
+            var duplicate = await db.Teams.FirstOrDefaultAsync(t => t.Name == alias);
+            if (duplicate is null) continue;
+            var canonical = teams[canonicalName];
+            var homeMatches = await db.Matches.Where(m => m.HomeTeamId == duplicate.Id).ToListAsync();
+            var awayMatches = await db.Matches.Where(m => m.AwayTeamId == duplicate.Id).ToListAsync();
+            foreach (var match in homeMatches) { match.HomeTeamId = canonical.Id; match.ParticipantHome = canonical.Name; }
+            foreach (var match in awayMatches) { match.AwayTeamId = canonical.Id; match.ParticipantAway = canonical.Name; }
+            foreach (var player in await db.TeamPlayers.Where(p => p.TeamId == duplicate.Id).ToListAsync()) player.TeamId = canonical.Id;
+            db.Teams.Remove(duplicate);
+            await db.SaveChangesAsync();
+        }
     }
 
     private static async Task<List<User>> EnsureUsersAsync(PlayPredictDbContext db)

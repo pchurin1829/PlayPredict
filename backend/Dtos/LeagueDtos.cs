@@ -22,7 +22,14 @@ public record CreateOfficialLeagueDto(
     string ScopeType,
     int? RoundFromId,
     int? RoundToId,
-    bool IsActive);
+    bool IsActive,
+    bool UseGeneralScoring,
+    int ExactScorePoints,
+    int CorrectOutcomePoints,
+    int IncorrectPoints,
+    bool PreferredPlayerEnabled,
+    int PreferredPlayerPointsPerGoal,
+    IReadOnlyList<string> PreferredPlayerPositions);
 
 public record UpdateOfficialLeagueDto(
     string Name,
@@ -32,7 +39,14 @@ public record UpdateOfficialLeagueDto(
     string ScopeType,
     int? RoundFromId,
     int? RoundToId,
-    bool IsActive);
+    bool IsActive,
+    bool UseGeneralScoring,
+    int ExactScorePoints,
+    int CorrectOutcomePoints,
+    int IncorrectPoints,
+    bool PreferredPlayerEnabled,
+    int PreferredPlayerPointsPerGoal,
+    IReadOnlyList<string> PreferredPlayerPositions);
 
 public record AdminOfficialLeagueDto(
     int Id,
@@ -51,6 +65,19 @@ public record AdminOfficialLeagueDto(
     int ParticipantsCount,
     int RoundsCount,
     int MatchesCount,
+    bool UseGeneralScoring,
+    int ExactScorePoints,
+    int CorrectOutcomePoints,
+    int IncorrectPoints,
+    bool PreferredPlayerEnabled,
+    int PreferredPlayerPointsPerGoal,
+    IReadOnlyList<string> PreferredPlayerPositions,
+    int EffectiveExactScorePoints,
+    int EffectiveCorrectOutcomePoints,
+    int EffectiveIncorrectPoints,
+    bool EffectivePreferredPlayerEnabled,
+    int EffectivePreferredPlayerPointsPerGoal,
+    IReadOnlyList<string> EffectivePreferredPlayerPositions,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc);
 

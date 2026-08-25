@@ -1,53 +1,27 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import type { CompanySettings } from '../api/types'
+import { PLAYER_POSITIONS, type CompanySettings, type PlayerPosition } from '../api/types'
 import { useCompanySettings } from '../company/CompanySettingsContext'
 import StatusMessage from '../components/StatusMessage'
 import ImageUploadField from '../components/admin/ImageUploadField'
 
-export default function AdminSettingsPage() {
-  const { company, loading, updateCompany } = useCompanySettings()
-  const [name, setName] = useState(company.name)
-  const [shortName, setShortName] = useState(company.shortName)
-  const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [removeLogo, setRemoveLogo] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
-
-  useEffect(() => {
-    setName(company.name); setShortName(company.shortName)
-  }, [company])
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault(); setSaving(true); setSaved(false); setError(null); setFieldErrors({})
-    try {
-      let updated = await api.put<CompanySettings>('/company-settings', { name, shortName, logoUrl: company.logoUrl })
-      if (logoFile) { const form = new FormData(); form.append('file', logoFile); updated = await api.upload<CompanySettings>('/company-settings/logo', form) }
-      else if (removeLogo) updated = await api.del<CompanySettings>('/company-settings/logo')
-      updateCompany(updated); setLogoFile(null); setRemoveLogo(false); setSaved(true)
-    } catch (reason) {
-      if (reason instanceof ApiError) { setError(reason.message); setFieldErrors(reason.fieldErrors) }
-      else setError('No se pudo guardar la configuración de empresa.')
-    } finally { setSaving(false) }
-  }
-
-  if (loading) return <StatusMessage kind="loading" message="Cargando configuración..." />
-
-  return (
-    <div>
-      <div className="admin-header"><div><h1>Configuración</h1><p className="admin-help">Identidad del cliente y reglas generales de PlayPredict.</p></div></div>
-      {error && <StatusMessage kind="error" message={error} />}
-      {saved && <StatusMessage kind="success" message="Configuración de empresa guardada." />}
-      <form className="form-card" onSubmit={handleSubmit}>
-        <div><span className="admin-eyebrow">EMPRESA</span><h2>Identidad del cliente</h2></div>
-        <div className="form-field"><label htmlFor="companyName">Nombre de empresa</label><input id="companyName" value={name} onChange={(e) => setName(e.target.value)} required />{fieldErrors.name && <span className="form-field-error">{fieldErrors.name[0]}</span>}</div>
-        <div className="form-field"><label htmlFor="companyShortName">Nombre corto</label><input id="companyShortName" value={shortName} onChange={(e) => setShortName(e.target.value)} required /><span className="form-field-hint">Se utiliza en títulos como “Competencias {shortName || 'PlayPredict'}”.</span>{fieldErrors.shortName && <span className="form-field-error">{fieldErrors.shortName[0]}</span>}</div>
-        <ImageUploadField label="Logo de empresa (opcional)" currentUrl={company.logoUrl} fallback={shortName.slice(0, 2).toUpperCase() || 'PP'} onSelectionChange={(file, remove) => { setLogoFile(file); setRemoveLogo(remove) }} onError={setError} />
-        <div className="form-actions"><button className="btn btn-primary" disabled={saving}>{saving ? 'Guardando...' : 'Guardar empresa'}</button><Link className="btn btn-secondary" to="/admin/scoring">Configurar scoring</Link></div>
-      </form>
-    </div>
-  )
+export default function AdminSettingsPage(){
+ const {company,loading,updateCompany}=useCompanySettings(); const [baseline,setBaseline]=useState(company)
+ const [name,setName]=useState(company.name),[shortName,setShortName]=useState(company.shortName),[logoFile,setLogoFile]=useState<File|null>(null),[removeLogo,setRemoveLogo]=useState(false)
+ const [exact,setExact]=useState(company.generalExactScorePoints),[correct,setCorrect]=useState(company.generalCorrectOutcomePoints),[incorrect,setIncorrect]=useState(company.generalIncorrectPoints)
+ const [preferred,setPreferred]=useState(company.generalPreferredPlayerEnabled),[perGoal,setPerGoal]=useState(company.generalPreferredPlayerPointsPerGoal),[positions,setPositions]=useState<PlayerPosition[]>(company.generalPreferredPlayerPositions)
+ const [saving,setSaving]=useState(false),[saved,setSaved]=useState(false),[error,setError]=useState<string|null>(null),[fieldErrors,setFieldErrors]=useState<Record<string,string[]>>({})
+ useEffect(()=>{setBaseline(company);setName(company.name);setShortName(company.shortName);setExact(company.generalExactScorePoints);setCorrect(company.generalCorrectOutcomePoints);setIncorrect(company.generalIncorrectPoints);setPreferred(company.generalPreferredPlayerEnabled);setPerGoal(company.generalPreferredPlayerPointsPerGoal);setPositions(company.generalPreferredPlayerPositions)},[company])
+ useEffect(()=>{if(!saved)return;const id=window.setTimeout(()=>setSaved(false),2500);return()=>window.clearTimeout(id)},[saved])
+ const dirty=useMemo(()=>Boolean(logoFile)||removeLogo||name!==baseline.name||shortName!==baseline.shortName||exact!==baseline.generalExactScorePoints||correct!==baseline.generalCorrectOutcomePoints||incorrect!==baseline.generalIncorrectPoints||preferred!==baseline.generalPreferredPlayerEnabled||perGoal!==baseline.generalPreferredPlayerPointsPerGoal||positions.join('|')!==baseline.generalPreferredPlayerPositions.join('|'),[baseline,correct,dirtyKey(exact,incorrect,name,perGoal,preferred,removeLogo,shortName),logoFile,positions])
+ async function submit(e:FormEvent){e.preventDefault();if(!dirty)return;setSaving(true);setSaved(false);setError(null);setFieldErrors({});try{let updated=await api.put<CompanySettings>('/company-settings',{name,shortName,logoUrl:company.logoUrl,generalExactScorePoints:exact,generalCorrectOutcomePoints:correct,generalIncorrectPoints:incorrect,generalPreferredPlayerEnabled:preferred,generalPreferredPlayerPointsPerGoal:perGoal,generalPreferredPlayerPositions:positions});if(logoFile){const form=new FormData();form.append('file',logoFile);updated=await api.upload('/company-settings/logo',form)}else if(removeLogo)updated=await api.del('/company-settings/logo');updateCompany(updated);setBaseline(updated);setLogoFile(null);setRemoveLogo(false);setSaved(true)}catch(reason){if(reason instanceof ApiError){setError(reason.message);setFieldErrors(reason.fieldErrors)}else setError('No se pudo guardar la configuración.')}finally{setSaving(false)}}
+ if(loading)return <StatusMessage kind="loading" message="Cargando configuración..."/>
+ const number=(value:string)=>Math.max(0,Math.trunc(Number(value))||0)
+ return <div><div className="breadcrumb"><Link to="/admin">← Volver a Administración</Link></div><div className="admin-header"><div><h1>Configuración</h1><p className="admin-help">Identidad del cliente y reglas generales de PlayPredict.</p></div></div>{error&&<StatusMessage kind="error" message={error}/>} {saved&&<StatusMessage kind="success" message="Configuración guardada"/>}
+ <form className="form-card" onSubmit={submit}><div><span className="admin-eyebrow">EMPRESA</span><h2>Identidad del cliente</h2></div><div className="form-field"><label>Nombre de empresa</label><input value={name} onChange={e=>setName(e.target.value)} required/>{fieldErrors.name&&<span className="form-field-error">{fieldErrors.name[0]}</span>}</div><div className="form-field"><label>Nombre corto</label><input value={shortName} onChange={e=>setShortName(e.target.value)} required/></div><ImageUploadField label="Logo de empresa (opcional)" currentUrl={company.logoUrl} fallback={shortName.slice(0,2).toUpperCase()||'PP'} onSelectionChange={(file,remove)=>{setLogoFile(file);setRemoveLogo(remove)}} onError={setError}/>
+ <section className="scoring-special-section"><h2>Configuración general de juego</h2><div className="form-row"><label className="form-field">Marcador exacto<input type="number" min="0" value={exact} onChange={e=>setExact(number(e.target.value))}/></label><label className="form-field">Resultado correcto<input type="number" min="0" value={correct} onChange={e=>setCorrect(number(e.target.value))}/></label><label className="form-field">Incorrecto<input type="number" min="0" value={incorrect} onChange={e=>setIncorrect(number(e.target.value))}/></label></div><label className="form-field form-checkbox"><input type="checkbox" checked={preferred} onChange={e=>setPreferred(e.target.checked)}/><span>Jugador Preferido habilitado</span></label><label className="form-field">Puntos por gol<input type="number" min="0" disabled={!preferred} value={perGoal} onChange={e=>setPerGoal(number(e.target.value))}/></label><div className="scoring-position-options">{PLAYER_POSITIONS.map(position=><label className="form-checkbox" key={position}><input type="checkbox" disabled={!preferred} checked={positions.includes(position)} onChange={e=>setPositions(current=>e.target.checked?[...current,position]:current.filter(x=>x!==position))}/><span>{position}</span></label>)}</div></section>
+ <div className="form-actions"><button className="btn btn-primary" disabled={saving||!dirty}>{saving?'Guardando...':'Guardar empresa'}</button></div></form></div>
 }
+
+function dirtyKey(...values:unknown[]){return values.join('|')}

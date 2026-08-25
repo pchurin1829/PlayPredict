@@ -436,6 +436,8 @@ button.admin-selection__option {
 .form-help { margin: -.55rem 0 1rem; color: var(--pp-text-secondary); font-size: .82rem; line-height: 1.45; }
 .scoring-special-section { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--pp-border); border-radius: 9px; background: var(--pp-bg-surface-alt); }
 .scoring-special-section h2 { margin: 0 0 .9rem; color: var(--pp-text-primary); font-size: .95rem; text-transform: uppercase; letter-spacing: .04em; }
+.scoring-position-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+@media (max-width: 520px) { .scoring-position-options { grid-template-columns: 1fr; } }
 .team-player-form { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 1.5rem; max-width: 840px; }
 .team-player-form__fields,.team-player-form__photo { min-width: 0; }
 .team-player-form__photo { display: flex; flex-direction: column; gap: .75rem; }

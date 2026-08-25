@@ -5,6 +5,7 @@ using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Dtos;
+using PlayPredict.Api.Services;
 
 namespace PlayPredict.Api.Endpoints;
 
@@ -16,7 +17,7 @@ public static class AdminOfficialLeagueEndpoints
             .WithTags("Admin - Official Leagues")
             .RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
 
-        group.MapGet("", async (PlayPredictDbContext db) =>
+        group.MapGet("", async (PlayPredictDbContext db, LeagueScoringService scoring) =>
         {
             var leagues = await db.Leagues
                 .Where(league => league.LeagueType == LeagueType.Official)
@@ -26,26 +27,27 @@ public static class AdminOfficialLeagueEndpoints
             var result = new List<AdminOfficialLeagueDto>();
             foreach (var league in leagues)
             {
-                result.Add(await ToDtoAsync(db, league));
+                result.Add(await ToDtoAsync(db, scoring, league));
             }
 
             return Results.Ok(result);
         });
 
-        group.MapGet("/{id:int}", async (int id, PlayPredictDbContext db) =>
+        group.MapGet("/{id:int}", async (int id, PlayPredictDbContext db, LeagueScoringService scoring) =>
         {
             var league = await db.Leagues.FirstOrDefaultAsync(candidate =>
                 candidate.Id == id && candidate.LeagueType == LeagueType.Official);
-            return league is null ? Results.NotFound() : Results.Ok(await ToDtoAsync(db, league));
+            return league is null ? Results.NotFound() : Results.Ok(await ToDtoAsync(db, scoring, league));
         });
 
-        group.MapPost("", async (CreateOfficialLeagueDto dto, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        group.MapPost("", async (CreateOfficialLeagueDto dto, ClaimsPrincipal principal, PlayPredictDbContext db, LeagueScoringService scoring) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
             if (user is null) return Results.Unauthorized();
 
             var (errors, scope) = await ValidateAsync(db, dto.Name, dto.Description, dto.CompetitionId,
                 dto.EditionId, dto.ScopeType, dto.RoundFromId, dto.RoundToId);
+            ValidateScoring(errors, dto.ExactScorePoints, dto.CorrectOutcomePoints, dto.IncorrectPoints, dto.PreferredPlayerPointsPerGoal, dto.PreferredPlayerPositions);
             if (errors.Count > 0) return Results.ValidationProblem(errors);
 
             var now = DateTime.UtcNow;
@@ -65,13 +67,15 @@ public static class AdminOfficialLeagueEndpoints
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             };
+            ApplyScoring(league, dto.UseGeneralScoring, dto.ExactScorePoints, dto.CorrectOutcomePoints, dto.IncorrectPoints,
+                dto.PreferredPlayerEnabled, dto.PreferredPlayerPointsPerGoal, dto.PreferredPlayerPositions);
 
             db.Leagues.Add(league);
             await db.SaveChangesAsync();
-            return Results.Created($"/api/admin/official-leagues/{league.Id}", await ToDtoAsync(db, league));
+            return Results.Created($"/api/admin/official-leagues/{league.Id}", await ToDtoAsync(db, scoring, league));
         });
 
-        group.MapPut("/{id:int}", async (int id, UpdateOfficialLeagueDto dto, PlayPredictDbContext db) =>
+        group.MapPut("/{id:int}", async (int id, UpdateOfficialLeagueDto dto, PlayPredictDbContext db, LeagueScoringService scoring) =>
         {
             var league = await db.Leagues.FirstOrDefaultAsync(candidate =>
                 candidate.Id == id && candidate.LeagueType == LeagueType.Official);
@@ -79,6 +83,7 @@ public static class AdminOfficialLeagueEndpoints
 
             var (errors, scope) = await ValidateAsync(db, dto.Name, dto.Description, dto.CompetitionId,
                 dto.EditionId, dto.ScopeType, dto.RoundFromId, dto.RoundToId);
+            ValidateScoring(errors, dto.ExactScorePoints, dto.CorrectOutcomePoints, dto.IncorrectPoints, dto.PreferredPlayerPointsPerGoal, dto.PreferredPlayerPositions);
             var changesFixtureScope = league.CompetitionId != dto.CompetitionId
                 || league.EditionId != dto.EditionId
                 || league.ScopeType != scope
@@ -99,9 +104,11 @@ public static class AdminOfficialLeagueEndpoints
             league.RoundToId = scope == LeagueScopeType.RoundRange ? dto.RoundToId : null;
             league.IsActive = dto.IsActive;
             league.UpdatedAtUtc = DateTime.UtcNow;
+            ApplyScoring(league, dto.UseGeneralScoring, dto.ExactScorePoints, dto.CorrectOutcomePoints, dto.IncorrectPoints,
+                dto.PreferredPlayerEnabled, dto.PreferredPlayerPointsPerGoal, dto.PreferredPlayerPositions);
 
             await db.SaveChangesAsync();
-            return Results.Ok(await ToDtoAsync(db, league));
+            return Results.Ok(await ToDtoAsync(db, scoring, league));
         });
 
         group.MapGet("/{id:int}/dependencies", async (int id, PlayPredictDbContext db) =>
@@ -114,11 +121,14 @@ public static class AdminOfficialLeagueEndpoints
         {
             var league = await db.Leagues.FirstOrDefaultAsync(l => l.Id == id && l.LeagueType == LeagueType.Official);
             if (league is null) return Results.NotFound();
-            var dependencies = await GetDependenciesAsync(db, league);
-            if (!dependencies.CanDelete)
-                return Results.Conflict(new { message = "No se puede eliminar esta competencia porque tiene participantes, pronósticos o evaluaciones relacionadas.", dependencies });
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            var predictionIds = await db.Predictions.Where(p => p.LeagueId == league.Id).Select(p => p.Id).ToListAsync();
+            await db.PredictionEvaluations.Where(e => predictionIds.Contains(e.PredictionId)).ExecuteDeleteAsync();
+            await db.Predictions.Where(p => p.LeagueId == league.Id).ExecuteDeleteAsync();
+            await db.LeagueParticipants.Where(p => p.LeagueId == league.Id).ExecuteDeleteAsync();
             db.Leagues.Remove(league);
             await db.SaveChangesAsync();
+            await transaction.CommitAsync();
             return Results.NoContent();
         });
     }
@@ -178,7 +188,7 @@ public static class AdminOfficialLeagueEndpoints
         return code;
     }
 
-    private static async Task<AdminOfficialLeagueDto> ToDtoAsync(PlayPredictDbContext db, League league)
+    private static async Task<AdminOfficialLeagueDto> ToDtoAsync(PlayPredictDbContext db, LeagueScoringService scoring, League league)
     {
         var competitionName = await db.Competitions.Where(c => c.Id == league.CompetitionId).Select(c => c.Name).FirstOrDefaultAsync()
             ?? $"Competencia no disponible (ID {league.CompetitionId})";
@@ -197,9 +207,27 @@ public static class AdminOfficialLeagueEndpoints
         var fromName = league.RoundFromId is null ? null : await db.Rounds.Where(r => r.Id == league.RoundFromId).Select(r => r.Name).FirstOrDefaultAsync();
         var toName = league.RoundToId is null ? null : await db.Rounds.Where(r => r.Id == league.RoundToId).Select(r => r.Name).FirstOrDefaultAsync();
 
+        var effective = (await scoring.GetEffectiveAsync(db, league.Id))!;
         return new AdminOfficialLeagueDto(league.Id, league.Name, league.Description, league.CompetitionId,
             competitionName, league.EditionId, editionName, league.ScopeType.ToString(), league.RoundFromId,
-            league.RoundToId, fromName, toName, league.IsActive, participants, roundsCount, matchesCount, league.CreatedAtUtc, league.UpdatedAtUtc);
+            league.RoundToId, fromName, toName, league.IsActive, participants, roundsCount, matchesCount,
+            league.UseGeneralScoring, league.ExactScorePoints, league.CorrectOutcomePoints, league.IncorrectPoints,
+            league.PreferredPlayerEnabled, league.PreferredPlayerPointsPerGoal, PlayerPositionCatalog.ToLabels(league.PreferredPlayerPositions),
+            effective.ExactScorePoints, effective.CorrectOutcomePoints, effective.IncorrectPoints, effective.PreferredPlayerEnabled,
+            effective.PreferredPlayerPointsPerGoal, PlayerPositionCatalog.ToLabels(effective.PreferredPlayerPositions), league.CreatedAtUtc, league.UpdatedAtUtc);
+    }
+
+    private static void ApplyScoring(League league, bool useGeneral, int exact, int correct, int incorrect, bool preferredEnabled, int pointsPerGoal, IEnumerable<string> positions)
+    {
+        league.UseGeneralScoring = useGeneral; league.ExactScorePoints = exact; league.CorrectOutcomePoints = correct; league.IncorrectPoints = incorrect;
+        league.PreferredPlayerEnabled = preferredEnabled; league.PreferredPlayerPointsPerGoal = pointsPerGoal; league.PreferredPlayerPositions = PlayerPosition.None;
+        foreach (var label in positions) if (PlayerPositionCatalog.TryParse(label, out var position)) league.PreferredPlayerPositions |= position;
+    }
+
+    private static void ValidateScoring(Dictionary<string,string[]> errors, int exact, int correct, int incorrect, int perGoal, IEnumerable<string> positions)
+    {
+        if (exact < 0 || correct < 0 || incorrect < 0 || perGoal < 0) errors["scoring"] = ["Los puntos deben ser mayores o iguales a cero."];
+        if (positions.Any(x => !PlayerPositionCatalog.TryParse(x, out _))) errors["preferredPlayerPositions"] = ["Hay una posición no reconocida."];
     }
 
     private static async Task<OfficialLeagueDependenciesDto> GetDependenciesAsync(PlayPredictDbContext db, League league)

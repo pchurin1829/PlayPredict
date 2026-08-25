@@ -89,7 +89,7 @@ function App() {
         <Route path="/admin" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />
         <Route path="/admin/fixture" element={<RequireAdmin><AdminOperationEntryPage operation="fixture" /></RequireAdmin>} />
         <Route path="/admin/results" element={<RequireAdmin><AdminOperationEntryPage operation="results" /></RequireAdmin>} />
-        <Route path="/admin/scoring" element={<RequireAdmin><AdminOperationEntryPage operation="scoring" /></RequireAdmin>} />
+        <Route path="/admin/scoring" element={<RequireAdmin><Navigate to="/admin/settings" replace /></RequireAdmin>} />
         <Route path="/admin/settings" element={<RequireAdmin><AdminSettingsPage /></RequireAdmin>} />
         <Route path="/admin/users" element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} />
         <Route path="/admin/teams" element={<RequireAdmin><TeamsListPage /></RequireAdmin>} />

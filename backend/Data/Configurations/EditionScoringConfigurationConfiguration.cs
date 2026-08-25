@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PlayPredict.Api.Domain.Entities;
+using PlayPredict.Api.Domain.Enums;
 
 namespace PlayPredict.Api.Data.Configurations;
 
@@ -18,6 +19,7 @@ public class EditionScoringConfigurationConfiguration : IEntityTypeConfiguration
         builder.Property(c => c.UseExperienceDefaults).IsRequired().HasDefaultValue(false);
         builder.Property(c => c.PreferredPlayerEnabled).IsRequired().HasDefaultValue(true);
         builder.Property(c => c.PreferredPlayerPointsPerGoal).IsRequired().HasDefaultValue(2);
+        builder.Property(c => c.PreferredPlayerPositions).IsRequired().HasDefaultValue(PlayerPosition.Midfielder | PlayerPosition.Forward);
         builder.Property(c => c.CreatedAtUtc).IsRequired();
         builder.Property(c => c.UpdatedAtUtc).IsRequired();
 

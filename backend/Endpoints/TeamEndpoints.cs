@@ -45,13 +45,13 @@ public static class TeamEndpoints
             var team = await db.Teams.FindAsync(id);
             if (team is null) return Results.NotFound();
 
-            var usedInMatches = await db.Matches.AnyAsync(m => m.HomeTeamId == id || m.AwayTeamId == id);
-            var hasPlayers = await db.TeamPlayers.AnyAsync(p => p.TeamId == id);
-            if (usedInMatches || hasPlayers)
+            var matches = await db.Matches.CountAsync(m => m.HomeTeamId == id || m.AwayTeamId == id);
+            var players = await db.TeamPlayers.CountAsync(p => p.TeamId == id);
+            if (matches > 0 || players > 0)
             {
                 return Results.Conflict(new
                 {
-                    message = "No se puede eliminar este equipo porque está siendo utilizado en partidos, fixture u otros datos de la competencia."
+                    message = $"No se puede eliminar este equipo. Utilizado en {matches} partido(s). Posee {players} jugador(es)."
                 });
             }
 

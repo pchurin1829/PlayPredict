@@ -128,7 +128,15 @@ export default function LeagueDetailPage() {
   const [expandedPredictionRounds, setExpandedPredictionRounds] = useState<Set<number>>(new Set())
   const [copiedCode, setCopiedCode] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<MatchWithPrediction | null>(null)
+  const [actionFocusMatchId, setActionFocusMatchId] = useState<number | null>(null)
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
+
+  useEffect(() => {
+    if (actionFocusMatchId == null) return
+    const action = cardRefs.current[actionFocusMatchId]?.querySelector<HTMLButtonElement>('[data-prediction-action]')
+    if (action && !action.disabled) action.focus()
+    setActionFocusMatchId(null)
+  }, [actionFocusMatchId, rows])
 
   useEffect(() => {
     let cancelled = false
@@ -206,6 +214,12 @@ export default function LeagueDetailPage() {
     if (nextInput) {
       nextInput.focus()
       nextInput.select()
+      return
+    }
+
+    const preferredPlayerInput = card.querySelector<HTMLInputElement>('[data-preferred-player-input]')
+    if (preferredPlayerInput) {
+      preferredPlayerInput.focus()
       return
     }
 
@@ -583,7 +597,7 @@ export default function LeagueDetailPage() {
                                   <label className="pp-match-card__preferred">
                                     <span className="pp-match-card__preferred-label">Jugador Preferido <small>(opcional)</small></span>
                                     {m.homePlayers.length > 0 || m.awayPlayers.length > 0 ? (
-                                      <PreferredPlayerPicker homeTeam={m.participantHome} awayTeam={m.participantAway} homePlayers={m.homePlayers} awayPlayers={m.awayPlayers} value={row.preferredPlayerId} ariaLabel={`Jugador Preferido para ${m.participantHome} vs ${m.participantAway}`} onChange={value => updateRow(m.id, { preferredPlayerId: value, savedMessage: null, error: null })} />
+                                      <PreferredPlayerPicker homeTeam={m.participantHome} awayTeam={m.participantAway} homePlayers={m.homePlayers} awayPlayers={m.awayPlayers} value={row.preferredPlayerId} ariaLabel={`Jugador Preferido para ${m.participantHome} vs ${m.participantAway}`} onChange={value => updateRow(m.id, { preferredPlayerId: value, savedMessage: null, error: null })} onSelectionComplete={() => setActionFocusMatchId(m.id)} />
                                     ) : (
                                       <span className="pp-match-card__preferred-empty">No hay jugadores disponibles para las posiciones habilitadas.</span>
                                     )}

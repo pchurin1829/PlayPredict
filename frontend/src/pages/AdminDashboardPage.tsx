@@ -4,7 +4,7 @@ import { useCompanySettings } from '../company/CompanySettingsContext'
 function getAdminAreas(companyName: string) { return [
   { title: 'Competencias de referencia', text: 'Competencias deportivas reales que sirven como fuente de fechas, partidos y resultados.', to: '/competitions' },
   { title: 'Equipos y Planteles', text: 'Gestionar equipos, jugadores y planteles disponibles para las competencias.', to: '/admin/teams' },
-  { title: 'Fixture / Partidos', text: 'Fechas y encuentros de cada edición.', to: '/admin/fixture' },
+  { title: 'Fixture / Partidos', text: 'Fechas y partidos oficiales de las competencias de referencia, reutilizados por las Competencias EL NENE.', to: '/admin/fixture' },
   { title: `Competencias ${companyName}`, text: `Competencias propias de ${companyName} creadas sobre una competencia de referencia.`, to: '/admin/official-leagues' },
   { title: 'Resultados', text: 'Cargar y corregir resultados reales.', to: '/admin/results' },
   { title: 'Rankings', text: 'Consultar rankings generados.', to: '/rankings' },

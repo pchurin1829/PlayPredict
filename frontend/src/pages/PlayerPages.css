@@ -399,6 +399,25 @@
   background: var(--pp-league-official-soft);
 }
 
+.pp-explore-private-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.pp-explore-private-cta p { margin: .25rem 0 0; color: var(--color-text-secondary); font-size: .85rem; }
+.pp-explore-private-cta .pp-comp-card__action { flex: 0 0 auto; margin-top: 0; }
+
+@media (max-width: 600px) {
+  .pp-explore-private-cta { align-items: stretch; flex-direction: column; }
+}
+
 .pp-btn--card-secondary {
   background: #e5e7eb;
   color: var(--pp-text-primary);
@@ -1180,7 +1199,7 @@
 }
 
 .pp-match-card__preferred-label {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--color-text-secondary);
 }

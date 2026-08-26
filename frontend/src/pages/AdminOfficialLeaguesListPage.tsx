@@ -70,7 +70,7 @@ export default function AdminOfficialLeaguesListPage() {
                 <div className="official-league-admin-card__fixture"><dt>Fixture utilizado</dt><dd>{league.roundsCount} {league.roundsCount === 1 ? 'fecha' : 'fechas'} · {league.matchesCount} {league.matchesCount === 1 ? 'partido' : 'partidos'}</dd></div>
                 <div><dt>Participantes</dt><dd>{league.participantsCount}</dd></div>
               </dl>
-              <div className="official-league-admin-card__actions"><Link className="btn btn-secondary" to={`/admin/official-leagues/${league.id}/edit`}>Editar</Link><button type="button" className="btn btn-danger" onClick={() => void inspectDelete(league)}>Eliminar</button></div>
+              <div className="official-league-admin-card__actions"><Link className="btn btn-primary" to={`/admin/official-leagues/${league.id}/matches`}>Ver partidos</Link><Link className="btn btn-secondary" to={`/admin/official-leagues/${league.id}/edit`}>Editar</Link><button type="button" className="btn btn-danger" onClick={() => void inspectDelete(league)}>Eliminar</button></div>
             </article>
           ))}
         </div>

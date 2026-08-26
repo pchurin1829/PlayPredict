@@ -179,7 +179,7 @@ export default function EditionScoringConfigurationPage() {
           <fieldset className="form-field" disabled={!preferredPlayerEnabled}>
             <legend>Posiciones habilitadas</legend>
             <div className="scoring-position-options">
-              {PLAYER_POSITIONS.map(position => <label className="form-checkbox" key={position}>
+              {PLAYER_POSITIONS.map(position => <label className="form-checkbox scoring-position-option" key={position}>
                 <input type="checkbox" checked={preferredPlayerPositions.includes(position)} onChange={event => setPreferredPlayerPositions(current => event.target.checked ? [...current, position] : current.filter(item => item !== position))} />
                 <span>{position}</span>
               </label>)}

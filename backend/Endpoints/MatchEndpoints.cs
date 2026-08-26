@@ -181,8 +181,15 @@ public static class MatchEndpoints
                 errors["scorers"] = ["Cada goleador debe pertenecer a uno de los equipos del partido."];
             var homeScorerGoals = scorerInputs.Where(s => scorerPlayers.TryGetValue(s.TeamPlayerId, out var p) && p.TeamId == match.HomeTeamId).Sum(s => s.Goals);
             var awayScorerGoals = scorerInputs.Where(s => scorerPlayers.TryGetValue(s.TeamPlayerId, out var p) && p.TeamId == match.AwayTeamId).Sum(s => s.Goals);
-            if (homeScorerGoals > dto.HomeGoals) errors["scorers"] = ["Los goles individuales del equipo local superan el resultado oficial."];
-            if (awayScorerGoals > dto.AwayGoals) errors["scorers"] = ["Los goles individuales del equipo visitante superan el resultado oficial."];
+            if (scorerInputs.Count > 0)
+            {
+                var scorerErrors = new List<string>();
+                if (homeScorerGoals != dto.HomeGoals)
+                    scorerErrors.Add(ScorerTotalMessage(match.ParticipantHome, dto.HomeGoals));
+                if (awayScorerGoals != dto.AwayGoals)
+                    scorerErrors.Add(ScorerTotalMessage(match.ParticipantAway, dto.AwayGoals));
+                if (scorerErrors.Count > 0) errors["scorers"] = scorerErrors.ToArray();
+            }
             if (errors.Count > 0) return Results.ValidationProblem(errors);
 
             match.HomeGoals = dto.HomeGoals;
@@ -270,6 +277,10 @@ public static class MatchEndpoints
 
         return (errors, status);
     }
+
+    private static string ScorerTotalMessage(string teamName, int officialGoals) => officialGoals == 0
+        ? $"{teamName} no tiene goles en el resultado. No podés asignarle goleadores."
+        : $"{teamName} tiene {officialGoals} {(officialGoals == 1 ? "gol" : "goles")} en el resultado. Debés asignar exactamente {officialGoals} {(officialGoals == 1 ? "gol" : "goles")} entre sus goleadores.";
 
     private static async Task<Dictionary<string, string[]>> ValidateRoundTeamAvailabilityAsync(
         PlayPredictDbContext db, int roundId, int? currentMatchId, Team homeTeam, Team awayTeam, HashSet<int> grandfatheredTeamIds)

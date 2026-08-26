@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { Edition, Round } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import { roundDisplayName } from '../utils/roundDisplay'
 
 interface GenerateRoundsResult {
   existingCount: number
@@ -127,7 +128,7 @@ export default function RoundsListPage() {
                   onClick={() => navigate(`/rounds/${r.id}/matches${flowQuery}`)}
                 >
                   <td>{r.order}</td>
-                  <td>{r.name}</td>
+                  <td>{roundDisplayName(r)}</td>
                   <td><div className="round-row-actions"><Link to={`/rounds/${r.id}/matches${flowQuery}`} className="btn btn-primary" onClick={(e) => e.stopPropagation()}>Ver Partidos</Link><Link to={`/rounds/${r.id}/edit`} className="btn btn-secondary" onClick={(e) => e.stopPropagation()}>Editar</Link></div></td>
                 </tr>
               ))}

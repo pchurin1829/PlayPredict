@@ -9,7 +9,7 @@ type Operation = 'fixture' | 'results' | 'scoring'
 const COPY: Record<Operation, { title: string; description: string; action: string }> = {
   fixture: {
     title: 'Fixture / Partidos',
-    description: 'Seleccioná la competencia y edición cuyo fixture querés gestionar.',
+    description: 'Fechas y partidos oficiales de las competencias de referencia que reutilizan las Competencias EL NENE. Seleccioná una competencia y edición.',
     action: 'Ver Fixture / Partidos',
   },
   results: {

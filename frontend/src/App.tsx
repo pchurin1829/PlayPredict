@@ -36,6 +36,7 @@ import AdminExperienceFormPage from './pages/AdminExperienceFormPage'
 import PlayerDashboardPage from './pages/PlayerDashboardPage'
 import AdminOfficialLeaguesListPage from './pages/AdminOfficialLeaguesListPage'
 import AdminOfficialLeagueFormPage from './pages/AdminOfficialLeagueFormPage'
+import AdminOfficialLeagueMatchesPage from './pages/AdminOfficialLeagueMatchesPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminOperationEntryPage from './pages/AdminOperationEntryPage'
 import TeamsListPage from './pages/TeamsListPage'
@@ -120,6 +121,7 @@ function App() {
         <Route path="/admin/official-leagues" element={<RequireAdmin><AdminOfficialLeaguesListPage /></RequireAdmin>} />
         <Route path="/admin/official-leagues/new" element={<RequireAdmin><AdminOfficialLeagueFormPage /></RequireAdmin>} />
         <Route path="/admin/official-leagues/:leagueId/edit" element={<RequireAdmin><AdminOfficialLeagueFormPage /></RequireAdmin>} />
+        <Route path="/admin/official-leagues/:leagueId/matches" element={<RequireAdmin><AdminOfficialLeagueMatchesPage /></RequireAdmin>} />
       </Route>
 
       <Route path="*" element={<HomeRedirect />} />

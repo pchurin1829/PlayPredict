@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { isoToLocalInput, localInputToIsoUtc } from '../api/dateUtils'
 import { MATCH_STATUSES, MATCH_STATUS_LABELS, type Match, type MatchStatus, type Team } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import { appendReturnTo, validAdminReturnTo } from '../utils/adminReturnTo'
 
 function SelectedTeam({ team }: { team: Team | undefined }) {
   if (!team) return null
@@ -14,6 +15,8 @@ export default function MatchFormPage() {
   const { roundId: roundIdParam, matchId } = useParams()
   const isEdit = Boolean(matchId)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const returnTo = validAdminReturnTo(searchParams.get('returnTo'))
 
   const [roundId, setRoundId] = useState<string | undefined>(roundIdParam)
   const [homeTeamId, setHomeTeamId] = useState('')
@@ -98,7 +101,7 @@ export default function MatchFormPage() {
           status,
         })
       }
-      navigate(`/rounds/${roundId}/matches`, {
+      navigate(appendReturnTo(`/rounds/${roundId}/matches`, returnTo), {
         replace: true,
         state: { savedMessage: 'Partido guardado correctamente.' },
       })
@@ -121,7 +124,7 @@ export default function MatchFormPage() {
   return (
     <div>
       <div className="breadcrumb">
-        <Link to={`/rounds/${roundId}/matches`}>← Volver a Partidos</Link>
+        <Link to={appendReturnTo(`/rounds/${roundId}/matches`, returnTo)}>← Volver a Partidos</Link>
       </div>
       <div className="admin-header">
         <h1>{isEdit ? 'Editar Partido' : 'Nuevo Partido'}</h1>
@@ -198,7 +201,7 @@ export default function MatchFormPage() {
           <button type="submit" className="btn btn-primary" disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
-          <Link to={`/rounds/${roundId}/matches`} className="btn btn-secondary">
+          <Link to={appendReturnTo(`/rounds/${roundId}/matches`, returnTo)} className="btn btn-secondary">
             Cancelar
           </Link>
         </div>

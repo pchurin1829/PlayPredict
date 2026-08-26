@@ -5,6 +5,8 @@ import { MATCH_STATUS_LABELS, type AdminOfficialLeague, type Competition, type E
 import StatusMessage from '../components/StatusMessage'
 import MatchResultModal from '../components/MatchResultModal'
 import ConfirmModal from '../components/ConfirmModal'
+import { roundDisplayName } from '../utils/roundDisplay'
+import { appendReturnTo, validAdminReturnTo } from '../utils/adminReturnTo'
 
 function TeamInMatch({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   return <span className="match-team">{logoUrl ? <img src={logoUrl} alt="" /> : <span className="match-team__placeholder" aria-hidden="true">{name.slice(0, 2).toUpperCase()}</span>}<span>{name}</span></span>
@@ -16,6 +18,7 @@ export default function MatchesListPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const adminFlow = searchParams.get('adminFlow')
+  const returnTo = validAdminReturnTo(searchParams.get('returnTo'))
 
   const [round, setRound] = useState<Round | null>(null)
   const [editionRounds, setEditionRounds] = useState<Round[]>([])
@@ -33,7 +36,7 @@ export default function MatchesListPage() {
 
   useEffect(() => {
     if (!savedMessage) return
-    navigate(location.pathname, { replace: true })
+    navigate(`${location.pathname}${location.search}`, { replace: true })
     const timeout = setTimeout(() => setSavedMessage(null), 4000)
     return () => clearTimeout(timeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,23 +110,26 @@ export default function MatchesListPage() {
   const currentRoundIndex = round ? editionRounds.findIndex((item) => item.id === round.id) : -1
   const previousRound = currentRoundIndex > 0 ? editionRounds[currentRoundIndex - 1] : null
   const nextRound = currentRoundIndex >= 0 && currentRoundIndex < editionRounds.length - 1 ? editionRounds[currentRoundIndex + 1] : null
-  const flowQuery = adminFlow ? `?adminFlow=${adminFlow}` : ''
+  const flowParams = new URLSearchParams()
+  if (adminFlow) flowParams.set('adminFlow', adminFlow)
+  if (returnTo) flowParams.set('returnTo', returnTo)
+  const flowQuery = flowParams.size > 0 ? `?${flowParams.toString()}` : ''
 
   return (
     <div>
       <div className="breadcrumb">
-        {round && edition && competition && (
+        {returnTo ? <Link to={returnTo}>← Volver</Link> : round && edition && competition && (
           <><Link to="/competitions">Competencias</Link> &gt; <Link to={`/competitions/${competition.id}/editions`}>{competition.name}</Link> &gt; <Link to={`/editions/${edition.id}/rounds${adminFlow ? `?adminFlow=${adminFlow}` : ''}`}>{edition.name}</Link> &gt; {adminFlow === 'results' ? 'Resultados' : round.name}</>
         )}
       </div>
       <div className="admin-header">
-        <h1>{adminFlow === 'results' ? 'Resultados' : 'Partidos'} {round ? `— ${round.name}` : ''}</h1>
-        {adminFlow !== 'results' && <Link to={`/rounds/${roundId}/matches/new`} className="btn btn-primary">+ Nuevo Partido</Link>}
+        <h1>{adminFlow === 'results' ? 'Resultados' : 'Partidos'} {round ? `— ${roundDisplayName(round, matches ?? [])}` : ''}</h1>
+        {adminFlow !== 'results' && <Link to={appendReturnTo(`/rounds/${roundId}/matches/new`, returnTo)} className="btn btn-primary">+ Nuevo Partido</Link>}
       </div>
       {(previousRound || nextRound) && (
         <nav className="round-navigation" aria-label="Navegación entre fechas">
-          <span>{previousRound && <Link className="btn btn-secondary" to={`/rounds/${previousRound.id}/matches${flowQuery}`}>← {previousRound.name}</Link>}</span>
-          <span>{nextRound && <Link className="btn btn-secondary" to={`/rounds/${nextRound.id}/matches${flowQuery}`}>{nextRound.name} →</Link>}</span>
+          <span>{previousRound && <Link className="btn btn-secondary" to={`/rounds/${previousRound.id}/matches${flowQuery}`}>← {roundDisplayName(previousRound)}</Link>}</span>
+          <span>{nextRound && <Link className="btn btn-secondary" to={`/rounds/${nextRound.id}/matches${flowQuery}`}>{roundDisplayName(nextRound)} →</Link>}</span>
         </nav>
       )}
       {officialLeagues.length > 0 && (
@@ -167,7 +173,7 @@ export default function MatchesListPage() {
                   </td>
                   <td>
                     <div className="match-row-actions">
-                      <Link to={`/matches/${m.id}/edit`} className="btn btn-secondary">
+                      <Link to={appendReturnTo(`/matches/${m.id}/edit`, returnTo)} className="btn btn-secondary">
                         Editar
                       </Link>
                       {m.status === 'Finished' || m.homeGoals != null || m.awayGoals != null ? (

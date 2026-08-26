@@ -376,6 +376,9 @@ button.admin-selection__option {
   align-items: center;
   gap: 0.5rem;
 }
+.form-checkbox input[type="checkbox"] { flex: 0 0 auto; width: 1.15rem; height: 1.15rem; margin: 0; accent-color: var(--pp-primary, #4545cf); }
+.form-checkbox > span,
+.form-checkbox > label { min-width: 0; line-height: 1.35; cursor: pointer; }
 
 .form-actions {
   display: flex;
@@ -436,7 +439,11 @@ button.admin-selection__option {
 .form-help { margin: -.55rem 0 1rem; color: var(--pp-text-secondary); font-size: .82rem; line-height: 1.45; }
 .scoring-special-section { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--pp-border); border-radius: 9px; background: var(--pp-bg-surface-alt); }
 .scoring-special-section h2 { margin: 0 0 .9rem; color: var(--pp-text-primary); font-size: .95rem; text-transform: uppercase; letter-spacing: .04em; }
-.scoring-position-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+.scoring-position-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: .5rem; }
+.scoring-position-option { min-height: 44px; padding: .65rem .75rem; border: 1px solid var(--pp-border); border-radius: 8px; background: var(--pp-bg-surface); }
+.scoring-fields { min-width: 0; margin: .85rem 0 0; padding: 1rem; border: 1px solid var(--pp-border); border-radius: 8px; }
+.scoring-fields--inherited { background: color-mix(in srgb, var(--pp-primary, #4545cf) 5%, var(--pp-bg-surface)); }
+.scoring-inherited-note { margin-top: -.25rem; }
 @media (max-width: 520px) { .scoring-position-options { grid-template-columns: 1fr; } }
 .team-player-form { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 1.5rem; max-width: 840px; }
 .team-player-form__fields,.team-player-form__photo { min-width: 0; }
@@ -693,6 +700,14 @@ button.admin-selection__option {
 .official-league-admin-card__details dd { margin: 0; color: var(--pp-text-primary); font-weight: 600; text-align: right; }
 .official-league-admin-card__fixture dd { color: var(--pp-primary); font-size: 1.05rem; }
 .official-league-admin-card__actions { justify-content: flex-end; }
+.official-league-admin-card__actions { flex-wrap: wrap; }
+.official-fixture-context { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 0 0 1.25rem; padding: 1rem; border: 1px solid var(--pp-border); border-radius: 10px; background: var(--pp-bg-surface-alt); }
+.official-fixture-context div { min-width: 0; }
+.official-fixture-context dt { color: var(--pp-text-secondary); font-size: .78rem; }
+.official-fixture-context dd { margin: .2rem 0 0; color: var(--pp-text-primary); font-weight: 700; }
+.official-fixture-round { margin: 0 0 1.5rem; }
+.official-fixture-round__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .65rem; }
+.official-fixture-round__header h2 { margin: 0; font-size: 1.05rem; }
 
 .round-generator { margin-bottom: 1.25rem; }
 .round-generator h2 { margin: 0; font-size: 1.05rem; }
@@ -709,12 +724,15 @@ button.admin-selection__option {
 .btn-tertiary:hover,
 .btn-tertiary:focus-visible { border-color: var(--pp-border-strong); background: var(--pp-bg-surface-alt); }
 
-@media (max-width: 600px) {
+  @media (max-width: 600px) {
   .image-upload-field__drop { align-items: stretch; flex-direction: column; }
   .round-generator__controls,
   .round-row-actions,
   .round-generator__manual { align-items: stretch; flex-direction: column; }
   .round-generator__controls .form-field { width: 100%; }
   .result-scorer-row { grid-template-columns: 1fr 64px; }
-  .result-scorer-row .btn { grid-column: 1 / -1; }
-}
+    .result-scorer-row .btn { grid-column: 1 / -1; }
+    .official-league-admin-card__actions,
+    .official-fixture-round__header { align-items: stretch; flex-direction: column; }
+    .official-fixture-context { grid-template-columns: 1fr; }
+  }

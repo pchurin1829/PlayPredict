@@ -37,7 +37,7 @@ public class RankingService
         return BuildRankingAsync(rows);
     }
 
-    public Task<List<RankingEntryDto>> GetLeagueRankingAsync(PlayPredictDbContext db, int leagueId)
+    public async Task<List<RankingEntryDto>> GetLeagueRankingAsync(PlayPredictDbContext db, int leagueId)
     {
         var rows = db.PredictionEvaluations
             .Where(e => e.Prediction.LeagueId == leagueId)
@@ -48,15 +48,34 @@ public class RankingService
                 e.Points,
                 e.EvaluationType));
 
-        return BuildRankingAsync(rows);
+        var list = await rows.ToListAsync();
+        var participants = await db.LeagueParticipants
+            .Where(participant => participant.LeagueId == leagueId)
+            .Select(participant => new
+            {
+                participant.UserId,
+                participant.User.FirstName,
+                participant.User.LastName
+            })
+            .ToListAsync();
+        foreach (var participant in participants.Where(participant => list.All(row => row.UserId != participant.UserId)))
+        {
+            list.Add(new EvaluationRow(participant.UserId, participant.FirstName, participant.LastName, 0, null, false));
+        }
+
+        return BuildRanking(list);
     }
 
     private static async Task<List<RankingEntryDto>> BuildRankingAsync(IQueryable<EvaluationRow> rows)
     {
         var list = await rows.ToListAsync();
+        return BuildRanking(list);
+    }
 
-        // Solo participan usuarios con al menos un pronóstico evaluado (el join contra
-        // PredictionEvaluations ya excluye a quien no tiene ninguna evaluación).
+    private static List<RankingEntryDto> BuildRanking(List<EvaluationRow> list)
+    {
+        // Edition/Fecha reciben sólo evaluaciones. League agrega antes una fila neutra
+        // para cada participante sin evaluaciones, de modo que figure con cero puntos.
         var grouped = list
             .GroupBy(r => new { r.UserId, r.FirstName, r.LastName })
             .Select(g => new
@@ -65,10 +84,10 @@ public class RankingService
                 g.Key.FirstName,
                 g.Key.LastName,
                 Points = g.Sum(x => x.Points),
-                ExactCount = g.Count(x => x.EvaluationType == EvaluationType.ExactScore),
-                CorrectCount = g.Count(x => x.EvaluationType == EvaluationType.CorrectOutcome),
-                IncorrectCount = g.Count(x => x.EvaluationType == EvaluationType.Incorrect),
-                EvaluatedCount = g.Count()
+                ExactCount = g.Count(x => x.IsEvaluated && x.EvaluationType == EvaluationType.ExactScore),
+                CorrectCount = g.Count(x => x.IsEvaluated && x.EvaluationType == EvaluationType.CorrectOutcome),
+                IncorrectCount = g.Count(x => x.IsEvaluated && x.EvaluationType == EvaluationType.Incorrect),
+                EvaluatedCount = g.Count(x => x.IsEvaluated)
             })
             // Orden deportivo: puntos > exactos > correctos > incorrectos (menor es mejor).
             // El apellido/nombre solo desempata visualmente entre usuarios ya empatados.
@@ -106,5 +125,7 @@ public class RankingService
         return result;
     }
 
-    private record EvaluationRow(int UserId, string FirstName, string LastName, int Points, EvaluationType EvaluationType);
+    private record EvaluationRow(
+        int UserId, string FirstName, string LastName, int Points,
+        EvaluationType? EvaluationType, bool IsEvaluated = true);
 }

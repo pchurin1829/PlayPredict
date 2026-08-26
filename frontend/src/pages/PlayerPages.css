@@ -1160,6 +1160,10 @@
   text-transform: uppercase;
 }
 
+.pp-match-card--saved .pp-match-card__prediction-label {
+  font-size: calc(0.6rem + 1px);
+}
+
 .pp-match-card__inputs {
   display: flex;
   align-items: center;

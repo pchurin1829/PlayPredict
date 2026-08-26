@@ -5,6 +5,7 @@
 .preferred-picker__selected span { display: flex; min-width: 0; flex-direction: column; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .875rem; }
 .preferred-picker__selected small { color: var(--pp-text-muted); font-size: .65rem; font-weight: 600; text-transform: uppercase; }
 .preferred-picker__selected button, .preferred-picker__none { border: 0; background: transparent; color: var(--pp-primary); cursor: pointer; font: inherit; font-weight: 700; }
+.preferred-picker__selected button { font-size: calc(1em - 1px); }
 
 .preferred-picker__menu { position: fixed; z-index: 1000; box-sizing: border-box; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--pp-border); border-radius: 9px; background: var(--pp-bg-surface); box-shadow: 0 10px 25px rgb(0 0 0 / 18%); }
 .preferred-picker__menu section strong { display: block; position: sticky; z-index: 1; top: 0; padding: .45rem .65rem; background: var(--pp-bg-surface-alt); color: var(--pp-text-secondary); font-size: .7rem; letter-spacing: .05em; text-transform: uppercase; }

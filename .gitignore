@@ -32,3 +32,5 @@ Thumbs.db
 
 # Backups locales de PostgreSQL (nunca versionar datos de una PC)
 backups/*.dump
+backups/*.zip
+backups/*.tar.gz

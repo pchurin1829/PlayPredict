@@ -2,9 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { isoToLocalInput, localInputToIsoUtc } from '../api/dateUtils'
-import { MATCH_STATUSES, MATCH_STATUS_LABELS, type Match, type MatchStatus, type Team } from '../api/types'
+import { MATCH_STATUSES, MATCH_STATUS_LABELS, type AdminOfficialLeague, type Match, type MatchStatus, type Round, type Team } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
-import { appendReturnTo, validAdminReturnTo } from '../utils/adminReturnTo'
+import { appendReturnTo, officialLeagueIdFromReturnTo, validAdminReturnTo } from '../utils/adminReturnTo'
 
 function SelectedTeam({ team }: { team: Team | undefined }) {
   if (!team) return null
@@ -17,6 +17,7 @@ export default function MatchFormPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const returnTo = validAdminReturnTo(searchParams.get('returnTo'))
+  const contextLeagueId = officialLeagueIdFromReturnTo(returnTo)
 
   const [roundId, setRoundId] = useState<string | undefined>(roundIdParam)
   const [homeTeamId, setHomeTeamId] = useState('')
@@ -27,6 +28,8 @@ export default function MatchFormPage() {
   const [startsAtUtc, setStartsAtUtc] = useState('')
   const [status, setStatus] = useState<MatchStatus>('Scheduled')
   const [currentStatus, setCurrentStatus] = useState<string | null>(null)
+  const [contextLeague, setContextLeague] = useState<AdminOfficialLeague | null>(null)
+  const [round, setRound] = useState<Round | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -38,12 +41,18 @@ export default function MatchFormPage() {
       try {
         const current = isEdit ? await api.get<Match>(`/matches/${matchId}`) : null
         const targetRoundId = current?.roundId ?? Number(roundIdParam)
-        const [teamItems, matches] = await Promise.all([
+        const [teamItems, matches, targetRound, originLeague] = await Promise.all([
           api.get<Team[]>('/teams'),
           api.get<Match[]>(`/rounds/${targetRoundId}/matches`),
+          api.get<Round>(`/rounds/${targetRoundId}`),
+          contextLeagueId == null
+            ? Promise.resolve(null)
+            : api.get<AdminOfficialLeague>(`/admin/official-leagues/${contextLeagueId}`).catch(() => null),
         ])
         setTeams(teamItems.filter((team) => team.active))
         setRoundMatches(matches.filter((match) => match.id !== current?.id))
+        setRound(targetRound)
+        setContextLeague(originLeague?.editionId === targetRound.editionId ? originLeague : null)
         if (!current) return
         const m = current
         setRoundId(String(m.roundId))
@@ -62,7 +71,7 @@ export default function MatchFormPage() {
       }
     }
     load()
-  }, [matchId, isEdit, roundIdParam])
+  }, [contextLeagueId, matchId, isEdit, roundIdParam])
 
   const usedTeamIds = new Set(roundMatches.flatMap((match) => [match.homeTeamId, match.awayTeamId]).filter((teamId) => !originalTeamIds.includes(teamId)))
 
@@ -124,7 +133,11 @@ export default function MatchFormPage() {
   return (
     <div>
       <div className="breadcrumb">
-        <Link to={appendReturnTo(`/rounds/${roundId}/matches`, returnTo)}>← Volver a Partidos</Link>
+        {contextLeague && returnTo && round ? (
+          <><Link to="/admin/official-leagues">Competencias EL NENE</Link> &gt; <Link to={returnTo}>{contextLeague.name}</Link> &gt; Partidos &gt; <Link to={appendReturnTo(`/rounds/${round.id}/matches`, returnTo)}>{round.name}</Link> &gt; {isEdit ? 'Editar' : 'Nuevo'}</>
+        ) : (
+          <Link to={appendReturnTo(`/rounds/${roundId}/matches`, returnTo)}>← Volver a Partidos</Link>
+        )}
       </div>
       <div className="admin-header">
         <h1>{isEdit ? 'Editar Partido' : 'Nuevo Partido'}</h1>

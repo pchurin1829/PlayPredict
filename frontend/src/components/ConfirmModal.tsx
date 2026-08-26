@@ -6,6 +6,7 @@ interface ConfirmModalProps {
   message: string
   confirmLabel?: string
   cancelLabel?: string
+  showCancel?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
@@ -16,6 +17,7 @@ export default function ConfirmModal({
   message,
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
+  showCancel = true,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -27,9 +29,9 @@ export default function ConfirmModal({
         <h3 className="cmodal__title">{title}</h3>
         <p className="cmodal__message">{message}</p>
         <div className="cmodal__actions">
-          <button type="button" className="cmodal__cancel" onClick={onCancel}>
+          {showCancel && <button type="button" className="cmodal__cancel" onClick={onCancel}>
             {cancelLabel}
-          </button>
+          </button>}
           <button type="button" className="cmodal__confirm" onClick={onConfirm}>
             {confirmLabel}
           </button>

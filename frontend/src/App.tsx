@@ -21,7 +21,7 @@ import LeaguesMinePage from './pages/LeaguesMinePage'
 import LeagueCreatePage from './pages/LeagueCreatePage'
 import LeagueJoinPage from './pages/LeagueJoinPage'
 import LeagueDetailPage from './pages/LeagueDetailPage'
-import RankingsCompetitionsPage from './pages/RankingsCompetitionsPage'
+import RankingsLeaguesPage from './pages/RankingsLeaguesPage'
 import RankingsEditionsPage from './pages/RankingsEditionsPage'
 import RankingsRoundsPage from './pages/RankingsRoundsPage'
 import RankingGeneralPage from './pages/RankingGeneralPage'
@@ -76,7 +76,7 @@ function App() {
         <Route path="/leagues/:leagueId/matches" element={<PredictionsMatchesPage />} />
         <Route path="/competitions/explore" element={<ExploreCompetitionsPage />} />
         <Route path="/competitions/:competitionId" element={<CompetitionDetailPage />} />
-        <Route path="/rankings" element={<RankingsCompetitionsPage />} />
+        <Route path="/rankings" element={<RankingsLeaguesPage />} />
         <Route path="/rankings/competitions/:competitionId/editions" element={<RankingsEditionsPage />} />
         <Route path="/rankings/editions/:editionId" element={<RankingGeneralPage />} />
         <Route path="/rankings/editions/:editionId/rounds" element={<RankingsRoundsPage />} />

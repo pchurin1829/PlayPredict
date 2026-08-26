@@ -16,6 +16,7 @@ export default function AdminOfficialLeagueMatchesPage() {
   const { leagueId } = useParams()
   const [league, setLeague] = useState<AdminOfficialLeague | null>(null)
   const [fixture, setFixture] = useState<ScopedRound[] | null>(null)
+  const [expandedRoundIds, setExpandedRoundIds] = useState<Set<number>>(new Set())
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -35,12 +36,24 @@ export default function AdminOfficialLeagueMatchesPage() {
     load().then(result => {
       if (cancelled) return
       setLeague(result.current); setFixture(result.fixture)
+      const relevant = [...result.fixture].reverse().find(item => item.matches.some(match => match.status === 'Finished'))
+        ?? result.fixture.find(item => item.matches.some(match => match.status === 'Scheduled'))
+        ?? result.fixture[result.fixture.length - 1]
+      setExpandedRoundIds(relevant ? new Set([relevant.round.id]) : new Set())
     }).catch(reason => { if (!cancelled) setError(reason.message ?? 'No se pudo cargar el fixture compartido.') })
     return () => { cancelled = true }
   }, [leagueId])
 
   const matchCount = useMemo(() => fixture?.reduce((total, item) => total + item.matches.length, 0) ?? 0, [fixture])
   const returnTo = league ? `/admin/official-leagues/${league.id}/matches` : null
+  function toggleRound(roundId: number) {
+    setExpandedRoundIds(current => {
+      const next = new Set(current)
+      if (next.has(roundId)) next.delete(roundId)
+      else next.add(roundId)
+      return next
+    })
+  }
 
   return <div>
     <div className="breadcrumb"><Link to="/admin/official-leagues">← Competencias EL NENE</Link></div>
@@ -56,8 +69,15 @@ export default function AdminOfficialLeagueMatchesPage() {
     {error && <StatusMessage kind="error" message={error} />}
     {!fixture && !error && <StatusMessage kind="loading" message="Cargando partidos compartidos..." />}
     {fixture?.map(({ round, matches }) => <section className="official-fixture-round" key={round.id}>
-      <div className="official-fixture-round__header"><h2>{roundDisplayName(round, matches)}</h2><Link to={appendReturnTo(`/rounds/${round.id}/matches`, returnTo)} className="btn btn-secondary">Administrar Partidos</Link></div>
-      {matches.length === 0 ? <div className="empty-state">Esta fecha no tiene partidos.</div> : <div className="table-wrap"><table className="admin-table"><thead><tr><th>ID</th><th>Partido</th><th>Inicio</th><th>Estado</th></tr></thead><tbody>{matches.map(match => <tr key={match.id}><td>#{match.id}</td><td><div className="match-versus"><Team name={match.participantHome} logoUrl={match.homeTeamLogoUrl}/><strong>vs</strong><Team name={match.participantAway} logoUrl={match.awayTeamLogoUrl}/></div></td><td>{new Date(match.startsAtUtc).toLocaleString('es-AR')}</td><td><span className={`badge badge--${match.status}`}>{MATCH_STATUS_LABELS[match.status]}</span></td></tr>)}</tbody></table></div>}
+      <div className="official-fixture-round__header">
+        <button type="button" className="official-fixture-round__toggle" aria-expanded={expandedRoundIds.has(round.id)} aria-controls={`official-round-${round.id}`} onClick={() => toggleRound(round.id)}>
+          <span>{roundDisplayName(round, matches)}</span><small>{expandedRoundIds.has(round.id) ? 'Ocultar' : 'Ver'}</small>
+        </button>
+        <Link to={appendReturnTo(`/rounds/${round.id}/matches`, returnTo)} className="btn btn-secondary">Administrar Partidos</Link>
+      </div>
+      {expandedRoundIds.has(round.id) && <div id={`official-round-${round.id}`}>
+        {matches.length === 0 ? <div className="empty-state">Esta fecha no tiene partidos.</div> : <div className="table-wrap"><table className="admin-table"><thead><tr><th>ID</th><th>Partido</th><th>Inicio</th><th>Estado</th><th>Resultado</th></tr></thead><tbody>{matches.map(match => <tr key={match.id}><td>#{match.id}</td><td><div className="match-versus"><Team name={match.participantHome} logoUrl={match.homeTeamLogoUrl}/><strong>vs</strong><Team name={match.participantAway} logoUrl={match.awayTeamLogoUrl}/></div></td><td>{new Date(match.startsAtUtc).toLocaleString('es-AR')}</td><td><span className={`badge badge--${match.status}`}>{MATCH_STATUS_LABELS[match.status]}</span></td><td>{match.homeGoals != null && match.awayGoals != null ? `${match.homeGoals} – ${match.awayGoals}` : '—'}</td></tr>)}</tbody></table></div>}
+      </div>}
     </section>)}
   </div>
 }

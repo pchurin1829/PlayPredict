@@ -657,13 +657,16 @@ button.admin-selection__option {
 .result-team strong { overflow-wrap: anywhere; }
 .result-scoreboard__score { display: flex; align-items: center; gap: .45rem; }
 .result-scoreboard__score input { width: 3.25rem; min-height: 44px; padding: .35rem; text-align: center; font-size: 1.15rem; font-weight: 800; }
+.result-scoreboard__score input:focus-visible { outline: 3px solid color-mix(in srgb, var(--pp-primary) 35%, transparent); outline-offset: 2px; border-color: var(--pp-primary); }
 .result-field-errors { display: grid; gap: .25rem; }
 .result-scorers { margin: 1rem 0; padding-top: 1rem; border-top: 1px solid var(--pp-border); }
 .result-scorers h3 { margin: 0; font-size: 1rem; }
 .result-scorers h3 small { color: var(--pp-text-muted); font-weight: 500; }
-.result-scorer-row { display: grid; grid-template-columns: minmax(0,1fr) 70px auto; gap: .5rem; margin-bottom: .5rem; }
+.result-scorer-row { display: grid; grid-template-columns: minmax(12rem,22rem) 70px minmax(10rem,auto); align-items: center; gap: .5rem; margin-bottom: .5rem; }
 .result-scorer-row select,.result-scorer-row input { min-height: 42px; border: 1px solid var(--pp-border); border-radius: 7px; background: var(--pp-bg-surface); }
 .result-scorer-row input { text-align: center; }
+.result-scorer-row__actions { display: flex; align-items: center; gap: .4rem; }
+.result-scorer-row__confirmed { color: var(--color-success); font-size: .78rem; font-weight: 700; }
 
 .official-league-admin-grid {
   display: grid;
@@ -708,6 +711,8 @@ button.admin-selection__option {
 .official-fixture-round { margin: 0 0 1.5rem; }
 .official-fixture-round__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .65rem; }
 .official-fixture-round__header h2 { margin: 0; font-size: 1.05rem; }
+.official-fixture-round__toggle { display: flex; min-width: min(100%,22rem); align-items: center; justify-content: space-between; gap: 1rem; padding: .7rem .85rem; border: 1px solid var(--pp-border); border-radius: 8px; background: var(--pp-bg-surface-alt); color: var(--pp-text-primary); cursor: pointer; font: inherit; font-weight: 700; text-align: left; }
+.official-fixture-round__toggle small { color: var(--pp-primary); font-size: .75rem; }
 
 .round-generator { margin-bottom: 1.25rem; }
 .round-generator h2 { margin: 0; font-size: 1.05rem; }
@@ -731,7 +736,7 @@ button.admin-selection__option {
   .round-generator__manual { align-items: stretch; flex-direction: column; }
   .round-generator__controls .form-field { width: 100%; }
   .result-scorer-row { grid-template-columns: 1fr 64px; }
-    .result-scorer-row .btn { grid-column: 1 / -1; }
+    .result-scorer-row__actions { grid-column: 1 / -1; }
     .official-league-admin-card__actions,
     .official-fixture-round__header { align-items: stretch; flex-direction: column; }
     .official-fixture-context { grid-template-columns: 1fr; }

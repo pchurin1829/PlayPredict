@@ -1,5 +1,8 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using PlayPredict.Api.Data;
+using PlayPredict.Api.Domain.Constants;
+using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Services;
 
 namespace PlayPredict.Api.Endpoints;
@@ -34,13 +37,20 @@ public static class RankingEndpoints
             return Results.Ok(ranking);
         });
 
-        group.MapGet("/leagues/{leagueId:int}", async (int leagueId, PlayPredictDbContext db, RankingService rankingService) =>
+        group.MapGet("/leagues/{leagueId:int}", async (int leagueId, ClaimsPrincipal principal, PlayPredictDbContext db, RankingService rankingService) =>
         {
-            var leagueExists = await db.Leagues.AnyAsync(l => l.Id == leagueId);
-            if (!leagueExists)
+            var league = await db.Leagues.FindAsync(leagueId);
+            if (league is null)
             {
                 return Results.NotFound();
             }
+
+            var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
+            if (user is null) return Results.Unauthorized();
+            var canView = principal.IsInRole(RoleNames.Admin)
+                || (league.LeagueType == LeagueType.Official && league.IsActive)
+                || await db.LeagueParticipants.AnyAsync(participant => participant.LeagueId == leagueId && participant.UserId == user.Id);
+            if (!canView) return Results.Forbid();
 
             var ranking = await rankingService.GetLeagueRankingAsync(db, leagueId);
             return Results.Ok(ranking);

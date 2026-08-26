@@ -64,6 +64,17 @@ public static class MatchEndpoints
                 : Results.Ok(ToDto(match));
         }).WithTags("Matches");
 
+        app.MapGet("/api/matches/{id:int}/result-requirements", async (int id, PlayPredictDbContext db, LeagueScoringService scoringService) =>
+        {
+            if (!await db.Matches.AnyAsync(match => match.Id == id)) return Results.NotFound();
+            var requirements = await GetScorerRequirementsAsync(db, scoringService, id);
+            return Results.Ok(new
+            {
+                showScorerSection = requirements.ShowScorerSection,
+                requiresScorerDetail = requirements.RequiresScorerDetail
+            });
+        }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin)).WithTags("Matches");
+
         app.MapPost("/api/rounds/{roundId:int}/matches", async (int roundId, CreateMatchDto dto, PlayPredictDbContext db) =>
         {
             var roundExists = await db.Rounds.AnyAsync(r => r.Id == roundId);
@@ -102,7 +113,7 @@ public static class MatchEndpoints
             await db.SaveChangesAsync();
 
             return Results.Created($"/api/matches/{match.Id}", ToDto(match));
-        }).WithTags("Matches");
+        }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin)).WithTags("Matches");
 
         app.MapPut("/api/matches/{id:int}", async (int id, UpdateMatchDto dto, PlayPredictDbContext db) =>
         {
@@ -110,6 +121,14 @@ public static class MatchEndpoints
             if (match is null)
             {
                 return Results.NotFound();
+            }
+
+            if (match.Status == MatchStatus.Finished)
+            {
+                return Results.Conflict(new
+                {
+                    message = "Un partido finalizado sólo puede modificarse mediante Corregir resultado."
+                });
             }
 
             var (errors, status) = ValidateMatch(dto.HomeTeamId, dto.AwayTeamId, dto.StartsAtUtc, dto.Status, match.Status);
@@ -137,9 +156,10 @@ public static class MatchEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(ToDto(match));
-        }).WithTags("Matches");
+        }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin)).WithTags("Matches");
 
-        app.MapPut("/api/matches/{id:int}/result", async (int id, MatchResultDto dto, PlayPredictDbContext db, PredictionEvaluationService evaluationService) =>
+        app.MapPut("/api/matches/{id:int}/result", async (int id, MatchResultDto dto, PlayPredictDbContext db,
+            PredictionEvaluationService evaluationService, LeagueScoringService scoringService) =>
         {
             var errors = new Dictionary<string, string[]>();
 
@@ -181,7 +201,12 @@ public static class MatchEndpoints
                 errors["scorers"] = ["Cada goleador debe pertenecer a uno de los equipos del partido."];
             var homeScorerGoals = scorerInputs.Where(s => scorerPlayers.TryGetValue(s.TeamPlayerId, out var p) && p.TeamId == match.HomeTeamId).Sum(s => s.Goals);
             var awayScorerGoals = scorerInputs.Where(s => scorerPlayers.TryGetValue(s.TeamPlayerId, out var p) && p.TeamId == match.AwayTeamId).Sum(s => s.Goals);
-            if (scorerInputs.Count > 0)
+            var requiresScorerDetail = false;
+            if (dto.HomeGoals + dto.AwayGoals > 0)
+            {
+                requiresScorerDetail = (await GetScorerRequirementsAsync(db, scoringService, match.Id)).RequiresScorerDetail;
+            }
+            if (scorerInputs.Count > 0 || requiresScorerDetail)
             {
                 var scorerErrors = new List<string>();
                 if (homeScorerGoals != dto.HomeGoals)
@@ -213,7 +238,7 @@ public static class MatchEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(ToDto(match));
-        }).WithTags("Matches");
+        }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin)).WithTags("Matches");
 
         app.MapDelete("/api/matches/{id:int}", async (int id, PlayPredictDbContext db) =>
         {
@@ -242,7 +267,7 @@ public static class MatchEndpoints
             db.Matches.Remove(match);
             await db.SaveChangesAsync();
             return Results.NoContent();
-        }).WithTags("Matches");
+        }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin)).WithTags("Matches");
     }
 
     private static (Dictionary<string, string[]> Errors, MatchStatus Status) ValidateMatch(
@@ -281,6 +306,50 @@ public static class MatchEndpoints
     private static string ScorerTotalMessage(string teamName, int officialGoals) => officialGoals == 0
         ? $"{teamName} no tiene goles en el resultado. No podés asignarle goleadores."
         : $"{teamName} tiene {officialGoals} {(officialGoals == 1 ? "gol" : "goles")} en el resultado. Debés asignar exactamente {officialGoals} {(officialGoals == 1 ? "gol" : "goles")} entre sus goleadores.";
+
+    private sealed record ScorerRequirements(bool ShowScorerSection, bool RequiresScorerDetail);
+
+    private static async Task<ScorerRequirements> GetScorerRequirementsAsync(
+        PlayPredictDbContext db, LeagueScoringService scoringService, int matchId)
+    {
+        var matchContext = await db.Matches
+            .Where(match => match.Id == matchId)
+            .Select(match => new { match.Round.EditionId, RoundOrder = match.Round.Order })
+            .SingleAsync();
+        var candidates = await db.Leagues
+            .Where(league => league.EditionId == matchContext.EditionId)
+            .ToListAsync();
+        var boundaryIds = candidates
+            .SelectMany(league => new[] { league.RoundFromId, league.RoundToId })
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+        var boundaryOrders = await db.Rounds
+            .Where(round => boundaryIds.Contains(round.Id))
+            .ToDictionaryAsync(round => round.Id, round => round.Order);
+        var consumerLeagueIds = candidates
+            .Where(league => league.ScopeType == LeagueScopeType.FullCompetition
+                || (league.RoundFromId.HasValue && league.RoundToId.HasValue
+                    && boundaryOrders.TryGetValue(league.RoundFromId.Value, out var fromOrder)
+                    && boundaryOrders.TryGetValue(league.RoundToId.Value, out var toOrder)
+                    && matchContext.RoundOrder >= fromOrder && matchContext.RoundOrder <= toOrder))
+            .Select(league => league.Id)
+            .ToList();
+
+        var preferredPlayerLeagueIds = new List<int>();
+        foreach (var leagueId in consumerLeagueIds)
+        {
+            var config = await scoringService.GetEffectiveAsync(db, leagueId);
+            if (config?.PreferredPlayerEnabled == true) preferredPlayerLeagueIds.Add(leagueId);
+        }
+
+        var requiresDetail = preferredPlayerLeagueIds.Count > 0 && await db.Predictions.AnyAsync(prediction =>
+            prediction.MatchId == matchId
+            && prediction.PreferredPlayerId.HasValue
+            && preferredPlayerLeagueIds.Contains(prediction.LeagueId));
+        return new(preferredPlayerLeagueIds.Count > 0, requiresDetail);
+    }
 
     private static async Task<Dictionary<string, string[]>> ValidateRoundTeamAvailabilityAsync(
         PlayPredictDbContext db, int roundId, int? currentMatchId, Team homeTeam, Team awayTeam, HashSet<int> grandfatheredTeamIds)

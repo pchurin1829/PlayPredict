@@ -70,7 +70,7 @@ export default function PlayerDashboardPage() {
 
           if (editionId) {
             const [rankingData, editionData, editionRounds] = await Promise.all([
-              api.get<RankingEntry[]>(`/rankings/editions/${editionId}`).catch(() => []),
+              api.get<RankingEntry[]>(`/rankings/leagues/${firstLeague.id}`).catch(() => []),
               api.get<Edition>(`/editions/${editionId}`).catch(() => null),
               api.get<Round[]>(`/editions/${editionId}/rounds`).catch(() => []),
             ])

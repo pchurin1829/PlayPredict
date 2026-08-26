@@ -205,6 +205,11 @@ export default function LeagueDetailPage() {
     if (event.key !== 'Enter') return
 
     event.preventDefault()
+    if (rows[matchId]?.hasPrediction) {
+      setActionFocusMatchId(matchId)
+      return
+    }
+
     const card = cardRefs.current[matchId]
     if (!card) return
     const inputs = Array.from(card.querySelectorAll<HTMLInputElement>('[data-prediction-score]'))
@@ -269,7 +274,7 @@ export default function LeagueDetailPage() {
         savedMessage: isUpdate ? 'Pronóstico actualizado correctamente.' : 'Pronóstico guardado correctamente.',
       })
       setTimeout(() => updateRow(match.id, { savedMessage: null }), 4000)
-      advanceToNextMatch(match.id)
+      if (!isUpdate) advanceToNextMatch(match.id)
     } catch (err) {
       updateRow(match.id, { saving: false, error: err instanceof ApiError ? err.message : 'Ocurrió un error inesperado al guardar.' })
     }

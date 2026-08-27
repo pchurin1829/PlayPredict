@@ -14,6 +14,7 @@ public class League
     public int? RoundToId { get; set; }
     public string InviteCode { get; set; } = string.Empty;
     public LeagueType LeagueType { get; set; } = LeagueType.Private;
+    public int? SourceLeagueId { get; set; }
     public bool IsActive { get; set; } = true;
     public int CreatedByUserId { get; set; }
     public DateTime CreatedAtUtc { get; set; }
@@ -31,5 +32,7 @@ public class League
     public Round? RoundFrom { get; set; }
     public Round? RoundTo { get; set; }
     public User CreatedByUser { get; set; } = null!;
+    public League? SourceLeague { get; set; }
+    public ICollection<League> DerivedLeagues { get; set; } = new List<League>();
     public ICollection<LeagueParticipant> Participants { get; set; } = new List<LeagueParticipant>();
 }

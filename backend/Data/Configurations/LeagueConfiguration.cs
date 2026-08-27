@@ -25,6 +25,7 @@ public class LeagueConfiguration : IEntityTypeConfiguration<League>
         builder.HasIndex(l => l.InviteCode).IsUnique();
         builder.HasIndex(l => l.CompetitionId);
         builder.HasIndex(l => l.EditionId);
+        builder.HasIndex(l => l.SourceLeagueId);
 
         builder.HasOne(l => l.Competition)
             .WithMany()
@@ -49,6 +50,11 @@ public class LeagueConfiguration : IEntityTypeConfiguration<League>
         builder.HasOne(l => l.CreatedByUser)
             .WithMany()
             .HasForeignKey(l => l.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(l => l.SourceLeague)
+            .WithMany(l => l.DerivedLeagues)
+            .HasForeignKey(l => l.SourceLeagueId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

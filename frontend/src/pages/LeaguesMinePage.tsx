@@ -248,6 +248,11 @@ export default function LeaguesMinePage() {
                           </button>
                         )}
                       </div>
+                      {isOfficial && (
+                        <Link to={`/leagues/new?officialLeagueId=${l.id}`} className="pp-btn pp-btn--primary pp-btn--sm">
+                          Crear Liga con amigos
+                        </Link>
+                      )}
                     </div>
                   </div>
                 )

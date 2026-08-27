@@ -63,13 +63,10 @@ export default function ExploreCompetitionsPage() {
               ? <Link to={`/leagues/${league.id}`} className="pp-comp-card__action pp-comp-card__action--view">Ver</Link>
               : <button type="button" className="pp-comp-card__action" disabled={joiningId === league.id} onClick={() => handleJoinOfficial(league.id, league.name)}>{joiningId === league.id ? 'Uniéndose...' : 'Participar'}</button>}
           </div>
+          <Link to={`/leagues/new?officialLeagueId=${league.id}`} className="pp-comp-card__action pp-comp-card__action--secondary">Crear Liga con amigos</Link>
         </div>
       </div>)}
     </div>}
 
-    <div className="pp-explore-private-cta">
-      <div><strong>¿Querés organizar una Liga con amigos?</strong><p>Elegí la fuente deportiva dentro del flujo de creación.</p></div>
-      <Link to="/leagues/new" className="pp-comp-card__action pp-comp-card__action--secondary">+ Crear Liga con amigos</Link>
-    </div>
   </div>
 }

@@ -16,7 +16,7 @@ public static class LeagueEndpoints
     {
         var group = app.MapGroup("/api/leagues").WithTags("Leagues").RequireAuthorization();
 
-        group.MapPost("/", async (CreateLeagueDto dto, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        group.MapPost("/", async (CreateLeagueDto dto, ClaimsPrincipal principal, PlayPredictDbContext db, LeagueScoringService scoring) =>
         {
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
             if (user is null)
@@ -24,44 +24,12 @@ public static class LeagueEndpoints
                 return Results.Unauthorized();
             }
 
-            var (errors, scopeType, competition, edition) = await ValidateCreateAsync(db, dto);
+            var (league, errors) = await CreatePrivateLeagueAsync(db, scoring, dto, user.Id);
             if (errors.Count > 0)
             {
                 return Results.ValidationProblem(errors);
             }
-
-            var inviteCode = await GenerateUniqueInviteCodeAsync(db);
-            var now = DateTime.UtcNow;
-
-            var league = new League
-            {
-                Name = dto.Name.Trim(),
-                Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
-                CompetitionId = competition!.Id,
-                EditionId = edition!.Id,
-                ScopeType = scopeType,
-                LeagueType = LeagueType.Private,
-                RoundFromId = scopeType == LeagueScopeType.RoundRange ? dto.RoundFromId : null,
-                RoundToId = scopeType == LeagueScopeType.RoundRange ? dto.RoundToId : null,
-                InviteCode = inviteCode,
-                IsActive = true,
-                CreatedByUserId = user.Id,
-                CreatedAtUtc = now,
-                UpdatedAtUtc = now
-            };
-
-            db.Leagues.Add(league);
-            await db.SaveChangesAsync();
-
-            db.LeagueParticipants.Add(new LeagueParticipant
-            {
-                LeagueId = league.Id,
-                UserId = user.Id,
-                JoinedAtUtc = now
-            });
-            await db.SaveChangesAsync();
-
-            return Results.Created($"/api/leagues/{league.Id}", await ToSummaryDtoAsync(db, league, user.Id));
+            return Results.Created($"/api/leagues/{league!.Id}", await ToSummaryDtoAsync(db, league, user.Id));
         });
 
         group.MapGet("/officials", async (ClaimsPrincipal principal, PlayPredictDbContext db) =>
@@ -438,87 +406,90 @@ public static class LeagueEndpoints
     private static Task<bool> IsParticipantAsync(PlayPredictDbContext db, int leagueId, int userId) =>
         db.LeagueParticipants.AnyAsync(lp => lp.LeagueId == leagueId && lp.UserId == userId);
 
-    private static async Task<(Dictionary<string, string[]> Errors, LeagueScopeType ScopeType, Competition? Competition, Edition? Edition)> ValidateCreateAsync(
-        PlayPredictDbContext db, CreateLeagueDto dto)
+    internal static async Task<(League? League, Dictionary<string, string[]> Errors)> CreatePrivateLeagueAsync(
+        PlayPredictDbContext db, LeagueScoringService scoring, CreateLeagueDto dto, int userId)
     {
         var errors = ValidateNameDescription(dto.Name, dto.Description);
+        var sourceLeague = await db.Leagues.FirstOrDefaultAsync(l => l.Id == dto.OfficialLeagueId);
+        if (sourceLeague is null) errors["officialLeagueId"] = ["La Competencia Oficial indicada no existe."];
+        else if (sourceLeague.LeagueType != LeagueType.Official) errors["officialLeagueId"] = ["La fuente debe ser una Competencia Oficial."];
+        else if (!sourceLeague.IsActive) errors["officialLeagueId"] = ["La Competencia Oficial indicada no está activa."];
+        if (!Enum.TryParse<LeagueScopeType>(dto.ScopeType, true, out var requestedScope))
+            errors["scopeType"] = ["La opción de alcance indicada no es válida."];
+        if (errors.Count > 0) return (null, errors);
 
-        if (!Enum.TryParse<LeagueScopeType>(dto.ScopeType, ignoreCase: true, out var scopeType))
+        int? roundFromId;
+        int? roundToId;
+        LeagueScopeType privateScope;
+        if (requestedScope == LeagueScopeType.FullCompetition)
         {
-            errors["scopeType"] = [$"Alcance inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<LeagueScopeType>())}."];
-            return (errors, default, null, null);
+            privateScope = sourceLeague!.ScopeType;
+            roundFromId = sourceLeague.RoundFromId;
+            roundToId = sourceLeague.RoundToId;
+        }
+        else
+        {
+            privateScope = LeagueScopeType.RoundRange;
+            roundFromId = dto.RoundFromId;
+            roundToId = dto.RoundToId;
+            await ValidateRequestedRangeAsync(db, sourceLeague!, roundFromId, roundToId, errors);
+            if (errors.Count > 0) return (null, errors);
         }
 
-        var competition = await db.Competitions.FindAsync(dto.CompetitionId);
-        if (competition is null)
+        var effective = await scoring.GetEffectiveAsync(db, sourceLeague!.Id)
+            ?? throw new InvalidOperationException("No se pudo resolver la configuración de puntuación de la Competencia Oficial.");
+        var now = DateTime.UtcNow;
+        var league = new League
         {
-            errors["competitionId"] = ["La Competencia indicada no existe."];
-        }
-        else if (!competition.IsActive)
+            Name = dto.Name.Trim(), Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
+            CompetitionId = sourceLeague.CompetitionId, EditionId = sourceLeague.EditionId, ScopeType = privateScope,
+            RoundFromId = roundFromId, RoundToId = roundToId, LeagueType = LeagueType.Private,
+            SourceLeagueId = sourceLeague.Id, InviteCode = await GenerateUniqueInviteCodeAsync(db), IsActive = true,
+            CreatedByUserId = userId, CreatedAtUtc = now, UpdatedAtUtc = now, UseGeneralScoring = false,
+            ExactScorePoints = effective.ExactScorePoints, CorrectOutcomePoints = effective.CorrectOutcomePoints,
+            IncorrectPoints = effective.IncorrectPoints, PreferredPlayerEnabled = effective.PreferredPlayerEnabled,
+            PreferredPlayerPointsPerGoal = effective.PreferredPlayerPointsPerGoal, PreferredPlayerPositions = effective.PreferredPlayerPositions
+        };
+        db.Leagues.Add(league);
+        await db.SaveChangesAsync();
+        db.LeagueParticipants.Add(new LeagueParticipant { LeagueId = league.Id, UserId = userId, JoinedAtUtc = now });
+        await db.SaveChangesAsync();
+        return (league, errors);
+    }
+
+    private static async Task ValidateRequestedRangeAsync(PlayPredictDbContext db, League sourceLeague,
+        int? roundFromId, int? roundToId, Dictionary<string, string[]> errors)
+    {
+        if (roundFromId is null || roundToId is null)
         {
-            errors["competitionId"] = ["La Competencia indicada no está habilitada."];
+            errors["roundFromId"] = ["Debés indicar la Fecha inicial y la Fecha final."];
+            return;
         }
 
-        var edition = await db.Editions.FindAsync(dto.EditionId);
-        if (edition is null)
+        var requestedRounds = await db.Rounds
+            .Where(r => r.Id == roundFromId || r.Id == roundToId)
+            .ToListAsync();
+        var from = requestedRounds.FirstOrDefault(r => r.Id == roundFromId);
+        var to = requestedRounds.FirstOrDefault(r => r.Id == roundToId);
+        if (from is null || to is null || from.EditionId != sourceLeague.EditionId || to.EditionId != sourceLeague.EditionId)
         {
-            errors["editionId"] = ["La Edición indicada no existe."];
+            errors["roundFromId"] = ["Ambas Fechas deben pertenecer a la Edición de la Competencia Oficial."];
+            return;
         }
-        else if (edition.CompetitionId != dto.CompetitionId)
-        {
-            errors["editionId"] = ["La Edición debe pertenecer a la Competencia elegida."];
-        }
-
-        if (errors.Count > 0)
-        {
-            return (errors, scopeType, competition, edition);
-        }
-
-        if (scopeType == LeagueScopeType.FullCompetition)
-        {
-            if (dto.RoundFromId is not null || dto.RoundToId is not null)
-            {
-                errors["roundFromId"] = ["No se debe indicar rango de Fechas cuando el alcance es toda la Competencia."];
-            }
-
-            return (errors, scopeType, competition, edition);
-        }
-
-        // RoundRange
-        if (dto.RoundFromId is null || dto.RoundToId is null)
-        {
-            errors["roundFromId"] = ["Debés indicar la Fecha inicial y la Fecha final para este alcance."];
-            return (errors, scopeType, competition, edition);
-        }
-
-        var roundFrom = await db.Rounds.FindAsync(dto.RoundFromId.Value);
-        var roundTo = await db.Rounds.FindAsync(dto.RoundToId.Value);
-
-        if (roundFrom is null || roundTo is null)
-        {
-            errors["roundFromId"] = ["Alguna de las Fechas indicadas no existe."];
-            return (errors, scopeType, competition, edition);
-        }
-
-        var roundFromCompetitionId = await db.Editions
-            .Where(e => e.Id == roundFrom.EditionId).Select(e => (int?)e.CompetitionId).FirstOrDefaultAsync();
-        var roundToCompetitionId = await db.Editions
-            .Where(e => e.Id == roundTo.EditionId).Select(e => (int?)e.CompetitionId).FirstOrDefaultAsync();
-
-        if (roundFromCompetitionId != dto.CompetitionId || roundToCompetitionId != dto.CompetitionId)
-        {
-            errors["roundFromId"] = ["Ambas Fechas deben pertenecer a la Competencia elegida."];
-        }
-        else if (roundFrom.EditionId != dto.EditionId || roundTo.EditionId != dto.EditionId)
-        {
-            errors["roundFromId"] = ["Ambas Fechas deben pertenecer a la Edición elegida."];
-        }
-        else if (roundFrom.Order > roundTo.Order)
+        if (from.Order > to.Order)
         {
             errors["roundFromId"] = ["La Fecha inicial no puede ser posterior a la Fecha final."];
+            return;
         }
 
-        return (errors, scopeType, competition, edition);
+        if (sourceLeague.ScopeType != LeagueScopeType.RoundRange) return;
+        var sourceLimits = await db.Rounds
+            .Where(r => r.Id == sourceLeague.RoundFromId || r.Id == sourceLeague.RoundToId)
+            .ToListAsync();
+        var sourceFrom = sourceLimits.FirstOrDefault(r => r.Id == sourceLeague.RoundFromId);
+        var sourceTo = sourceLimits.FirstOrDefault(r => r.Id == sourceLeague.RoundToId);
+        if (sourceFrom is null || sourceTo is null || from.Order < sourceFrom.Order || to.Order > sourceTo.Order)
+            errors["roundFromId"] = ["El rango debe estar contenido dentro del alcance de la Competencia Oficial."];
     }
 
     private static Dictionary<string, string[]> ValidateNameDescription(string? name, string? description)
@@ -607,12 +578,18 @@ public static class LeagueEndpoints
         var editionName = await db.Editions
             .Where(e => e.Id == league.EditionId).Select(e => e.Name).FirstAsync();
         var participantsCount = await db.LeagueParticipants.CountAsync(lp => lp.LeagueId == league.Id);
+        var sourceLeague = league.SourceLeagueId is null ? null : await db.Leagues
+            .Where(l => l.Id == league.SourceLeagueId)
+            .Select(l => new { l.Name, l.ScopeType, l.RoundFromId, l.RoundToId })
+            .FirstOrDefaultAsync();
+        var usesFullSourceScope = sourceLeague is not null && league.ScopeType == sourceLeague.ScopeType
+            && league.RoundFromId == sourceLeague.RoundFromId && league.RoundToId == sourceLeague.RoundToId;
         var isCreator = league.CreatedByUserId == currentUserId;
         var (roundFromName, roundToName) = await GetRoundRangeNamesAsync(db, league);
 
         return new LeagueSummaryDto(
             league.Id, league.Name, league.Description, league.CompetitionId, competitionName, league.EditionId, editionName,
-            league.ScopeType.ToString(), league.LeagueType.ToString(),
+            league.ScopeType.ToString(), league.LeagueType.ToString(), league.SourceLeagueId, sourceLeague?.Name, usesFullSourceScope,
             league.RoundFromId, league.RoundToId, roundFromName, roundToName,
             league.CreatedByUserId, isCreator, participantsCount, league.IsActive,
             isCreator ? league.InviteCode : null, true);
@@ -626,13 +603,19 @@ public static class LeagueEndpoints
             .Where(e => e.Id == league.EditionId).Select(e => e.Name).FirstAsync();
         var creator = await db.Users.FindAsync(league.CreatedByUserId);
         var participantsCount = await db.LeagueParticipants.CountAsync(lp => lp.LeagueId == league.Id);
+        var sourceLeague = league.SourceLeagueId is null ? null : await db.Leagues
+            .Where(l => l.Id == league.SourceLeagueId)
+            .Select(l => new { l.Name, l.ScopeType, l.RoundFromId, l.RoundToId })
+            .FirstOrDefaultAsync();
+        var usesFullSourceScope = sourceLeague is not null && league.ScopeType == sourceLeague.ScopeType
+            && league.RoundFromId == sourceLeague.RoundFromId && league.RoundToId == sourceLeague.RoundToId;
         var isCreator = league.CreatedByUserId == currentUserId;
         var (roundFromName, roundToName) = await GetRoundRangeNamesAsync(db, league);
         var rounds = await GetRoundsInLeagueScopeAsync(db, league);
 
         return new LeagueDetailDto(
             league.Id, league.Name, league.Description, league.CompetitionId, competitionName, league.EditionId, editionName,
-            league.ScopeType.ToString(), league.LeagueType.ToString(),
+            league.ScopeType.ToString(), league.LeagueType.ToString(), league.SourceLeagueId, sourceLeague?.Name, usesFullSourceScope,
             league.RoundFromId, league.RoundToId, roundFromName, roundToName,
             league.CreatedByUserId, $"{creator!.FirstName} {creator.LastName}", isCreator, participantsCount, league.IsActive,
             isCreator ? league.InviteCode : null,

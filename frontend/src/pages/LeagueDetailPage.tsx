@@ -425,12 +425,16 @@ export default function LeagueDetailPage() {
           <div className="pp-info-card">
             <h2 className="pp-info-card__title">Tu Liga</h2>
             <div className="pp-info-card__meta">
-              <span className="pp-info-card__meta-item">⚽ Fuente deportiva: {league.competitionName} · {league.editionName}</span>
+              {league.leagueType === 'Private' && league.sourceLeagueName && (
+                <span className="pp-info-card__meta-item">🏆 Derivada de {league.sourceLeagueName}</span>
+              )}
+              <span className="pp-info-card__meta-item">⚽ Referencia deportiva: {league.competitionName} · {league.editionName}</span>
               <span className="pp-info-card__meta-item">
-                📋 Alcance: {LEAGUE_SCOPE_LABELS[league.scopeType]}
-                {league.scopeType === 'RoundRange' && league.roundFromName && league.roundToName && (
-                  <> ({league.roundFromName} → {league.roundToName})</>
-                )}
+                📋 Alcance: {league.leagueType === 'Private' && league.usesFullSourceScope && league.sourceLeagueName
+                  ? `Toda ${league.sourceLeagueName}`
+                  : league.scopeType === 'RoundRange' && league.roundFromName && league.roundToName
+                    ? `${league.roundFromName} → ${league.roundToName}`
+                    : LEAGUE_SCOPE_LABELS[league.scopeType]}
               </span>
               <span className="pp-info-card__meta-item">{league.isCreator ? '👑 Creador' : '🙋 Participante'}</span>
             </div>

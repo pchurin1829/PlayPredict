@@ -79,8 +79,8 @@ export default function CompetitionDetailPage() {
           )}
         </div>
         <div className="pp-info-card__cta">
-          <Link to={`/leagues/new?competitionId=${competition.id}`} className="pp-btn pp-btn--primary">
-            + Crear nueva Liga
+          <Link to="/competitions/explore" className="pp-btn pp-btn--primary">
+            Elegir Competencia Oficial
           </Link>
         </div>
       </div>
@@ -98,8 +98,8 @@ export default function CompetitionDetailPage() {
             Todavía no participás en ninguna Liga de esta Competencia.
           </p>
           <div className="pp-empty__actions">
-            <Link to={`/leagues/new?competitionId=${competition.id}`} className="pp-btn pp-btn--primary">
-              + Crear Liga
+            <Link to="/competitions/explore" className="pp-btn pp-btn--primary">
+              Elegir Competencia Oficial
             </Link>
           </div>
         </div>

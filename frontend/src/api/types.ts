@@ -293,6 +293,9 @@ export interface LeagueSummary {
   editionName: string
   scopeType: LeagueScopeType
   leagueType: LeagueType
+  sourceLeagueId: number | null
+  sourceLeagueName: string | null
+  usesFullSourceScope: boolean
   roundFromId: number | null
   roundToId: number | null
   roundFromName: string | null

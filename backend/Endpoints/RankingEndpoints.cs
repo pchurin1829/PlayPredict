@@ -22,6 +22,14 @@ public static class RankingEndpoints
             return Results.Ok(await rankingService.GetLeagueRankingAsync(db, leagueId));
         });
 
+        group.MapGet("/leagues/{leagueId:int}/prize-standings", async (int leagueId, ClaimsPrincipal principal,
+            PlayPredictDbContext db, RankingService rankingService) =>
+        {
+            var accessError = await ValidateLeagueAccessAsync(leagueId, principal, db);
+            if (accessError is not null) return accessError;
+            return Results.Ok(await rankingService.GetLeagueAwardStandingsAsync(db, leagueId));
+        });
+
         group.MapGet("/leagues/{leagueId:int}/rounds/{roundId:int}", async (int leagueId, int roundId,
             ClaimsPrincipal principal, PlayPredictDbContext db, RankingService rankingService) =>
         {
@@ -33,6 +41,26 @@ public static class RankingEndpoints
             if (league is null || !await RoundIsInScopeAsync(db, league, round))
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["roundId"] = ["La Fecha no pertenece al alcance de esta Liga."] });
             return Results.Ok(await rankingService.GetLeagueRoundRankingAsync(db, leagueId, roundId));
+        });
+
+        group.MapGet("/leagues/{leagueId:int}/rounds/{roundId:int}/prize-standings", async (int leagueId, int roundId,
+            ClaimsPrincipal principal, PlayPredictDbContext db, RankingService rankingService) =>
+        {
+            var accessError = await ValidateLeagueAccessAsync(leagueId, principal, db);
+            if (accessError is not null) return accessError;
+            var league = await db.Leagues.FindAsync(leagueId);
+            var round = await db.Rounds.FindAsync(roundId);
+            if (round is null) return Results.NotFound();
+            if (league is null || !await RoundIsInScopeAsync(db, league, round))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["roundId"] = ["La Fecha no pertenece al alcance de esta Liga."] });
+            return Results.Ok(await rankingService.GetLeagueRoundAwardStandingsAsync(db, leagueId, roundId));
+        });
+
+        group.MapGet("/me/league-positions", async (ClaimsPrincipal principal, PlayPredictDbContext db, RankingService rankingService) =>
+        {
+            var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
+            if (user is null) return Results.Unauthorized();
+            return Results.Ok(await rankingService.GetUserLeaguePositionsAsync(db, user.Id));
         });
     }
 

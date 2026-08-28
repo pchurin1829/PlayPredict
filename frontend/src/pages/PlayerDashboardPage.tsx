@@ -4,18 +4,16 @@ import { api } from '../api/client'
 import type {
   LeagueSummary,
   MatchWithPrediction,
-  RankingEntry,
+  UserLeaguePosition,
   Prize,
   Competition,
   Edition,
   Round,
   LeagueDetail,
 } from '../api/types'
-import { useAuth } from '../auth/AuthContext'
 import { useCompanySettings } from '../company/CompanySettingsContext'
 import DashboardHero from '../components/player/DashboardHero'
 import MatchPredictionCard from '../components/player/MatchPredictionCard'
-import RankingPreview from '../components/player/RankingPreview'
 import CurrentRoundCard from '../components/player/CurrentRoundCard'
 import PrizeHighlight from '../components/player/PrizeHighlight'
 import SponsorBanner from '../components/player/SponsorBanner'
@@ -23,13 +21,12 @@ import ComingSoonBadge from '../components/player/ComingSoonBadge'
 import './PlayerDashboardPage.css'
 
 export default function PlayerDashboardPage() {
-  const { user } = useAuth()
   const { company } = useCompanySettings()
   const companyName = company.shortName || 'PlayPredict'
 
   const [leagues, setLeagues] = useState<LeagueSummary[]>([])
   const [leagueContexts, setLeagueContexts] = useState<Array<{ league: LeagueDetail; matches: MatchWithPrediction[] }>>([])
-  const [ranking, setRanking] = useState<RankingEntry[]>([])
+  const [positions, setPositions] = useState<UserLeaguePosition[]>([])
   const [prizes, setPrizes] = useState<Prize[]>([])
   const [activeEdition, setActiveEdition] = useState<Edition | null>(null)
   const [rounds, setRounds] = useState<Round[]>([])
@@ -41,14 +38,16 @@ export default function PlayerDashboardPage() {
 
     async function loadDashboard() {
       try {
-        const [leaguesData, competitionsData] = await Promise.all([
+        const [leaguesData, competitionsData, positionsData] = await Promise.all([
           api.get<LeagueSummary[]>('/leagues/mine'),
           api.get<Competition[]>('/competitions'),
+          api.get<UserLeaguePosition[]>('/rankings/me/league-positions'),
         ])
 
         if (cancelled) return
         setLeagues(leaguesData)
         setCompetitions(competitionsData)
+        setPositions(positionsData)
 
         if (leaguesData.length > 0) {
           const firstLeague = leaguesData[0]
@@ -69,14 +68,12 @@ export default function PlayerDashboardPage() {
           const editionId = activeEd?.id
 
           if (editionId) {
-            const [rankingData, editionData, editionRounds] = await Promise.all([
-              api.get<RankingEntry[]>(`/rankings/leagues/${firstLeague.id}`).catch(() => []),
+            const [editionData, editionRounds] = await Promise.all([
               api.get<Edition>(`/editions/${editionId}`).catch(() => null),
               api.get<Round[]>(`/editions/${editionId}/rounds`).catch(() => []),
             ])
 
             if (cancelled) return
-            setRanking(rankingData)
             setActiveEdition(editionData)
             setRounds(editionRounds)
 
@@ -133,12 +130,6 @@ export default function PlayerDashboardPage() {
       }),
     }))
   }).sort((a, b) => Date.parse(a.matches[0].startsAtUtc) - Date.parse(b.matches[0].startsAtUtc))
-  const bestPosition = ranking.length > 0
-    ? ranking.find((r) => r.userId === user?.id)?.position ?? null
-    : null
-  const totalPoints = ranking.length > 0
-    ? ranking.find((r) => r.userId === user?.id)?.points ?? null
-    : null
   const activeCompetition = leagues.length > 0
     ? competitions.find((c) => c.id === leagues[0].competitionId)
     : competitions.find((c) => c.isActive)
@@ -181,10 +172,7 @@ export default function PlayerDashboardPage() {
   return (
     <div className="pdash">
       <div className="pdash__main">
-        <DashboardHero
-          bestPosition={bestPosition}
-          totalPoints={totalPoints}
-        />
+        <DashboardHero positions={positions} />
 
         <section className="pdash__section pdash__pending-section">
           <h2 className="pdash__section-title">Pronósticos pendientes</h2>
@@ -260,8 +248,6 @@ export default function PlayerDashboardPage() {
       </div>
 
       <div className="pdash__sidebar-right">
-        <RankingPreview ranking={ranking} />
-
         <CurrentRoundCard
           roundName={rounds.length > 0 ? rounds[0].name : null}
           competitionName={activeCompetition?.name ?? activeEdition?.name ?? null}

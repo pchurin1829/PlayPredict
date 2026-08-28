@@ -172,6 +172,11 @@ using (var scope = app.Services.CreateScope())
     {
         var evaluationService = scope.ServiceProvider.GetRequiredService<PredictionEvaluationService>();
         await DemoDatasetV1Seeder.SeedAsync(db, evaluationService);
+        if (app.Configuration.GetValue<bool>("DemoSeed:RankingDense"))
+        {
+            await DemoDatasetV1Seeder.SeedDenseRankingAsync(db, evaluationService);
+            logger.LogInformation("Dense ranking demo data is ready in {LeagueName}.", DemoDatasetV1Seeder.DenseRankingLeagueName);
+        }
     }
 }
 

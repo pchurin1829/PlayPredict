@@ -140,6 +140,37 @@ docker compose ps
 
 El primer arranque aplica migraciones y ejecuta el Dataset Demo v1. Un segundo reinicio no duplica datos.
 
+### Escenario opt-in: Ranking Denso con 20 participantes
+
+Para habilitar el escenario visual sin recrear la base, establecer en `.env`:
+
+```dotenv
+DEMO_SEED_RANKING_DENSE=true
+```
+
+Luego recrear únicamente el backend:
+
+```powershell
+docker compose up -d --build backend
+```
+
+El seeder es aditivo e idempotente. Crea/reutiliza exclusivamente identidades demo, la competencia de referencia `Ranking Denso Demo` y la Liga Oficial `RANKING DENSO DEMO`. Sus nueve partidos corresponden a tres Fechas finalizadas; los puntos se calculan mediante `PredictionEvaluationService` con scoring 6/3/0.
+
+Distribución general esperada:
+
+| Puntos | Participantes | Posición densa |
+|---:|---:|---:|
+| 54 | 3 | 1° |
+| 42 | 2 | 2° |
+| 36 | 4 | 3° |
+| 27 | 3 | 4° |
+| 24 | 1 | 5° |
+| 18 | 3 | 6° |
+| 12 | 2 | 7° |
+| 6 | 2 | 8° |
+
+Para probar `VOS` y `Mi posición`, ingresar con `rafael.demo@playpredict.local` / `demo123`: Rafael suma 36 puntos, ocupa la posición 3° y la comparte con otros tres jugadores. Las tres Fechas contienen evaluaciones para los 20 participantes y permiten probar también el ranking por Fecha.
+
 ### Reconstrucción totalmente limpia
 
 Esta operación elimina el volumen local; hacer primero el dump indicado abajo. Después:

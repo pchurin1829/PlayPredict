@@ -37,6 +37,7 @@ services:
       # (queda trackeado por Git): se toma de .env (gitignored). Si no está definida,
       # DataSeeder cae a un valor por defecto documentado solo para desarrollo.
       DevSeed__AdminPassword: ${DEV_ADMIN_PASSWORD:-}
+      DemoSeed__RankingDense: ${DEMO_SEED_RANKING_DENSE:-false}
       UploadStorage__RootPath: /data/uploads
     ports:
       - "${BACKEND_PORT:-8006}:8080"

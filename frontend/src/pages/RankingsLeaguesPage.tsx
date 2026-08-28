@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
-import type { LeagueSummary, RankingEntry } from '../api/types'
+import type { AwardStanding, LeagueSummary, RankingEntry } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import TieBreakPolicyModal from '../components/player/TieBreakPolicyModal'
+import AwardStandingsTable from '../components/player/AwardStandingsTable'
 import { useAuth } from '../auth/AuthContext'
 import './PlayerPages.css'
 
@@ -10,7 +12,15 @@ export default function RankingsLeaguesPage() {
   const [selectedLeagueId, setSelectedLeagueId] = useState<number | null>(null)
   const [ranking, setRanking] = useState<RankingEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [policyOpen, setPolicyOpen] = useState(false)
+  const [view, setView] = useState<'ranking' | 'prizes'>('ranking')
+  const [awardStandings, setAwardStandings] = useState<AwardStanding[] | null>(null)
+  const currentUserRowRef = useRef<HTMLTableRowElement>(null)
   const { user } = useAuth()
+
+  const scrollToCurrentUser = () => {
+    currentUserRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -45,16 +55,26 @@ export default function RankingsLeaguesPage() {
     return () => { cancelled = true }
   }, [selectedLeagueId])
 
+  useEffect(() => {
+    if (view !== 'prizes' || selectedLeagueId == null) return
+    let cancelled = false
+    api.get<AwardStanding[]>(`/rankings/leagues/${selectedLeagueId}/prize-standings`)
+      .then(data => { if (!cancelled) setAwardStandings(data) })
+      .catch(() => { if (!cancelled) setAwardStandings([]) })
+    return () => { cancelled = true }
+  }, [selectedLeagueId, view])
+
   if (error) return <StatusMessage kind="error" message={error} />
   if (!leagues) return <StatusMessage kind="loading" message="Cargando rankings..." />
   const selectedLeague = leagues.find(league => league.id === selectedLeagueId)
+  const currentUserEntry = ranking?.find(entry => entry.userId === user?.id)
 
   return <div>
     <div className="pp-header"><h1>Ranking</h1></div>
     {leagues.length === 0 ? <div className="pp-empty"><span className="pp-empty__icon">📊</span><p className="pp-empty__text">No hay Competencias EL NENE disponibles.</p></div> : <>
       <div className="pp-edition-select">
         <span className="pp-edition-select__label">Competencia EL NENE:</span>
-        <select className="pp-edition-select__select" value={selectedLeagueId ?? ''} onChange={event => setSelectedLeagueId(Number(event.target.value))}>
+        <select className="pp-edition-select__select" value={selectedLeagueId ?? ''} onChange={event => { setSelectedLeagueId(Number(event.target.value)); setView('ranking') }}>
           {leagues.map(league => <option key={league.id} value={league.id}>{league.name}</option>)}
         </select>
       </div>
@@ -62,18 +82,29 @@ export default function RankingsLeaguesPage() {
       {ranking === null && <StatusMessage kind="loading" message="Cargando ranking..." />}
       {ranking && ranking.length === 0 && <div className="pp-empty"><span className="pp-empty__icon">📊</span><p className="pp-empty__text">Todavía no hay pronósticos evaluados en esta Competencia EL NENE.</p></div>}
       {ranking && ranking.length > 0 && <div className="pp-ranking">
-        <div className="pp-ranking__header"><h2>{selectedLeague?.name}</h2></div>
-        <table><thead><tr><th>#</th><th>Jugador</th><th>Puntos</th><th>Exactos</th><th>Correctos</th><th>Evaluados</th></tr></thead>
+        <div className="pp-ranking__header">
+          <div>
+            <h2>{view === 'ranking' ? selectedLeague?.name : 'Posiciones para premios'}</h2>
+            {view === 'ranking' && currentUserEntry && <p className="pp-ranking__current-summary">{currentUserEntry.position}° · {currentUserEntry.points} puntos{currentUserEntry.sharedCount > 0 && <> · <span>(compartido con {currentUserEntry.sharedCount} jugadores más)</span></>}</p>}
+          </div>
+          <div className="pp-ranking__header-actions">
+            <button type="button" className="pp-ranking__policy" onClick={() => setPolicyOpen(true)}>Ver política de desempate</button>
+            <button type="button" className="pp-ranking__policy" onClick={() => { if (view === 'ranking') setAwardStandings(null); setView(current => current === 'ranking' ? 'prizes' : 'ranking') }}>{view === 'ranking' ? 'Ver posiciones para premios' : 'Volver al ranking'}</button>
+            {view === 'ranking' && currentUserEntry && <button type="button" className="pp-ranking__my-position" onClick={scrollToCurrentUser} aria-label="Ir a mi posición en el ranking"><span aria-hidden="true">⌖</span> Mi posición</button>}
+          </div>
+        </div>
+        {view === 'ranking' ? <table><thead><tr><th>#</th><th>Jugador</th><th>Puntos</th><th>Exactos</th><th>Correctos</th><th>Evaluados</th></tr></thead>
           <tbody>{ranking.map(entry => {
             const isMe = user?.id === entry.userId
-            return <tr key={entry.userId} className={isMe ? 'pp-ranking__me' : ''}>
+            return <tr key={entry.userId} ref={isMe ? currentUserRowRef : undefined} className={isMe ? 'pp-ranking__me' : ''}>
               <td><span className={`pp-ranking__pos ${entry.position <= 3 ? `pp-ranking__pos--${entry.position}` : ''}`}>{entry.position}°</span></td>
-              <td>{entry.firstName} {entry.lastName}{!entry.isActiveParticipant && <span className="pp-ranking__inactive-badge">Retirado</span>}{isMe && <span className="pp-ranking__me-badge">(Vos)</span>}</td>
+              <td>{entry.firstName} {entry.lastName}{!entry.isActiveParticipant && <span className="pp-ranking__inactive-badge">Retirado</span>}{isMe && <span className="pp-ranking__me-badge">VOS</span>}</td>
               <td className="pp-ranking__points">{entry.points}</td><td>{entry.exactCount}</td><td>{entry.correctCount}</td><td>{entry.evaluatedCount}</td>
             </tr>
           })}</tbody>
-        </table>
+        </table> : awardStandings === null ? <StatusMessage kind="loading" message="Calculando posiciones para premios..." /> : <AwardStandingsTable standings={awardStandings} currentUserId={user?.id} />}
       </div>}
     </>}
+    <TieBreakPolicyModal open={policyOpen} onClose={() => setPolicyOpen(false)} />
   </div>
 }

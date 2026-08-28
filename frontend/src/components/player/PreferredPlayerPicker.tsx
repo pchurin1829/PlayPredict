@@ -12,6 +12,8 @@ interface Props {
   onChange: (value: string) => void
   onSelectionComplete?: () => void
   ariaLabel?: string
+  initiallyOpen?: boolean
+  onDismiss?: () => void
 }
 
 const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -29,9 +31,9 @@ export const preferredPlayerLabel = (player: AvailablePlayer) => {
 
 type MenuPosition = { style: CSSProperties; opensUp: boolean }
 
-export default function PreferredPlayerPicker({ homeTeam, awayTeam, homePlayers, awayPlayers, value, onChange, onSelectionComplete, ariaLabel }: Props) {
+export default function PreferredPlayerPicker({ homeTeam, awayTeam, homePlayers, awayPlayers, value, onChange, onSelectionComplete, ariaLabel, initiallyOpen = false, onDismiss }: Props) {
   const [query, setQuery] = useState('')
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(initiallyOpen)
   const [activeOption, setActiveOption] = useState(-1)
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null)
   const pickerRef = useRef<HTMLDivElement>(null)
@@ -46,6 +48,10 @@ export default function PreferredPlayerPicker({ homeTeam, awayTeam, homePlayers,
     { name: awayTeam, players: awayPlayers.filter(player => normalize(`${preferredPlayerLabel(player)} ${player.nickname ?? ''} ${player.position}`).includes(filter)) },
   ], [awayPlayers, awayTeam, filter, homePlayers, homeTeam])
   const visiblePlayers = useMemo(() => groups.flatMap(group => group.players), [groups])
+
+  useEffect(() => {
+    if (initiallyOpen) inputRef.current?.focus()
+  }, [initiallyOpen])
 
   useEffect(() => {
     if (!open) {
@@ -85,11 +91,14 @@ export default function PreferredPlayerPicker({ homeTeam, awayTeam, homePlayers,
     if (!open) return
     const closeOnOutsideClick = (event: PointerEvent) => {
       const target = event.target as Node
-      if (!pickerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false)
+      if (!pickerRef.current?.contains(target) && !menuRef.current?.contains(target)) {
+        setOpen(false)
+        onDismiss?.()
+      }
     }
     document.addEventListener('pointerdown', closeOnOutsideClick)
     return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
-  }, [open])
+  }, [onDismiss, open])
 
   if (!all.length) return <span className="preferred-picker__empty">No hay jugadores disponibles para las posiciones habilitadas.</span>
 
@@ -105,6 +114,7 @@ export default function PreferredPlayerPicker({ homeTeam, awayTeam, homePlayers,
     if (event.key === 'Escape') {
       setOpen(false)
       setActiveOption(-1)
+      onDismiss?.()
       return
     }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -162,7 +172,7 @@ export default function PreferredPlayerPicker({ homeTeam, awayTeam, homePlayers,
           <button type="button" onClick={() => choose('')}>Quitar</button>
         </div>
       )}
-      <input ref={inputRef} data-preferred-player-input type="search" value={query} placeholder={selected ? 'Cambiar jugador...' : 'Buscar jugador...'} aria-label={ariaLabel ?? 'Buscar Jugador Preferido'} aria-controls={open ? menuId : undefined} aria-expanded={open} aria-haspopup="listbox" autoComplete="off" onFocus={() => setOpen(true)} onBlur={event => { if (!menuRef.current?.contains(event.relatedTarget as Node | null)) setOpen(false) }} onChange={event => { setQuery(event.target.value); setOpen(true); setActiveOption(event.target.value.trim() ? 1 : -1) }} onKeyDown={handleInputKeyDown} />
+      <input ref={inputRef} data-preferred-player-input type="search" value={query} placeholder={selected ? 'Cambiar jugador...' : 'Buscar jugador...'} aria-label={ariaLabel ?? 'Buscar Jugador Preferido'} aria-controls={open ? menuId : undefined} aria-expanded={open} aria-haspopup="listbox" autoComplete="off" onFocus={() => setOpen(true)} onBlur={event => { if (!menuRef.current?.contains(event.relatedTarget as Node | null)) { setOpen(false); onDismiss?.() } }} onChange={event => { setQuery(event.target.value); setOpen(true); setActiveOption(event.target.value.trim() ? 1 : -1) }} onKeyDown={handleInputKeyDown} />
       {menu}
     </div>
   )

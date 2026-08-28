@@ -150,8 +150,10 @@ public sealed class UniquePredictionModelTests
         Assert.Equal(5, ranking.Single(r => r.UserId == data.User.Id).Points);
         Assert.False(ranking.Single(r => r.UserId == data.User.Id).IsActiveParticipant);
         Assert.Equal(0, ranking.Single(r => r.UserId == second.Id).Points);
+        Assert.Equal([1, 2], ranking.Select(r => r.Position));
         var roundRanking = await new RankingService().GetLeagueRoundRankingAsync(db, data.Official.Id, data.Match.RoundId);
         Assert.Equal(5, roundRanking.Single(r => r.UserId == data.User.Id).Points);
+        Assert.Equal([1, 2], roundRanking.Select(r => r.Position));
     }
 
     [Fact]

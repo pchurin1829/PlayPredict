@@ -215,7 +215,34 @@ export interface RankingEntry {
   correctCount: number
   incorrectCount: number
   evaluatedCount: number
+  sharedCount: number
   isActiveParticipant: boolean
+}
+
+export interface AwardStanding {
+  position: number | null
+  positionFrom: number
+  positionTo: number
+  tieBreakPending: boolean
+  userId: number
+  firstName: string
+  lastName: string
+  points: number
+  exactCount: number
+  correctCount: number
+  incorrectCount: number
+  evaluatedCount: number
+  accumulatedScoreError: number
+  preferredPlayerPoints: number
+  isActiveParticipant: boolean
+}
+
+export interface UserLeaguePosition {
+  leagueId: number
+  leagueName: string
+  densePosition: number
+  sharedCount: number
+  points: number
 }
 
 export type PrizeType = 'Money' | 'Product' | 'Service' | 'Coupon' | 'Ticket' | 'Recognition' | 'Other'

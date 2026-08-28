@@ -652,6 +652,48 @@
   color: var(--color-text);
 }
 
+.pp-ranking__current-summary {
+  margin: 0.3rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
+.pp-ranking__current-summary span {
+  color: var(--color-text-muted);
+}
+
+.pp-ranking__header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pp-ranking__my-position,
+.pp-ranking__policy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.pp-ranking__my-position:hover,
+.pp-ranking__my-position:focus-visible,
+.pp-ranking__policy:hover,
+.pp-ranking__policy:focus-visible {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  outline: none;
+}
+
 .pp-ranking table {
   width: 100%;
   border-collapse: collapse;
@@ -725,6 +767,26 @@
 .pp-ranking__points {
   font-weight: 700;
   color: var(--color-text);
+}
+
+.pp-award-standings__pending-position {
+  color: var(--color-text-secondary);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pp-award-standings__pending {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--color-warning, #9a6700);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.pp-award-standings__pending small {
+  display: block;
+  color: var(--color-text-muted);
+  font-weight: 500;
 }
 
 /* ── Prize card (player-friendly) ─────────────────────────── */
@@ -1227,7 +1289,7 @@
 }
 
 .pp-match-card__preferred-label {
-  font-size: 0.78rem;
+  font-size: calc(0.78rem - 1px);
   font-weight: 700;
   color: var(--color-text-secondary);
 }

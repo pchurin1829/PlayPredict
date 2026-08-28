@@ -38,7 +38,37 @@ public static class DemoDatasetV1Seeder
         ("ana.torres@playpredict.local", "Ana", "Torres"),
         ("juan.perez@playpredict.local", "Juan", "Pérez"),
         ("maria.lopez@playpredict.local", "María", "López"),
-        ("pedro.gomez@playpredict.local", "Pedro", "Gómez")
+        ("pedro.gomez@playpredict.local", "Pedro", "Gómez"),
+        ("ranking.demo06@playpredict.local", "Usuario Demo", "06"),
+        ("ranking.demo07@playpredict.local", "Usuario Demo", "07"),
+        ("ranking.demo08@playpredict.local", "Usuario Demo", "08"),
+        ("ranking.demo09@playpredict.local", "Usuario Demo", "09"),
+        ("ranking.demo10@playpredict.local", "Usuario Demo", "10"),
+        ("ranking.demo11@playpredict.local", "Usuario Demo", "11"),
+        ("ranking.demo12@playpredict.local", "Usuario Demo", "12"),
+        ("ranking.demo13@playpredict.local", "Usuario Demo", "13"),
+        ("ranking.demo14@playpredict.local", "Usuario Demo", "14"),
+        ("ranking.demo15@playpredict.local", "Usuario Demo", "15"),
+        ("ranking.demo16@playpredict.local", "Usuario Demo", "16"),
+        ("ranking.demo17@playpredict.local", "Usuario Demo", "17"),
+        ("ranking.demo18@playpredict.local", "Usuario Demo", "18"),
+        ("ranking.demo19@playpredict.local", "Usuario Demo", "19"),
+        ("ranking.demo20@playpredict.local", "Usuario Demo", "20")
+    };
+
+    public const string DenseRankingLeagueName = "RANKING DENSO DEMO";
+    private const string DenseRankingCompetitionName = "Ranking Denso Demo";
+    private static readonly (int Exact, int Correct)[] DenseRankingProfiles =
+    {
+        (4, 4), // Rafael: 36 puntos, posición intermedia compartida con otros tres jugadores.
+        (9, 0), (9, 0), (9, 0),
+        (7, 0), (6, 2),
+        (6, 0), (5, 2), (3, 6),
+        (4, 1), (3, 3), (2, 5),
+        (4, 0),
+        (3, 0), (2, 2), (1, 4),
+        (2, 0), (1, 2),
+        (1, 0), (0, 2)
     };
 
     private static readonly string[] FullRosterTeams =
@@ -85,6 +115,71 @@ public static class DemoDatasetV1Seeder
         // Los datos de juego se dejan vacíos para que el circuito ADMIN + PLAYER pueda
         // probarse desde cero. Resultados, pronósticos y evaluaciones se generan manualmente.
     }
+
+    public static async Task SeedDenseRankingAsync(PlayPredictDbContext db, PredictionEvaluationService evaluationService)
+    {
+        var experience = await EnsureExperienceAsync(db);
+        var teams = await EnsureTeamsAsync(db);
+        var edition = await EnsureCompetitionAsync(db, experience.Id, DenseRankingCompetitionName, "2026", LigaProfesionalFixture[..3], teams);
+        await EnsureScoringAsync(db, edition.Id, preferredPlayerEnabled: false);
+        var users = await EnsureUsersAsync(db);
+        var rounds = await db.Rounds.Where(round => round.EditionId == edition.Id).OrderBy(round => round.Order).ToListAsync();
+        var league = await EnsureLeagueAsync(db, DenseRankingLeagueName, edition, LeagueType.Official, users[0].Id, rounds);
+        league.UseGeneralScoring = false;
+        league.ExactScorePoints = 6;
+        league.CorrectOutcomePoints = 3;
+        league.IncorrectPoints = 0;
+        league.PreferredPlayerEnabled = false;
+        await db.SaveChangesAsync();
+        await EnsureParticipantsAsync(db, league.Id, users);
+
+        var matches = await db.Matches.Where(match => match.Round.EditionId == edition.Id && match.Round.Order <= 3)
+            .OrderBy(match => match.Round.Order).ThenBy(match => match.StartsAtUtc).ToListAsync();
+
+        for (var matchIndex = 0; matchIndex < matches.Count; matchIndex++)
+        {
+            var match = matches[matchIndex];
+            var result = OfficialResults[matchIndex % OfficialResults.Length];
+            match.HomeGoals = result.Home;
+            match.AwayGoals = result.Away;
+            match.Status = MatchStatus.Finished;
+
+            for (var userIndex = 0; userIndex < users.Count; userIndex++)
+            {
+                var user = users[userIndex];
+                if (await db.Predictions.AnyAsync(prediction => prediction.UserId == user.Id && prediction.MatchId == match.Id)) continue;
+                var profile = DenseRankingProfiles[userIndex];
+                var predictionScore = matchIndex < profile.Exact
+                    ? result
+                    : matchIndex < profile.Exact + profile.Correct
+                        ? CorrectNonExactScore(result)
+                        : IncorrectScore(result);
+                db.Predictions.Add(new Prediction
+                {
+                    MatchId = match.Id,
+                    UserId = user.Id,
+                    PredictedHomeScore = predictionScore.Home,
+                    PredictedAwayScore = predictionScore.Away,
+                    CreatedAtUtc = match.StartsAtUtc.AddDays(-1),
+                    UpdatedAtUtc = match.StartsAtUtc.AddDays(-1)
+                });
+            }
+
+            await db.SaveChangesAsync();
+            await evaluationService.PrepareEvaluationsForMatchAsync(db, match);
+            await db.SaveChangesAsync();
+        }
+    }
+
+    private static (int Home, int Away) CorrectNonExactScore((int Home, int Away) result) =>
+        result.Home > result.Away ? (result.Home + 1, result.Away)
+        : result.Home < result.Away ? (result.Home, result.Away + 1)
+        : (result.Home + 1, result.Away + 1);
+
+    private static (int Home, int Away) IncorrectScore((int Home, int Away) result) =>
+        result.Home > result.Away ? (0, 1)
+        : result.Home < result.Away ? (1, 0)
+        : (1, 0);
 
     private static async Task EnsureDemoCompanyAsync(PlayPredictDbContext db)
     {

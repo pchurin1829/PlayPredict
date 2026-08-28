@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, useCallback, type KeyboardEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import { LEAGUE_SCOPE_LABELS, type LeagueDetail, type LeagueParticipantInfo, type RankingEntry, type MatchWithPrediction } from '../api/types'
+import { LEAGUE_SCOPE_LABELS, type AwardStanding, type LeagueDetail, type LeagueParticipantInfo, type RankingEntry, type MatchWithPrediction } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 import ComingSoonBadge from '../components/player/ComingSoonBadge'
 import ConfirmModal from '../components/ConfirmModal'
 import TeamBadge from '../components/player/TeamBadge'
 import QuickPreferredPlayerPicker from '../components/player/QuickPreferredPlayerPicker'
+import TieBreakPolicyModal from '../components/player/TieBreakPolicyModal'
+import AwardStandingsTable from '../components/player/AwardStandingsTable'
 import { useAuth } from '../auth/AuthContext'
 import './PlayerPages.css'
 
@@ -32,10 +34,9 @@ function sanitizeDigits(value: string): string {
 function buildInitialRow(match: MatchWithPrediction): RowState {
   const home = match.myPrediction ? String(match.myPrediction.predictedHomeScore) : ''
   const away = match.myPrediction ? String(match.myPrediction.predictedAwayScore) : ''
-  const quickPreferredPlayers = match.quickPreferredPlayers ?? []
   const preferredPlayerId = match.myPrediction?.preferredPlayerId
     ? String(match.myPrediction.preferredPlayerId)
-    : !match.myPrediction && quickPreferredPlayers.length === 1 ? String(quickPreferredPlayers[0].id) : ''
+    : ''
   return {
     homeInput: home,
     awayInput: away,
@@ -127,13 +128,17 @@ export default function LeagueDetailPage() {
   const [matches, setMatches] = useState<MatchWithPrediction[] | null>(null)
   const [rows, setRows] = useState<Record<number, RowState>>({})
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<Tab>(requestedTab === 'pronosticos' ? 'pronosticos' : 'resumen')
+  const [activeTab, setActiveTab] = useState<Tab>(requestedTab === 'pronosticos' ? 'pronosticos' : requestedTab === 'ranking' ? 'ranking' : 'resumen')
   const [roundFilter, setRoundFilter] = useState<number | null>(null)
   const [expandedPredictionRounds, setExpandedPredictionRounds] = useState<Set<number>>(new Set())
   const [copiedCode, setCopiedCode] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<MatchWithPrediction | null>(null)
   const [actionFocusMatchId, setActionFocusMatchId] = useState<number | null>(null)
+  const [rankingPolicyOpen, setRankingPolicyOpen] = useState(false)
+  const [rankingView, setRankingView] = useState<'ranking' | 'prizes'>('ranking')
+  const [awardStandings, setAwardStandings] = useState<AwardStanding[] | null>(null)
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
+  const rankingUserRowRef = useRef<HTMLTableRowElement>(null)
 
   useEffect(() => {
     if (actionFocusMatchId == null) return
@@ -174,6 +179,18 @@ export default function LeagueDetailPage() {
       .catch(() => { if (!cancelled) setRanking([]) })
     return () => { cancelled = true }
   }, [activeTab, leagueId, rankingRoundId])
+
+  useEffect(() => {
+    if (activeTab !== 'ranking' || rankingView !== 'prizes' || !leagueId) return
+    let cancelled = false
+    const url = rankingRoundId === null
+      ? `/rankings/leagues/${leagueId}/prize-standings`
+      : `/rankings/leagues/${leagueId}/rounds/${rankingRoundId}/prize-standings`
+    api.get<AwardStanding[]>(url)
+      .then(data => { if (!cancelled) setAwardStandings(data) })
+      .catch(() => { if (!cancelled) setAwardStandings([]) })
+    return () => { cancelled = true }
+  }, [activeTab, leagueId, rankingRoundId, rankingView])
 
   useEffect(() => {
     if ((activeTab !== 'pronosticos' && activeTab !== 'resultados') || !leagueId) return
@@ -375,6 +392,11 @@ export default function LeagueDetailPage() {
   const finishedMatches = matches ? matches.filter((m) => m.status === 'Finished') : []
 
   const roundOptions = league?.rounds ? [...league.rounds].sort((a, b) => a.order - b.order) : []
+  const currentRankingEntry = ranking?.find((entry) => entry.userId === user?.id)
+
+  const scrollToRankingUser = () => {
+    rankingUserRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
+  }
 
   function filterByRound(ms: MatchWithPrediction[]): MatchWithPrediction[] {
     if (roundFilter === null) return ms
@@ -613,7 +635,7 @@ export default function LeagueDetailPage() {
                                   <label className="pp-match-card__preferred">
                                     <span className="pp-match-card__preferred-label">Jugador Preferido <small>(opcional)</small></span>
                                     {m.homePlayers.length > 0 || m.awayPlayers.length > 0 ? (
-                                      <QuickPreferredPlayerPicker homeTeam={m.participantHome} awayTeam={m.participantAway} homePlayers={m.homePlayers} awayPlayers={m.awayPlayers} quickPlayers={m.quickPreferredPlayers} value={row.preferredPlayerId} ariaLabel={`Jugador Preferido para ${m.participantHome} vs ${m.participantAway}`} onChange={value => updateRow(m.id, { preferredPlayerId: value, savedMessage: null, error: null })} onSelectionComplete={() => setActionFocusMatchId(m.id)} />
+                                      <QuickPreferredPlayerPicker homeTeam={m.participantHome} awayTeam={m.participantAway} homePlayers={m.homePlayers} awayPlayers={m.awayPlayers} quickPlayers={m.quickPreferredPlayers} value={row.preferredPlayerId} selectedPlayerName={m.myPrediction?.preferredPlayerName} ariaLabel={`Jugador Preferido para ${m.participantHome} vs ${m.participantAway}`} onChange={value => updateRow(m.id, { preferredPlayerId: value, savedMessage: null, error: null })} onSelectionComplete={() => setActionFocusMatchId(m.id)} />
                                     ) : (
                                       <span className="pp-match-card__preferred-empty">No hay jugadores disponibles para las posiciones habilitadas.</span>
                                     )}
@@ -741,7 +763,7 @@ export default function LeagueDetailPage() {
         <div>
           <div className="pp-edition-select">
             <span className="pp-edition-select__label">Alcance del ranking:</span>
-            <select className="pp-edition-select__select" value={rankingRoundId ?? ''} onChange={(event) => setRankingRoundId(event.target.value ? Number(event.target.value) : null)}>
+            <select className="pp-edition-select__select" value={rankingRoundId ?? ''} onChange={(event) => { setRankingRoundId(event.target.value ? Number(event.target.value) : null); setRankingView('ranking') }}>
               <option value="">General de la Liga</option>
               {roundOptions.map((round) => <option key={round.id} value={round.id}>{round.name}</option>)}
             </select>
@@ -755,16 +777,26 @@ export default function LeagueDetailPage() {
           )}
           {ranking && ranking.length > 0 && (
             <div className="pp-ranking">
-              <div className="pp-ranking__header"><h2>{rankingRoundId === null ? 'Ranking de la Liga' : `Ranking — ${getRoundName(rankingRoundId)}`}</h2></div>
-              <table>
+              <div className="pp-ranking__header">
+                <div>
+                  <h2>{rankingView === 'ranking' ? rankingRoundId === null ? 'Ranking de la Liga' : `Ranking — ${getRoundName(rankingRoundId)}` : 'Posiciones para premios'}</h2>
+                  {rankingView === 'ranking' && currentRankingEntry && <p className="pp-ranking__current-summary">{currentRankingEntry.position}° · {currentRankingEntry.points} puntos{currentRankingEntry.sharedCount > 0 && <> · <span>(compartido con {currentRankingEntry.sharedCount} jugadores más)</span></>}</p>}
+                </div>
+                <div className="pp-ranking__header-actions">
+                  <button type="button" className="pp-ranking__policy" onClick={() => setRankingPolicyOpen(true)}>Ver política de desempate</button>
+                  <button type="button" className="pp-ranking__policy" onClick={() => { if (rankingView === 'ranking') setAwardStandings(null); setRankingView(current => current === 'ranking' ? 'prizes' : 'ranking') }}>{rankingView === 'ranking' ? 'Ver posiciones para premios' : 'Volver al ranking'}</button>
+                  {rankingView === 'ranking' && currentRankingEntry && <button type="button" className="pp-ranking__my-position" onClick={scrollToRankingUser} aria-label="Ir a mi posición en el ranking"><span aria-hidden="true">⌖</span> Mi posición</button>}
+                </div>
+              </div>
+              {rankingView === 'ranking' ? <table>
                 <thead><tr><th>#</th><th>Jugador</th><th>Puntos</th><th>Exactos</th><th>Correctos</th><th>Evaluados</th></tr></thead>
                 <tbody>
                   {ranking.map((r) => {
                     const isMe = user && r.userId === user.id
                     return (
-                      <tr key={r.userId} className={isMe ? 'pp-ranking__me' : ''}>
+                      <tr key={r.userId} ref={isMe ? rankingUserRowRef : undefined} className={isMe ? 'pp-ranking__me' : ''}>
                         <td><span className={`pp-ranking__pos ${r.position <= 3 ? `pp-ranking__pos--${r.position}` : ''}`}>{r.position}°</span></td>
-                        <td>{r.firstName} {r.lastName}{!r.isActiveParticipant && <span className="pp-ranking__inactive-badge">Retirado</span>}{isMe && <span className="pp-ranking__me-badge">(Vos)</span>}</td>
+                        <td>{r.firstName} {r.lastName}{!r.isActiveParticipant && <span className="pp-ranking__inactive-badge">Retirado</span>}{isMe && <span className="pp-ranking__me-badge">VOS</span>}</td>
                         <td className="pp-ranking__points">{r.points}</td>
                         <td>{r.exactCount}</td>
                         <td>{r.correctCount}</td>
@@ -773,7 +805,7 @@ export default function LeagueDetailPage() {
                     )
                   })}
                 </tbody>
-              </table>
+              </table> : awardStandings === null ? <StatusMessage kind="loading" message="Calculando posiciones para premios..." /> : <AwardStandingsTable standings={awardStandings} currentUserId={user?.id} />}
             </div>
           )}
         </div>
@@ -811,6 +843,7 @@ export default function LeagueDetailPage() {
         onConfirm={deletePrediction}
         onCancel={() => setDeleteTarget(null)}
       />
+      <TieBreakPolicyModal open={rankingPolicyOpen} onClose={() => setRankingPolicyOpen(false)} />
     </div>
   )
 }

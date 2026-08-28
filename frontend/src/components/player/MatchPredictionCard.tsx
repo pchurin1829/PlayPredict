@@ -29,7 +29,7 @@ export default function MatchPredictionCard({
   const quickPreferredPlayers = match.quickPreferredPlayers ?? []
   const [preferredPlayerId, setPreferredPlayerId] = useState(match.myPrediction?.preferredPlayerId
     ? String(match.myPrediction.preferredPlayerId)
-    : !match.myPrediction && quickPreferredPlayers.length === 1 ? String(quickPreferredPlayers[0].id) : '')
+    : '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
@@ -153,7 +153,7 @@ export default function MatchPredictionCard({
               />
             </div>
             {match.preferredPlayerEnabled && <div className="mpcard__preferred"><span>Jugador Preferido <small>(opcional)</small></span>
-              <QuickPreferredPlayerPicker homeTeam={match.participantHome} awayTeam={match.participantAway} homePlayers={match.homePlayers} awayPlayers={match.awayPlayers} quickPlayers={quickPreferredPlayers} value={preferredPlayerId} onChange={value => { setPreferredPlayerId(value); setSavedMessage(null) }} />
+              <QuickPreferredPlayerPicker homeTeam={match.participantHome} awayTeam={match.participantAway} homePlayers={match.homePlayers} awayPlayers={match.awayPlayers} quickPlayers={quickPreferredPlayers} value={preferredPlayerId} selectedPlayerName={match.myPrediction?.preferredPlayerName} onChange={value => { setPreferredPlayerId(value); setSavedMessage(null) }} />
             </div>}
             <button
               type="button"

@@ -372,8 +372,8 @@ public static class LeagueEndpoints
             var teamIds = matches.SelectMany(m => new[] { m.HomeTeamId, m.AwayTeamId }).Distinct().ToList();
             var effective = await scoring.GetEffectiveAsync(db, league.Id);
             var allowed = effective?.PreferredPlayerPositions ?? PlayerPosition.None;
-            var players = await db.TeamPlayers.Where(p => teamIds.Contains(p.TeamId) && p.Active).OrderBy(p => p.DisplayName).ToListAsync();
-            players = players.Where(p => PlayerPositionCatalog.TryParse(p.Position, out var position) && allowed.HasFlag(position)).ToList();
+            var allActivePlayers = await db.TeamPlayers.Where(p => teamIds.Contains(p.TeamId) && p.Active).OrderBy(p => p.DisplayName).ToListAsync();
+            var players = allActivePlayers.Where(p => PlayerPositionCatalog.TryParse(p.Position, out var position) && allowed.HasFlag(position)).ToList();
             var teamPreferences = await db.UserTeamPreferredPlayers
                 .Where(preference => preference.UserId == user.Id && teamIds.Contains(preference.TeamId))
                 .ToDictionaryAsync(preference => preference.TeamId, preference => preference.TeamPlayerId);
@@ -386,7 +386,7 @@ public static class LeagueEndpoints
                 var prediction = predictions.FirstOrDefault(p => p.MatchId == m.Id);
                 var evaluation = prediction is null ? null : evaluations.GetValueOrDefault(prediction.Id);
                 var eligible = prediction is not null && PredictionEndpoints.IsEligible(prediction, league, m, membershipPeriods);
-                return PredictionEndpoints.ToMatchWithPredictionDto(m, prediction, evaluation, league.IsActive, players, preferredEnabled, eligible, teamPreferences);
+                return PredictionEndpoints.ToMatchWithPredictionDto(m, prediction, evaluation, league.IsActive, players, preferredEnabled, eligible, teamPreferences, allActivePlayers);
             });
 
             return Results.Ok(result);

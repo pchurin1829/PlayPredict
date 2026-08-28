@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Entities;
+using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Endpoints;
 using Xunit;
 
@@ -111,6 +112,64 @@ public sealed class UserTeamPreferredPlayerTests
         Assert.Equal(data.HomePlayer.Id, (await db.UserTeamPreferredPlayers.SingleAsync(x => x.UserId == data.User.Id)).TeamPlayerId);
         Assert.Equal(data.OtherHomePlayer.Id, (await db.UserTeamPreferredPlayers.SingleAsync(x => x.UserId == second.Id)).TeamPlayerId);
         Assert.Null(typeof(UserTeamPreferredPlayer).GetProperty("LeagueId"));
+    }
+
+    [Fact]
+    public async Task Options_only_include_teams_from_leagues_the_user_participates_in()
+    {
+        await using var db = CreateDb();
+        var data = await SeedAsync(db);
+
+        // Sin ninguna Liga, no hay equipos para configurar.
+        Assert.Empty(await UserTeamPreferredPlayerEndpoints.GetOptionsAsync(db, data.User.Id));
+
+        var round2 = new Round { Id = 2, Edition = data.Match.Round.Edition, EditionId = data.Match.Round.EditionId, Name = "Fecha 2", Order = 2 };
+        var otherTeam = new Team { Id = 3, Name = "Independiente", ShortName = "IND" };
+        var otherTeamPlayer = Player(4, otherTeam, "Cocca");
+        var matchOutOfScope = new Match
+        {
+            Id = 2, Round = round2, RoundId = round2.Id, HomeTeam = data.Away, HomeTeamId = data.Away.Id,
+            AwayTeam = otherTeam, AwayTeamId = otherTeam.Id, ParticipantHome = data.Away.Name, ParticipantAway = otherTeam.Name,
+            StartsAtUtc = DateTime.UtcNow.AddDays(2)
+        };
+        var league = new League
+        {
+            Id = 1, Name = "Liga Test", CompetitionId = 1, EditionId = data.Match.Round.EditionId,
+            ScopeType = LeagueScopeType.RoundRange, RoundFromId = data.Match.RoundId, RoundToId = data.Match.RoundId,
+            LeagueType = LeagueType.Official, CreatedByUser = data.User, CreatedAtUtc = DateTime.UtcNow,
+        };
+        db.AddRange(round2, otherTeam, otherTeamPlayer, matchOutOfScope, league);
+        db.LeagueParticipants.Add(new LeagueParticipant { League = league, User = data.User, JoinedAtUtc = DateTime.UtcNow });
+        await db.SaveChangesAsync();
+
+        var options = await UserTeamPreferredPlayerEndpoints.GetOptionsAsync(db, data.User.Id);
+
+        // Home y Away están en la Fecha 1 (dentro del alcance de la Liga); Independiente solo
+        // juega en la Fecha 2, fuera del rango RoundFrom/RoundTo de esta Liga.
+        Assert.Equal([data.Home.Name, data.Away.Name], options.Select(o => o.TeamName));
+    }
+
+    [Fact]
+    public async Task Quick_preferred_player_ignores_league_position_restriction()
+    {
+        await using var db = CreateDb();
+        var data = await SeedAsync(db);
+        var goalkeeper = Player(5, data.Home, "Romero");
+        goalkeeper.Position = "Arquero";
+        db.TeamPlayers.Add(goalkeeper);
+        await db.SaveChangesAsync();
+
+        // El selector largo ya viene filtrado por las posiciones que puntúan en la Liga (acá, sin
+        // arqueros); la sugerencia rápida debe reflejar la preferencia global sin ese filtro.
+        var filteredPlayers = new[] { data.HomePlayer, data.OtherHomePlayer, data.AwayPlayer };
+        var allActivePlayers = new[] { data.HomePlayer, data.OtherHomePlayer, data.AwayPlayer, goalkeeper };
+        var teamPreferences = new Dictionary<int, int> { [data.Home.Id] = goalkeeper.Id };
+
+        var dto = PredictionEndpoints.ToMatchWithPredictionDto(data.Match, null, null,
+            players: filteredPlayers, teamPreferences: teamPreferences, allActivePlayers: allActivePlayers);
+
+        Assert.DoesNotContain(dto.HomePlayers, p => p.Id == goalkeeper.Id);
+        Assert.Equal([goalkeeper.Id], dto.QuickPreferredPlayers.Select(p => p.Id));
     }
 
     private static PlayPredictDbContext CreateDb() => new(new DbContextOptionsBuilder<PlayPredictDbContext>()

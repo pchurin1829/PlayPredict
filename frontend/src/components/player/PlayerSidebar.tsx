@@ -19,6 +19,7 @@ const GENERAL_ITEMS: SidebarItem[] = [
 
 const ACCOUNT_ITEMS: SidebarItem[] = [
   { label: 'Mi Perfil', icon: '👤', to: '/profile' },
+  { label: 'Mis jugadores preferidos', icon: '⭐', to: '/preferred-players' },
   { label: 'Amigos', icon: '👥', comingSoon: true },
   { label: 'Notificaciones', icon: '🔔', comingSoon: true },
   { label: 'Configuración', icon: '⚙️', comingSoon: true },

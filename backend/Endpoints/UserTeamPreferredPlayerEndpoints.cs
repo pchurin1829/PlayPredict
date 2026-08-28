@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Domain.Entities;
+using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Dtos;
 
 namespace PlayPredict.Api.Endpoints;
@@ -35,29 +36,7 @@ public static class UserTeamPreferredPlayerEndpoints
             var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
             if (user is null) return Results.Unauthorized();
 
-            var teams = await db.Teams
-                .Where(team => team.Active && db.TeamPlayers.Any(player => player.TeamId == team.Id && player.Active))
-                .OrderBy(team => team.Name)
-                .ToListAsync();
-            var teamIds = teams.Select(team => team.Id).ToList();
-            var players = await db.TeamPlayers
-                .Where(player => teamIds.Contains(player.TeamId) && player.Active)
-                .OrderBy(player => player.DisplayName)
-                .ToListAsync();
-            var preferences = await db.UserTeamPreferredPlayers
-                .Where(x => x.UserId == user.Id && teamIds.Contains(x.TeamId))
-                .Include(x => x.Team)
-                .Include(x => x.TeamPlayer)
-                .ToDictionaryAsync(x => x.TeamId);
-
-            return Results.Ok(teams.Select(team => new PreferredPlayerProfileTeamDto(
-                team.Id,
-                team.Name,
-                team.ShortName,
-                players.Where(player => player.TeamId == team.Id)
-                    .Select(player => new PreferredPlayerProfilePlayerDto(player.Id, PlayerLabel(player)))
-                    .ToList(),
-                preferences.TryGetValue(team.Id, out var preference) ? ToDto(preference) : null)));
+            return Results.Ok(await GetOptionsAsync(db, user.Id));
         });
 
         group.MapPut("/{teamId:int}", async (int teamId, SaveUserTeamPreferredPlayerDto dto,
@@ -85,6 +64,79 @@ public static class UserTeamPreferredPlayerEndpoints
             await db.SaveChangesAsync();
             return Results.NoContent();
         });
+    }
+
+    internal static async Task<List<PreferredPlayerProfileTeamDto>> GetOptionsAsync(PlayPredictDbContext db, int userId)
+    {
+        var teamIds = await GetTeamIdsForUserAsync(db, userId);
+
+        var teams = await db.Teams
+            .Where(team => teamIds.Contains(team.Id) && team.Active
+                && db.TeamPlayers.Any(player => player.TeamId == team.Id && player.Active))
+            .OrderBy(team => team.Name)
+            .ToListAsync();
+        var resolvedTeamIds = teams.Select(team => team.Id).ToList();
+        var players = await db.TeamPlayers
+            .Where(player => resolvedTeamIds.Contains(player.TeamId) && player.Active)
+            .OrderBy(player => player.DisplayName)
+            .ToListAsync();
+        var preferences = await db.UserTeamPreferredPlayers
+            .Where(x => x.UserId == userId && resolvedTeamIds.Contains(x.TeamId))
+            .Include(x => x.Team)
+            .Include(x => x.TeamPlayer)
+            .ToDictionaryAsync(x => x.TeamId);
+
+        return teams.Select(team => new PreferredPlayerProfileTeamDto(
+            team.Id,
+            team.Name,
+            team.ShortName,
+            players.Where(player => player.TeamId == team.Id)
+                .Select(player => new PreferredPlayerProfilePlayerDto(player.Id, PlayerLabel(player)))
+                .ToList(),
+            preferences.TryGetValue(team.Id, out var preference) ? ToDto(preference) : null)).ToList();
+    }
+
+    /// <summary>
+    /// Un equipo entra en la pantalla si el usuario participa (LeagueParticipants activo) de alguna
+    /// Liga -oficial o de amigos derivada- cuyo alcance de Fechas incluya un partido de ese equipo.
+    /// La preferencia en sí es global (UserId + TeamId): esto solo determina qué equipos mostrar.
+    /// </summary>
+    internal static async Task<HashSet<int>> GetTeamIdsForUserAsync(PlayPredictDbContext db, int userId)
+    {
+        var leagueIds = await db.LeagueParticipants
+            .Where(lp => lp.UserId == userId && lp.LeftAtUtc == null)
+            .Select(lp => lp.LeagueId)
+            .ToListAsync();
+        var leagues = await db.Leagues
+            .Where(league => leagueIds.Contains(league.Id) && league.IsActive)
+            .ToListAsync();
+
+        var teamIds = new HashSet<int>();
+        foreach (var league in leagues)
+        {
+            var matchesQuery = db.Matches.Where(m => m.Round.EditionId == league.EditionId);
+            if (league.ScopeType == LeagueScopeType.RoundRange)
+            {
+                var bounds = await db.Rounds
+                    .Where(r => r.Id == league.RoundFromId || r.Id == league.RoundToId)
+                    .ToListAsync();
+                var from = bounds.FirstOrDefault(r => r.Id == league.RoundFromId);
+                var to = bounds.FirstOrDefault(r => r.Id == league.RoundToId);
+                if (from is null || to is null) continue;
+                matchesQuery = matchesQuery.Where(m => m.Round.Order >= from.Order && m.Round.Order <= to.Order);
+            }
+
+            var matchTeams = await matchesQuery
+                .Select(m => new { m.HomeTeamId, m.AwayTeamId })
+                .ToListAsync();
+            foreach (var m in matchTeams)
+            {
+                teamIds.Add(m.HomeTeamId);
+                teamIds.Add(m.AwayTeamId);
+            }
+        }
+
+        return teamIds;
     }
 
     internal static async Task<(UserTeamPreferredPlayer? Preference, Dictionary<string, string[]> Errors)> UpsertAsync(

@@ -16,7 +16,11 @@ interface Props {
 }
 
 export default function QuickPreferredPlayerPicker(props: Props) {
-  const { homeTeam, awayTeam, homePlayers, awayPlayers, quickPlayers, value, onChange, onSelectionComplete, ariaLabel } = props
+  const { homeTeam, awayTeam, homePlayers, awayPlayers, value, onChange, onSelectionComplete, ariaLabel } = props
+  // El backend siempre envía un array (posiblemente vacío) para quickPreferredPlayers, pero este
+  // componente es un primitivo reutilizable: si todavía no llegaron las preferencias (o llega un
+  // valor sin esa colección) se lo trata igual que "0 preferencias" y se cae al selector largo.
+  const quickPlayers = props.quickPlayers ?? []
   const quickIds = quickPlayers.map(player => String(player.id))
   const [showAll, setShowAll] = useState(Boolean(value && !quickIds.includes(value)))
   const groupName = useId()

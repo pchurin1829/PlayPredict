@@ -32,9 +32,10 @@ function sanitizeDigits(value: string): string {
 function buildInitialRow(match: MatchWithPrediction): RowState {
   const home = match.myPrediction ? String(match.myPrediction.predictedHomeScore) : ''
   const away = match.myPrediction ? String(match.myPrediction.predictedAwayScore) : ''
+  const quickPreferredPlayers = match.quickPreferredPlayers ?? []
   const preferredPlayerId = match.myPrediction?.preferredPlayerId
     ? String(match.myPrediction.preferredPlayerId)
-    : !match.myPrediction && match.quickPreferredPlayers.length === 1 ? String(match.quickPreferredPlayers[0].id) : ''
+    : !match.myPrediction && quickPreferredPlayers.length === 1 ? String(quickPreferredPlayers[0].id) : ''
   return {
     homeInput: home,
     awayInput: away,

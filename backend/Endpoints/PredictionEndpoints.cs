@@ -76,8 +76,11 @@ public static class PredictionEndpoints
             var teamIds = matches.SelectMany(m => new[] { m.HomeTeamId, m.AwayTeamId }).Distinct().ToList();
             var preferredConfig = await scoring.GetEffectiveAsync(db, leagueId.Value);
             var allowedPositions = preferredConfig?.PreferredPlayerPositions ?? PlayerPosition.None;
-            var players = await db.TeamPlayers.Where(p => teamIds.Contains(p.TeamId) && p.Active).OrderBy(p => p.DisplayName).ToListAsync();
-            players = players.Where(p => PlayerPositionCatalog.TryParse(p.Position, out var position) && allowedPositions.HasFlag(position)).ToList();
+            var allActivePlayers = await db.TeamPlayers.Where(p => teamIds.Contains(p.TeamId) && p.Active).OrderBy(p => p.DisplayName).ToListAsync();
+            // El selector largo solo debe ofrecer posiciones que puntúan como Jugador Preferido en
+            // esta Liga; la sugerencia rápida, en cambio, refleja la preferencia global del usuario
+            // (cualquier posición), así que se arma aparte a partir del plantel sin filtrar.
+            var players = allActivePlayers.Where(p => PlayerPositionCatalog.TryParse(p.Position, out var position) && allowedPositions.HasFlag(position)).ToList();
             var teamPreferences = await db.UserTeamPreferredPlayers
                 .Where(preference => preference.UserId == user.Id && teamIds.Contains(preference.TeamId))
                 .ToDictionaryAsync(preference => preference.TeamId, preference => preference.TeamPlayerId);
@@ -90,7 +93,7 @@ public static class PredictionEndpoints
                 var prediction = predictions.FirstOrDefault(p => p.MatchId == m.Id);
                 var evaluation = prediction is null ? null : evaluations.GetValueOrDefault(prediction.Id);
                 var eligible = prediction is not null && IsEligible(prediction, league, m, membershipPeriods);
-                return ToMatchWithPredictionDto(m, prediction, evaluation, true, players, preferredEnabled, eligible, teamPreferences);
+                return ToMatchWithPredictionDto(m, prediction, evaluation, true, players, preferredEnabled, eligible, teamPreferences, allActivePlayers);
             });
 
             return Results.Ok(result);
@@ -421,12 +424,14 @@ public static class PredictionEndpoints
 
     internal static MatchWithPredictionDto ToMatchWithPredictionDto(Match m, Prediction? prediction, PredictionEvaluation? evaluation,
         bool leagueIsActive = true, IReadOnlyList<TeamPlayer>? players = null, bool preferredEnabled = false, bool predictionEligible = false,
-        IReadOnlyDictionary<int, int>? teamPreferences = null) =>
+        IReadOnlyDictionary<int, int>? teamPreferences = null, IReadOnlyList<TeamPlayer>? allActivePlayers = null) =>
         new(m.Id, m.RoundId, m.HomeTeamId, m.AwayTeamId, m.ParticipantHome, m.ParticipantAway, m.StartsAtUtc, m.Status.ToString(),
             m.HomeGoals, m.AwayGoals,
             (players ?? []).Where(p => p.TeamId == m.HomeTeamId).Select(ToAvailablePlayer).ToList(),
             (players ?? []).Where(p => p.TeamId == m.AwayTeamId).Select(ToAvailablePlayer).ToList(),
-            BuildQuickPreferredPlayers(m, players ?? [], teamPreferences),
+            // La sugerencia rápida usa la preferencia global (cualquier posición), no el plantel ya
+            // filtrado por las posiciones que puntúan en esta Liga.
+            BuildQuickPreferredPlayers(m, allActivePlayers ?? players ?? [], teamPreferences),
             preferredEnabled, predictionEligible, prediction is null ? null : ToDto(prediction, evaluation), leagueIsActive && CanCreateOrEditPrediction(m));
 
     internal static IReadOnlyList<AvailablePlayerDto> BuildQuickPreferredPlayers(

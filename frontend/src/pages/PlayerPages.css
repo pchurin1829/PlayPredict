@@ -1034,8 +1034,12 @@
 .pp-profile__preferred-warning { display: flex; grid-column: 1 / -1; align-items: center; justify-content: space-between; gap: .75rem; color: var(--color-warning-dark, #8a5a00); font-size: .78rem; }
 .pp-profile__preferred-empty { color: var(--color-text-secondary); }
 
+.pp-preferred__filters { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-bottom: 1rem; }
+.pp-preferred__search { max-width: 260px; }
+
 @media (max-width: 600px) {
   .pp-profile__preferred-row { grid-template-columns: minmax(0, 1fr); }
+  .pp-preferred__search { max-width: none; width: 100%; }
 }
 
 /* ── Edition selector (Rankings/Premios smart landing) ───── */

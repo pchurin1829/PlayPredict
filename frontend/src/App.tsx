@@ -4,6 +4,7 @@ import { RequireAdmin, RequireAuth, useAuth } from './auth/AuthContext'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
+import PreferredPlayersPage from './pages/PreferredPlayersPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import CompetitionsListPage from './pages/CompetitionsListPage'
 import CompetitionFormPage from './pages/CompetitionFormPage'
@@ -77,6 +78,7 @@ function App() {
         <Route path="/prizes/competitions/:competitionId/editions" element={<PrizesEditionsPage />} />
         <Route path="/prizes/editions/:editionId" element={<PrizesListPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/preferred-players" element={<PreferredPlayersPage />} />
 
         {/* ADMIN ROUTES */}
         <Route path="/admin" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />

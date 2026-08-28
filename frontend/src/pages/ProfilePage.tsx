@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { api, ApiError } from '../api/client'
-import type { PreferredPlayerProfileTeam, User, UserTeamPreferredPlayer } from '../api/types'
+import type { User } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import StatusMessage from '../components/StatusMessage'
 import './PlayerPages.css'
@@ -14,16 +14,6 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
   const [saved, setSaved] = useState(false)
-  const [preferredTeams, setPreferredTeams] = useState<PreferredPlayerProfileTeam[] | null>(null)
-  const [preferenceError, setPreferenceError] = useState<string | null>(null)
-  const [preferenceMessage, setPreferenceMessage] = useState<string | null>(null)
-  const [savingTeamId, setSavingTeamId] = useState<number | null>(null)
-
-  useEffect(() => {
-    api.get<PreferredPlayerProfileTeam[]>('/users/me/team-preferred-players/options')
-      .then(setPreferredTeams)
-      .catch((reason) => setPreferenceError(reason instanceof ApiError ? reason.message : 'No se pudieron cargar los jugadores preferidos.'))
-  }, [])
 
   if (!user) {
     return null
@@ -48,27 +38,6 @@ export default function ProfilePage() {
       }
     } finally {
       setSaving(false)
-    }
-  }
-
-  async function changePreference(team: PreferredPlayerProfileTeam, value: string) {
-    setSavingTeamId(team.teamId)
-    setPreferenceError(null)
-    setPreferenceMessage(null)
-    try {
-      if (!value) {
-        await api.del<void>(`/users/me/team-preferred-players/${team.teamId}`)
-        setPreferredTeams(current => current?.map(item => item.teamId === team.teamId ? { ...item, preference: null } : item) ?? current)
-        setPreferenceMessage(`Se quitó el jugador preferido de ${team.teamName}.`)
-      } else {
-        const preference = await api.put<UserTeamPreferredPlayer>(`/users/me/team-preferred-players/${team.teamId}`, { teamPlayerId: Number(value) })
-        setPreferredTeams(current => current?.map(item => item.teamId === team.teamId ? { ...item, preference } : item) ?? current)
-        setPreferenceMessage(`Jugador preferido de ${team.teamName} actualizado.`)
-      }
-    } catch (reason) {
-      setPreferenceError(reason instanceof ApiError ? reason.message : 'No se pudo actualizar la preferencia.')
-    } finally {
-      setSavingTeamId(null)
     }
   }
 
@@ -135,42 +104,6 @@ export default function ProfilePage() {
           </div>
         </form>
       </div>
-
-      <section className="pp-profile__card pp-profile__card--preferred">
-        <div className="pp-profile__section-heading">
-          <h2>Jugadores preferidos</h2>
-          <p>Elegí un jugador predeterminado para los equipos que quieras. Se usará como sugerencia al pronosticar.</p>
-        </div>
-
-        {preferenceError && <StatusMessage kind="error" message={preferenceError} />}
-        {preferenceMessage && <StatusMessage kind="success" message={preferenceMessage} />}
-        {!preferredTeams && !preferenceError && <StatusMessage kind="loading" message="Cargando equipos y jugadores..." />}
-        {preferredTeams?.length === 0 && <p className="pp-profile__preferred-empty">No hay planteles activos disponibles.</p>}
-        {preferredTeams && preferredTeams.length > 0 && (
-          <div className="pp-profile__preferred-list">
-            {preferredTeams.map(team => (
-              <label key={team.teamId} className="pp-profile__preferred-row">
-                <span className="pp-profile__preferred-team"><strong>{team.teamName}</strong><small>{team.teamShortName}</small></span>
-                <select
-                  className="pp-form__input"
-                  value={team.preference?.isValid ? String(team.preference.teamPlayerId) : ''}
-                  disabled={savingTeamId === team.teamId}
-                  onChange={event => void changePreference(team, event.target.value)}
-                >
-                  <option value="">Sin jugador preferido</option>
-                  {team.players.map(player => <option key={player.id} value={player.id}>{player.name}</option>)}
-                </select>
-                {team.preference && !team.preference.isValid && (
-                  <span className="pp-profile__preferred-warning">
-                    La preferencia guardada ya no está activa.
-                    <button type="button" className="pp-btn pp-btn--secondary pp-btn--sm" disabled={savingTeamId === team.teamId} onClick={() => void changePreference(team, '')}>Quitar preferencia guardada</button>
-                  </span>
-                )}
-              </label>
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   )
 }

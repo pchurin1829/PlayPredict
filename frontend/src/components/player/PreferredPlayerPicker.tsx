@@ -18,7 +18,7 @@ const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u0
 const demoPositions = new Set(['Arquero', 'Defensor', 'Mediocampista', 'Delantero'])
 
 /** Keeps real names intact while avoiding the team name embedded in generated demo rosters. */
-const preferredPlayerLabel = (player: AvailablePlayer) => {
+export const preferredPlayerLabel = (player: AvailablePlayer) => {
   if (demoPositions.has(player.firstName)) {
     const demoNumber = player.lastName.match(/\d+\s*$/)?.[0]?.trim()
     return demoNumber ? `${player.firstName} ${demoNumber}` : player.firstName

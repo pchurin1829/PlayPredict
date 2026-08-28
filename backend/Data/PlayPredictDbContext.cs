@@ -28,6 +28,7 @@ public class PlayPredictDbContext : DbContext
     public DbSet<Experience> Experiences => Set<Experience>();
     public DbSet<League> Leagues => Set<League>();
     public DbSet<LeagueParticipant> LeagueParticipants => Set<LeagueParticipant>();
+    public DbSet<UserTeamPreferredPlayer> UserTeamPreferredPlayers => Set<UserTeamPreferredPlayer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -96,11 +96,10 @@ export default function PlayerDashboardPage() {
   }, [])
 
   function handlePredictionUpdated(updatedMatch: MatchWithPrediction) {
-    const leagueId = updatedMatch.myPrediction?.leagueId
     setLeagueContexts((prev) => prev.map((context) => (
-      context.league.id === leagueId
-        ? { ...context, matches: context.matches.map((match) => match.id === updatedMatch.id ? updatedMatch : match) }
-        : context
+      { ...context, matches: context.matches.map((match) => match.id === updatedMatch.id
+        ? { ...match, myPrediction: updatedMatch.myPrediction }
+        : match) }
     )))
   }
 

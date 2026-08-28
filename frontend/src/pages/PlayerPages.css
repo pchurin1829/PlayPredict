@@ -197,6 +197,11 @@
   border-top: 1px solid var(--color-border-light);
 }
 
+.pp-league-card__footer--official {
+  flex-direction: column;
+  align-items: stretch;
+}
+
 .pp-league-card__badge-stack {
   display: flex;
   flex-direction: column;
@@ -1018,6 +1023,21 @@
   color: var(--color-text-secondary);
 }
 
+.pp-profile__card--preferred { max-width: 720px; margin-top: 1rem; }
+.pp-profile__section-heading { margin-bottom: 1rem; }
+.pp-profile__section-heading h2 { margin: 0; color: var(--color-text); font-size: 1.1rem; }
+.pp-profile__section-heading p { margin: .35rem 0 0; color: var(--color-text-secondary); font-size: .85rem; }
+.pp-profile__preferred-list { display: grid; gap: .65rem; }
+.pp-profile__preferred-row { display: grid; grid-template-columns: minmax(130px, .7fr) minmax(220px, 1.3fr); align-items: center; gap: .75rem; padding: .7rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); background: var(--color-surface-soft); }
+.pp-profile__preferred-team { display: flex; min-width: 0; flex-direction: column; color: var(--color-text); }
+.pp-profile__preferred-team small { color: var(--color-text-secondary); }
+.pp-profile__preferred-warning { display: flex; grid-column: 1 / -1; align-items: center; justify-content: space-between; gap: .75rem; color: var(--color-warning-dark, #8a5a00); font-size: .78rem; }
+.pp-profile__preferred-empty { color: var(--color-text-secondary); }
+
+@media (max-width: 600px) {
+  .pp-profile__preferred-row { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* ── Edition selector (Rankings/Premios smart landing) ───── */
 .pp-edition-select {
   display: flex;
@@ -1496,6 +1516,18 @@
 .pp-league-card__actions-row--private {
   width: 100%;
   justify-content: space-between;
+}
+
+.pp-ranking__inactive-badge {
+  margin-left: 0.45rem;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.pp-league-card__create-friends {
+  align-self: flex-start;
+  text-align: center;
 }
 
 .pp-league-groups {

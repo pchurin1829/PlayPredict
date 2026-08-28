@@ -27,11 +27,16 @@ public class PredictionEvaluationConfiguration : IEntityTypeConfiguration<Predic
         builder.Property(e => e.EvaluatedAtUtc).IsRequired();
 
         // Una única evaluación vigente por Prediction (sin historial en este Sprint).
-        builder.HasIndex(e => e.PredictionId).IsUnique();
+        builder.HasIndex(e => new { e.PredictionId, e.LeagueId }).IsUnique();
 
         builder.HasOne(e => e.Prediction)
-            .WithOne()
-            .HasForeignKey<PredictionEvaluation>(e => e.PredictionId)
+            .WithMany()
+            .HasForeignKey(e => e.PredictionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.League)
+            .WithMany()
+            .HasForeignKey(e => e.LeagueId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

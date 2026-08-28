@@ -13,7 +13,7 @@ public static class DemoGameDataResetter
         var matchIds = await db.Matches.Where(m => editionIds.Contains(m.Round.EditionId)).Select(m => m.Id).ToListAsync();
         var leagueIds = await db.Leagues.Where(l => editionIds.Contains(l.EditionId)).Select(l => l.Id).ToListAsync();
         var predictionIds = await db.Predictions
-            .Where(p => matchIds.Contains(p.MatchId) || leagueIds.Contains(p.LeagueId)).Select(p => p.Id).ToListAsync();
+            .Where(p => matchIds.Contains(p.MatchId)).Select(p => p.Id).ToListAsync();
 
         await using var transaction = await db.Database.BeginTransactionAsync();
         await db.PredictionEvaluations.Where(e => predictionIds.Contains(e.PredictionId)).ExecuteDeleteAsync();

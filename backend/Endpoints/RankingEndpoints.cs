@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Constants;
+using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Services;
 
@@ -13,47 +14,47 @@ public static class RankingEndpoints
     {
         var group = app.MapGroup("/api/rankings").WithTags("Rankings").RequireAuthorization();
 
-        group.MapGet("/editions/{editionId:int}", async (int editionId, PlayPredictDbContext db, RankingService rankingService) =>
+        group.MapGet("/leagues/{leagueId:int}", async (int leagueId, ClaimsPrincipal principal,
+            PlayPredictDbContext db, RankingService rankingService) =>
         {
-            var editionExists = await db.Editions.AnyAsync(e => e.Id == editionId);
-            if (!editionExists)
-            {
-                return Results.NotFound();
-            }
-
-            var ranking = await rankingService.GetEditionRankingAsync(db, editionId);
-            return Results.Ok(ranking);
+            var accessError = await ValidateLeagueAccessAsync(leagueId, principal, db);
+            if (accessError is not null) return accessError;
+            return Results.Ok(await rankingService.GetLeagueRankingAsync(db, leagueId));
         });
 
-        group.MapGet("/rounds/{roundId:int}", async (int roundId, PlayPredictDbContext db, RankingService rankingService) =>
+        group.MapGet("/leagues/{leagueId:int}/rounds/{roundId:int}", async (int leagueId, int roundId,
+            ClaimsPrincipal principal, PlayPredictDbContext db, RankingService rankingService) =>
         {
-            var roundExists = await db.Rounds.AnyAsync(r => r.Id == roundId);
-            if (!roundExists)
-            {
-                return Results.NotFound();
-            }
-
-            var ranking = await rankingService.GetRoundRankingAsync(db, roundId);
-            return Results.Ok(ranking);
-        });
-
-        group.MapGet("/leagues/{leagueId:int}", async (int leagueId, ClaimsPrincipal principal, PlayPredictDbContext db, RankingService rankingService) =>
-        {
+            var accessError = await ValidateLeagueAccessAsync(leagueId, principal, db);
+            if (accessError is not null) return accessError;
             var league = await db.Leagues.FindAsync(leagueId);
-            if (league is null)
-            {
-                return Results.NotFound();
-            }
-
-            var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
-            if (user is null) return Results.Unauthorized();
-            var canView = principal.IsInRole(RoleNames.Admin)
-                || (league.LeagueType == LeagueType.Official && league.IsActive)
-                || await db.LeagueParticipants.AnyAsync(participant => participant.LeagueId == leagueId && participant.UserId == user.Id);
-            if (!canView) return Results.Forbid();
-
-            var ranking = await rankingService.GetLeagueRankingAsync(db, leagueId);
-            return Results.Ok(ranking);
+            var round = await db.Rounds.FindAsync(roundId);
+            if (round is null) return Results.NotFound();
+            if (league is null || !await RoundIsInScopeAsync(db, league, round))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["roundId"] = ["La Fecha no pertenece al alcance de esta Liga."] });
+            return Results.Ok(await rankingService.GetLeagueRoundRankingAsync(db, leagueId, roundId));
         });
+    }
+
+    private static async Task<IResult?> ValidateLeagueAccessAsync(int leagueId, ClaimsPrincipal principal, PlayPredictDbContext db)
+    {
+        var league = await db.Leagues.FindAsync(leagueId);
+        if (league is null) return Results.NotFound();
+        var user = await UserEndpoints.GetCurrentUserAsync(principal, db);
+        if (user is null) return Results.Unauthorized();
+        var canView = principal.IsInRole(RoleNames.Admin)
+            || (league.LeagueType == LeagueType.Official && league.IsActive)
+            || await db.LeagueParticipants.AnyAsync(p => p.LeagueId == leagueId && p.UserId == user.Id && p.LeftAtUtc == null);
+        return canView ? null : Results.Forbid();
+    }
+
+    private static async Task<bool> RoundIsInScopeAsync(PlayPredictDbContext db, League league, Round round)
+    {
+        if (round.EditionId != league.EditionId) return false;
+        if (league.ScopeType == LeagueScopeType.FullCompetition) return true;
+        var bounds = await db.Rounds.Where(r => r.Id == league.RoundFromId || r.Id == league.RoundToId).ToListAsync();
+        var from = bounds.FirstOrDefault(r => r.Id == league.RoundFromId);
+        var to = bounds.FirstOrDefault(r => r.Id == league.RoundToId);
+        return from is not null && to is not null && round.Order >= from.Order && round.Order <= to.Order;
     }
 }

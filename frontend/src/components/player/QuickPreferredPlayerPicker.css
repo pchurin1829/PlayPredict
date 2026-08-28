@@ -1,0 +1,9 @@
+.quick-preferred-picker { display: grid; gap: .55rem; width: 100%; }
+.quick-preferred-picker__options { display: grid; gap: .4rem; }
+.quick-preferred-picker__option { display: flex; align-items: center; gap: .55rem; min-height: 40px; padding: .45rem .6rem; border: 1px solid var(--pp-border); border-radius: 8px; background: var(--pp-bg-surface); cursor: pointer; }
+.quick-preferred-picker__option:has(input:checked) { border-color: var(--pp-primary); background: color-mix(in srgb, var(--pp-primary) 8%, var(--pp-bg-surface)); }
+.quick-preferred-picker__option input { flex: 0 0 auto; accent-color: var(--pp-primary); }
+.quick-preferred-picker__option span { display: flex; min-width: 0; flex-direction: column; }
+.quick-preferred-picker__option strong { color: var(--pp-text-primary); font-size: .85rem; overflow-wrap: anywhere; }
+.quick-preferred-picker__option small { color: var(--pp-text-muted); font-size: .72rem; }
+.quick-preferred-picker__option--search strong { color: var(--pp-primary); }

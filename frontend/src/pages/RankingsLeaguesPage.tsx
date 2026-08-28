@@ -68,7 +68,7 @@ export default function RankingsLeaguesPage() {
             const isMe = user?.id === entry.userId
             return <tr key={entry.userId} className={isMe ? 'pp-ranking__me' : ''}>
               <td><span className={`pp-ranking__pos ${entry.position <= 3 ? `pp-ranking__pos--${entry.position}` : ''}`}>{entry.position}°</span></td>
-              <td>{entry.firstName} {entry.lastName}{isMe && <span className="pp-ranking__me-badge">(Vos)</span>}</td>
+              <td>{entry.firstName} {entry.lastName}{!entry.isActiveParticipant && <span className="pp-ranking__inactive-badge">Retirado</span>}{isMe && <span className="pp-ranking__me-badge">(Vos)</span>}</td>
               <td className="pp-ranking__points">{entry.points}</td><td>{entry.exactCount}</td><td>{entry.correctCount}</td><td>{entry.evaluatedCount}</td>
             </tr>
           })}</tbody>

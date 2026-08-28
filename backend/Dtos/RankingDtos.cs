@@ -9,4 +9,5 @@ public record RankingEntryDto(
     int ExactCount,
     int CorrectCount,
     int IncorrectCount,
-    int EvaluatedCount);
+    int EvaluatedCount,
+    bool IsActiveParticipant);

@@ -99,6 +99,7 @@ app.MapGet("/api/system/info", () => Results.Ok(new
 
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
+app.MapUserTeamPreferredPlayerEndpoints();
 app.MapAdminUserEndpoints();
 app.MapCompetitionEndpoints();
 app.MapEditionEndpoints();

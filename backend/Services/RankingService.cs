@@ -9,38 +9,16 @@ namespace PlayPredict.Api.Services;
 // posiciones. No calcula puntos, no persiste nada, no conoce reglas de puntuación.
 public class RankingService
 {
-    public Task<List<RankingEntryDto>> GetEditionRankingAsync(PlayPredictDbContext db, int editionId)
-    {
-        var rows = db.PredictionEvaluations
-            .Where(e => e.Prediction.Match.Round.EditionId == editionId)
-            .Select(e => new EvaluationRow(
-                e.Prediction.UserId,
-                e.Prediction.User.FirstName,
-                e.Prediction.User.LastName,
-                e.Points,
-                e.EvaluationType));
-
-        return BuildRankingAsync(rows);
-    }
-
-    public Task<List<RankingEntryDto>> GetRoundRankingAsync(PlayPredictDbContext db, int roundId)
-    {
-        var rows = db.PredictionEvaluations
-            .Where(e => e.Prediction.Match.RoundId == roundId)
-            .Select(e => new EvaluationRow(
-                e.Prediction.UserId,
-                e.Prediction.User.FirstName,
-                e.Prediction.User.LastName,
-                e.Points,
-                e.EvaluationType));
-
-        return BuildRankingAsync(rows);
-    }
-
     public async Task<List<RankingEntryDto>> GetLeagueRankingAsync(PlayPredictDbContext db, int leagueId)
+        => await GetLeagueRankingCoreAsync(db, leagueId, null);
+
+    public async Task<List<RankingEntryDto>> GetLeagueRoundRankingAsync(PlayPredictDbContext db, int leagueId, int roundId)
+        => await GetLeagueRankingCoreAsync(db, leagueId, roundId);
+
+    private static async Task<List<RankingEntryDto>> GetLeagueRankingCoreAsync(PlayPredictDbContext db, int leagueId, int? roundId)
     {
         var rows = db.PredictionEvaluations
-            .Where(e => e.Prediction.LeagueId == leagueId)
+            .Where(e => e.LeagueId == leagueId && (!roundId.HasValue || e.Prediction.Match.RoundId == roundId.Value))
             .Select(e => new EvaluationRow(
                 e.Prediction.UserId,
                 e.Prediction.User.FirstName,
@@ -55,13 +33,19 @@ public class RankingService
             {
                 participant.UserId,
                 participant.User.FirstName,
-                participant.User.LastName
+                participant.User.LastName,
+                IsActive = participant.LeftAtUtc == null
             })
             .ToListAsync();
-        foreach (var participant in participants.Where(participant => list.All(row => row.UserId != participant.UserId)))
+        var participantStates = participants.GroupBy(p => new { p.UserId, p.FirstName, p.LastName })
+            .Select(group => new { group.Key.UserId, group.Key.FirstName, group.Key.LastName, IsActive = group.Any(p => p.IsActive) })
+            .ToList();
+        foreach (var participant in participantStates.Where(participant => list.All(row => row.UserId != participant.UserId)))
         {
-            list.Add(new EvaluationRow(participant.UserId, participant.FirstName, participant.LastName, 0, null, false));
+            list.Add(new EvaluationRow(participant.UserId, participant.FirstName, participant.LastName, 0, null, false, participant.IsActive));
         }
+
+        list = list.Select(row => row with { IsActiveParticipant = participantStates.FirstOrDefault(p => p.UserId == row.UserId)?.IsActive ?? false }).ToList();
 
         return BuildRanking(list);
     }
@@ -119,7 +103,8 @@ public class RankingService
 
             result.Add(new RankingEntryDto(
                 sharedPosition, entry.UserId, entry.FirstName, entry.LastName,
-                entry.Points, entry.ExactCount, entry.CorrectCount, entry.IncorrectCount, entry.EvaluatedCount));
+                entry.Points, entry.ExactCount, entry.CorrectCount, entry.IncorrectCount, entry.EvaluatedCount,
+                gActive(list, entry.UserId)));
         }
 
         return result;
@@ -127,5 +112,7 @@ public class RankingService
 
     private record EvaluationRow(
         int UserId, string FirstName, string LastName, int Points,
-        EvaluationType? EvaluationType, bool IsEvaluated = true);
+        EvaluationType? EvaluationType, bool IsEvaluated = true, bool IsActiveParticipant = false);
+
+    private static bool gActive(List<EvaluationRow> rows, int userId) => rows.Any(row => row.UserId == userId && row.IsActiveParticipant);
 }

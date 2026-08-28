@@ -22,10 +22,6 @@ import LeagueCreatePage from './pages/LeagueCreatePage'
 import LeagueJoinPage from './pages/LeagueJoinPage'
 import LeagueDetailPage from './pages/LeagueDetailPage'
 import RankingsLeaguesPage from './pages/RankingsLeaguesPage'
-import RankingsEditionsPage from './pages/RankingsEditionsPage'
-import RankingsRoundsPage from './pages/RankingsRoundsPage'
-import RankingGeneralPage from './pages/RankingGeneralPage'
-import RankingRoundPage from './pages/RankingRoundPage'
 import AdminPrizesListPage from './pages/AdminPrizesListPage'
 import AdminPrizeFormPage from './pages/AdminPrizeFormPage'
 import PrizesCompetitionsPage from './pages/PrizesCompetitionsPage'
@@ -77,10 +73,6 @@ function App() {
         <Route path="/competitions/explore" element={<ExploreCompetitionsPage />} />
         <Route path="/competitions/:competitionId" element={<CompetitionDetailPage />} />
         <Route path="/rankings" element={<RankingsLeaguesPage />} />
-        <Route path="/rankings/competitions/:competitionId/editions" element={<RankingsEditionsPage />} />
-        <Route path="/rankings/editions/:editionId" element={<RankingGeneralPage />} />
-        <Route path="/rankings/editions/:editionId/rounds" element={<RankingsRoundsPage />} />
-        <Route path="/rankings/rounds/:roundId" element={<RankingRoundPage />} />
         <Route path="/prizes" element={<PrizesCompetitionsPage />} />
         <Route path="/prizes/competitions/:competitionId/editions" element={<PrizesEditionsPage />} />
         <Route path="/prizes/editions/:editionId" element={<PrizesListPage />} />

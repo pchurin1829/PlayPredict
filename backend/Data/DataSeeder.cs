@@ -300,7 +300,7 @@ public static class DataSeeder
             InviteCode = "DEMO-LIGA-01",
             IsActive = true,
             CreatedByUserId = ownerUserId,
-            CreatedAtUtc = now,
+            CreatedAtUtc = DateTime.UnixEpoch,
             UpdatedAtUtc = now
         };
         db.Leagues.Add(league);
@@ -562,14 +562,14 @@ public static class DataSeeder
         foreach (var (email, _, _) in RankingDemoUsers)
         {
             var user = users[email];
-            var isParticipant = await db.LeagueParticipants.AnyAsync(lp => lp.LeagueId == demoLeague.Id && lp.UserId == user.Id);
+            var isParticipant = await db.LeagueParticipants.AnyAsync(lp => lp.LeagueId == demoLeague.Id && lp.UserId == user.Id && lp.LeftAtUtc == null);
             if (!isParticipant)
             {
                 db.LeagueParticipants.Add(new LeagueParticipant
                 {
                     LeagueId = demoLeague.Id,
                     UserId = user.Id,
-                    JoinedAtUtc = DateTime.UtcNow
+                    JoinedAtUtc = DateTime.UnixEpoch
                 });
             }
         }
@@ -581,18 +581,17 @@ public static class DataSeeder
             var user = users[email];
             for (var i = 0; i < finishedMatches.Count && i < scores.Length; i++)
             {
-                var exists = await db.Predictions.AnyAsync(p => p.LeagueId == demoLeague.Id && p.UserId == user.Id && p.MatchId == finishedMatches[i].Id);
+                var exists = await db.Predictions.AnyAsync(p => p.UserId == user.Id && p.MatchId == finishedMatches[i].Id);
                 if (!exists)
                 {
                     db.Predictions.Add(new Prediction
                     {
-                        LeagueId = demoLeague.Id,
                         MatchId = finishedMatches[i].Id,
                         UserId = user.Id,
                         PredictedHomeScore = scores[i].Home,
                         PredictedAwayScore = scores[i].Away,
-                        CreatedAtUtc = DateTime.UtcNow,
-                        UpdatedAtUtc = DateTime.UtcNow
+                        CreatedAtUtc = finishedMatches[i].StartsAtUtc.AddDays(-1),
+                        UpdatedAtUtc = finishedMatches[i].StartsAtUtc.AddDays(-1)
                     });
                 }
             }

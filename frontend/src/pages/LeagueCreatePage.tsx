@@ -77,6 +77,14 @@ export default function LeagueCreatePage() {
   const rangeLabel = officialLeague?.scopeType === 'RoundRange'
     ? `${officialLeague.roundFromName ?? 'Fecha inicial'} → ${officialLeague.roundToName ?? 'Fecha final'}`
     : null
+  const selectedFrom = availableRounds.find((round) => round.id === roundFromId)
+  const selectedTo = availableRounds.find((round) => round.id === roundToId)
+  const roundsForFrom = selectedTo
+    ? availableRounds.filter((round) => round.order <= selectedTo.order)
+    : availableRounds
+  const roundsForTo = selectedFrom
+    ? availableRounds.filter((round) => round.order >= selectedFrom.order)
+    : availableRounds
 
   return <div>
     <Link to="/competitions/explore" className="pp-back">← Volver a Competencias Oficiales</Link>
@@ -95,34 +103,6 @@ export default function LeagueCreatePage() {
         </div>
       </div>
       <form className="pp-form" onSubmit={handleSubmit}>
-        <fieldset className="pp-form__field">
-          <legend className="pp-form__label">Alcance</legend>
-          <label className="form-checkbox">
-            <input type="radio" name="scopeType" checked={scopeType === 'FullCompetition'} onChange={() => setScopeType('FullCompetition')} />
-            <span>Toda {officialLeague.name}</span>
-          </label>
-          <label className="form-checkbox">
-            <input type="radio" name="scopeType" checked={scopeType === 'RoundRange'} onChange={() => setScopeType('RoundRange')} />
-            <span>Por fechas</span>
-          </label>
-        </fieldset>
-        {scopeType === 'RoundRange' && <div className="pp-form__row">
-          <div className="pp-form__field">
-            <label className="pp-form__label" htmlFor="roundFromId">Desde</label>
-            <select id="roundFromId" className="pp-form__select" value={roundFromId} onChange={(event) => setRoundFromId(event.target.value ? Number(event.target.value) : '')} required>
-              <option value="">Seleccionar...</option>
-              {availableRounds.map((round) => <option key={round.id} value={round.id}>{round.name}</option>)}
-            </select>
-            {fieldErrors.roundFromId && <span className="pp-form__error">{fieldErrors.roundFromId[0]}</span>}
-          </div>
-          <div className="pp-form__field">
-            <label className="pp-form__label" htmlFor="roundToId">Hasta</label>
-            <select id="roundToId" className="pp-form__select" value={roundToId} onChange={(event) => setRoundToId(event.target.value ? Number(event.target.value) : '')} required>
-              <option value="">Seleccionar...</option>
-              {availableRounds.map((round) => <option key={round.id} value={round.id}>{round.name}</option>)}
-            </select>
-          </div>
-        </div>}
         <div className="pp-form__field">
           <label className="pp-form__label" htmlFor="name">Nombre</label>
           <input id="name" className="pp-form__input" type="text" placeholder="Ej: Liga de los viernes" value={name} onChange={(event) => setName(event.target.value)} />
@@ -133,6 +113,34 @@ export default function LeagueCreatePage() {
           <textarea id="description" className="pp-form__textarea" placeholder="Contale a tus amigos de qué trata esta Liga..." value={description} onChange={(event) => setDescription(event.target.value)} />
           {fieldErrors.description && <span className="pp-form__error">{fieldErrors.description[0]}</span>}
         </div>
+        <fieldset className="pp-form__field">
+          <legend className="pp-form__label">Alcance</legend>
+          <label className="form-checkbox">
+            <input type="radio" name="scopeType" checked={scopeType === 'FullCompetition'} onChange={() => setScopeType('FullCompetition')} />
+            <span>Todas las fechas de {officialLeague.name}</span>
+          </label>
+          <label className="form-checkbox">
+            <input type="radio" name="scopeType" checked={scopeType === 'RoundRange'} onChange={() => setScopeType('RoundRange')} />
+            <span>Solo algunas fechas</span>
+          </label>
+        </fieldset>
+        {scopeType === 'RoundRange' && <div className="pp-form__row">
+          <div className="pp-form__field">
+            <label className="pp-form__label" htmlFor="roundFromId">Desde</label>
+            <select id="roundFromId" className="pp-form__select" value={roundFromId} onChange={(event) => setRoundFromId(event.target.value ? Number(event.target.value) : '')} required>
+              <option value="">Seleccionar...</option>
+              {roundsForFrom.map((round) => <option key={round.id} value={round.id}>{round.name}</option>)}
+            </select>
+            {fieldErrors.roundFromId && <span className="pp-form__error">{fieldErrors.roundFromId[0]}</span>}
+          </div>
+          <div className="pp-form__field">
+            <label className="pp-form__label" htmlFor="roundToId">Hasta</label>
+            <select id="roundToId" className="pp-form__select" value={roundToId} onChange={(event) => setRoundToId(event.target.value ? Number(event.target.value) : '')} required>
+              <option value="">Seleccionar...</option>
+              {roundsForTo.map((round) => <option key={round.id} value={round.id}>{round.name}</option>)}
+            </select>
+          </div>
+        </div>}
         {fieldErrors.officialLeagueId && <span className="pp-form__error">{fieldErrors.officialLeagueId[0]}</span>}
         <div className="pp-form__actions">
           <button type="submit" className="pp-btn pp-btn--primary" disabled={saving}>{saving ? 'Creando...' : 'Crear Liga'}</button>

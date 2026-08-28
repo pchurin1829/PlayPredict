@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlayPredict.Api.Data;
@@ -11,9 +12,11 @@ using PlayPredict.Api.Data;
 namespace PlayPredict.Api.Migrations
 {
     [DbContext(typeof(PlayPredictDbContext))]
-    partial class PlayPredictDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260827222202_UniquePredictionPerUserMatch")]
+    partial class UniquePredictionPerUserMatch
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -847,41 +850,6 @@ namespace PlayPredict.Api.Migrations
                     b.ToTable("UserRoles", (string)null);
                 });
 
-            modelBuilder.Entity("PlayPredict.Api.Domain.Entities.UserTeamPreferredPlayer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("TeamId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TeamPlayerId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TeamId");
-
-                    b.HasIndex("TeamPlayerId");
-
-                    b.HasIndex("UserId", "TeamId")
-                        .IsUnique();
-
-                    b.ToTable("UserTeamPreferredPlayers", (string)null);
-                });
-
             modelBuilder.Entity("PlayPredict.Api.Domain.Entities.Competition", b =>
                 {
                     b.HasOne("PlayPredict.Api.Domain.Entities.Experience", "Experience")
@@ -1139,33 +1107,6 @@ namespace PlayPredict.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Role");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("PlayPredict.Api.Domain.Entities.UserTeamPreferredPlayer", b =>
-                {
-                    b.HasOne("PlayPredict.Api.Domain.Entities.Team", "Team")
-                        .WithMany()
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("PlayPredict.Api.Domain.Entities.TeamPlayer", "TeamPlayer")
-                        .WithMany()
-                        .HasForeignKey("TeamPlayerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("PlayPredict.Api.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Team");
-
-                    b.Navigation("TeamPlayer");
 
                     b.Navigation("User");
                 });

@@ -346,8 +346,7 @@ public static class MatchEndpoints
 
         var requiresDetail = preferredPlayerLeagueIds.Count > 0 && await db.Predictions.AnyAsync(prediction =>
             prediction.MatchId == matchId
-            && prediction.PreferredPlayerId.HasValue
-            && preferredPlayerLeagueIds.Contains(prediction.LeagueId));
+            && prediction.PreferredPlayerId.HasValue);
         return new(preferredPlayerLeagueIds.Count > 0, requiresDetail);
     }
 

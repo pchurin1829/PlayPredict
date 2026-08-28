@@ -187,8 +187,10 @@ export default function PredictionsMatchesPage() {
       const isUpdate = row.hasPrediction
       const updated = isUpdate
         ? await api.put<MatchWithPrediction['myPrediction']>(`/predictions/${match.myPrediction!.id}`, {
+            leagueId: Number(leagueId),
             predictedHomeScore: homeScore,
             predictedAwayScore: awayScore,
+            updatePreferredPlayer: false,
           })
         : await api.post<MatchWithPrediction['myPrediction']>('/predictions', {
             leagueId: Number(leagueId),
@@ -221,7 +223,7 @@ export default function PredictionsMatchesPage() {
     setDeleteTarget(null)
     updateRow(match.id, { saving: true, error: null, savedMessage: null })
     try {
-      await api.del<void>(`/predictions/${match.myPrediction.id}`)
+      await api.del<void>(`/predictions/${match.myPrediction.id}?leagueId=${leagueId}`)
       setMatches((prev) => prev ? prev.map((m) => m.id === match.id ? { ...m, myPrediction: null } : m) : prev)
       updateRow(match.id, {
         homeInput: '', awayInput: '', savedHome: '', savedAway: '', hasPrediction: false,
@@ -406,7 +408,7 @@ export default function PredictionsMatchesPage() {
                       <div className="pp-match-card__result-row">
                         <span className="pp-match-card__result-label">Puntos</span>
                         <span className={`pp-match-card__result-points ${(m.myPrediction.points ?? 0) > 0 ? 'pp-match-card__result-points--positive' : ''}`}>
-                          {m.myPrediction.points ?? 0} pts
+                          {m.predictionEligible ? `${m.myPrediction.points ?? 0} pts` : 'No elegible en esta Liga'}
                         </span>
                       </div>
                       {m.myPrediction.evaluationLabel && (
@@ -465,7 +467,7 @@ export default function PredictionsMatchesPage() {
       <ConfirmModal
         open={deleteTarget !== null}
         title="Eliminar pronóstico"
-        message="¿Querés eliminar este pronóstico? Los valores guardados se borrarán definitivamente."
+        message="¿Querés eliminar este pronóstico? Se borrará para este partido en todas las Ligas que lo utilizan."
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
         onConfirm={deletePrediction}

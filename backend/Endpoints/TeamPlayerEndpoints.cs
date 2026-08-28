@@ -72,8 +72,9 @@ public static class TeamPlayerEndpoints
             if (player is null) return Results.NotFound();
             var usedInPredictions = await db.Predictions.AnyAsync(p => p.PreferredPlayerId == id);
             var usedInResults = await db.MatchScorers.AnyAsync(s => s.TeamPlayerId == id);
-            if (usedInPredictions || usedInResults)
-                return Results.Conflict(new { message = "No se puede eliminar este jugador porque ya está utilizado en pronósticos o resultados." });
+            var usedInPreferences = await db.UserTeamPreferredPlayers.AnyAsync(preference => preference.TeamPlayerId == id);
+            if (usedInPredictions || usedInResults || usedInPreferences)
+                return Results.Conflict(new { message = "No se puede eliminar este jugador porque ya está utilizado en pronósticos, resultados o preferencias de usuarios." });
             db.TeamPlayers.Remove(player);
             await db.SaveChangesAsync();
             ManagedImageStorage.Delete(player.PhotoUrl, "team-players", configuration, environment);

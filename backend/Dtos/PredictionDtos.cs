@@ -2,7 +2,6 @@ namespace PlayPredict.Api.Dtos;
 
 public record PredictionDto(
     int Id,
-    int LeagueId,
     int MatchId,
     int UserId,
     int PredictedHomeScore,
@@ -24,12 +23,15 @@ public record CreatePredictionDto(
     int MatchId,
     int PredictedHomeScore,
     int PredictedAwayScore,
-    int? PreferredPlayerId);
+    int? PreferredPlayerId,
+    bool UpdatePreferredPlayer = false);
 
 public record UpdatePredictionDto(
+    int LeagueId,
     int PredictedHomeScore,
     int PredictedAwayScore,
-    int? PreferredPlayerId);
+    int? PreferredPlayerId,
+    bool UpdatePreferredPlayer = false);
 
 public record AvailablePlayerDto(int Id, int TeamId, string FirstName, string LastName, string? Nickname, int? ShirtNumber, string Position);
 
@@ -46,6 +48,8 @@ public record MatchWithPredictionDto(
     int? AwayGoals,
     IReadOnlyList<AvailablePlayerDto> HomePlayers,
     IReadOnlyList<AvailablePlayerDto> AwayPlayers,
+    IReadOnlyList<AvailablePlayerDto> QuickPreferredPlayers,
     bool PreferredPlayerEnabled,
+    bool PredictionEligible,
     PredictionDto? MyPrediction,
     bool CanPredict);

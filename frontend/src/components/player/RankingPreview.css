@@ -71,6 +71,12 @@
   margin-left: 0.25rem;
 }
 
+.rpreview__inactive {
+  margin-left: 0.3rem;
+  color: var(--color-text-secondary);
+  font-size: 0.65rem;
+}
+
 .rpreview__points {
   font-weight: 700;
   color: var(--color-primary);

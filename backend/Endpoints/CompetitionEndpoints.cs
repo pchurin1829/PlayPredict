@@ -137,7 +137,7 @@ public static class CompetitionEndpoints
         var roundIds = db.Rounds.Where(r => editionIds.Contains(r.EditionId)).Select(r => r.Id);
         var matchIds = db.Matches.Where(m => roundIds.Contains(m.RoundId)).Select(m => m.Id);
         var leagueIds = db.Leagues.Where(l => l.CompetitionId == competitionId).Select(l => l.Id);
-        var predictionIds = db.Predictions.Where(p => leagueIds.Contains(p.LeagueId) || matchIds.Contains(p.MatchId)).Select(p => p.Id);
+        var predictionIds = db.Predictions.Where(p => matchIds.Contains(p.MatchId)).Select(p => p.Id);
         return new CompetitionDependenciesDto(
             await editionIds.CountAsync(), await roundIds.CountAsync(), await matchIds.CountAsync(),
             await leagueIds.CountAsync(), await db.LeagueParticipants.CountAsync(p => leagueIds.Contains(p.LeagueId)),

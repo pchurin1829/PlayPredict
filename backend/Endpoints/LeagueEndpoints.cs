@@ -41,7 +41,7 @@ public static class LeagueEndpoints
             }
 
             var participatingLeagueIds = await db.LeagueParticipants
-                .Where(lp => lp.UserId == user.Id)
+                .Where(lp => lp.UserId == user.Id && lp.LeftAtUtc == null)
                 .Select(lp => lp.LeagueId)
                 .ToListAsync();
 
@@ -69,7 +69,7 @@ public static class LeagueEndpoints
             }
 
             var leagueIds = await db.LeagueParticipants
-                .Where(lp => lp.UserId == user.Id)
+                .Where(lp => lp.UserId == user.Id && lp.LeftAtUtc == null)
                 .Select(lp => lp.LeagueId)
                 .ToListAsync();
 
@@ -196,7 +196,7 @@ public static class LeagueEndpoints
             }
 
             var participant = await db.LeagueParticipants
-                .FirstOrDefaultAsync(lp => lp.LeagueId == id && lp.UserId == user.Id);
+                .FirstOrDefaultAsync(lp => lp.LeagueId == id && lp.UserId == user.Id && lp.LeftAtUtc == null);
             if (participant is null)
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -218,7 +218,7 @@ public static class LeagueEndpoints
             // participación. Los pronósticos se conservan para que, si el usuario vuelve
             // a participar, recupere los valores cargados. La política definitiva sobre
             // pronósticos al abandonar una Liga queda pendiente de decisión de producto.
-            db.LeagueParticipants.Remove(participant);
+            participant.LeftAtUtc = DateTime.UtcNow;
             await db.SaveChangesAsync();
 
             return Results.Ok(new { message = "Dejaste la Liga correctamente." });
@@ -246,20 +246,7 @@ public static class LeagueEndpoints
             // Eliminar una Liga es distinto de suspenderla: la confirmación explícita del
             // owner elimina sus datos dependientes en el orden requerido por las FK Restrict.
             await using var transaction = await db.Database.BeginTransactionAsync();
-            var predictionIds = await db.Predictions
-                .Where(p => p.LeagueId == id)
-                .Select(p => p.Id)
-                .ToListAsync();
-
-            if (predictionIds.Count > 0)
-            {
-                await db.PredictionEvaluations
-                    .Where(e => predictionIds.Contains(e.PredictionId))
-                    .ExecuteDeleteAsync();
-                await db.Predictions
-                    .Where(p => p.LeagueId == id)
-                    .ExecuteDeleteAsync();
-            }
+            await db.PredictionEvaluations.Where(e => e.LeagueId == id).ExecuteDeleteAsync();
 
             await db.LeagueParticipants
                 .Where(lp => lp.LeagueId == id)
@@ -340,7 +327,7 @@ public static class LeagueEndpoints
 
             // Datos públicos mínimos: nunca email, hash ni roles internos.
             var participants = await db.LeagueParticipants
-                .Where(lp => lp.LeagueId == id)
+                .Where(lp => lp.LeagueId == id && lp.LeftAtUtc == null)
                 .OrderBy(lp => lp.JoinedAtUtc)
                 .Join(db.Users, lp => lp.UserId, u => u.Id,
                     (lp, u) => new { u.Id, u.FirstName, u.LastName, lp.JoinedAtUtc })
@@ -378,22 +365,28 @@ public static class LeagueEndpoints
 
             var predictions = await db.Predictions
                 .Include(p => p.PreferredPlayer)
-                .Where(p => p.LeagueId == id && p.UserId == user.Id && matchIds.Contains(p.MatchId))
+                .Where(p => p.UserId == user.Id && matchIds.Contains(p.MatchId))
                 .ToListAsync();
 
-            var evaluations = await PredictionEndpoints.GetEvaluationsForPredictionsAsync(db, predictions);
+            var evaluations = await PredictionEndpoints.GetEvaluationsForPredictionsAsync(db, predictions, id);
             var teamIds = matches.SelectMany(m => new[] { m.HomeTeamId, m.AwayTeamId }).Distinct().ToList();
             var effective = await scoring.GetEffectiveAsync(db, league.Id);
             var allowed = effective?.PreferredPlayerPositions ?? PlayerPosition.None;
             var players = await db.TeamPlayers.Where(p => teamIds.Contains(p.TeamId) && p.Active).OrderBy(p => p.DisplayName).ToListAsync();
             players = players.Where(p => PlayerPositionCatalog.TryParse(p.Position, out var position) && allowed.HasFlag(position)).ToList();
+            var teamPreferences = await db.UserTeamPreferredPlayers
+                .Where(preference => preference.UserId == user.Id && teamIds.Contains(preference.TeamId))
+                .ToDictionaryAsync(preference => preference.TeamId, preference => preference.TeamPlayerId);
             var preferredEnabled = effective?.PreferredPlayerEnabled ?? false;
+            var membershipPeriods = await db.LeagueParticipants
+                .Where(p => p.LeagueId == id && p.UserId == user.Id).ToListAsync();
 
             var result = matches.Select(m =>
             {
                 var prediction = predictions.FirstOrDefault(p => p.MatchId == m.Id);
                 var evaluation = prediction is null ? null : evaluations.GetValueOrDefault(prediction.Id);
-                return PredictionEndpoints.ToMatchWithPredictionDto(m, prediction, evaluation, league.IsActive, players, preferredEnabled);
+                var eligible = prediction is not null && PredictionEndpoints.IsEligible(prediction, league, m, membershipPeriods);
+                return PredictionEndpoints.ToMatchWithPredictionDto(m, prediction, evaluation, league.IsActive, players, preferredEnabled, eligible, teamPreferences);
             });
 
             return Results.Ok(result);
@@ -404,7 +397,7 @@ public static class LeagueEndpoints
         Results.Json(new { message }, statusCode: StatusCodes.Status403Forbidden);
 
     private static Task<bool> IsParticipantAsync(PlayPredictDbContext db, int leagueId, int userId) =>
-        db.LeagueParticipants.AnyAsync(lp => lp.LeagueId == leagueId && lp.UserId == userId);
+        db.LeagueParticipants.AnyAsync(lp => lp.LeagueId == leagueId && lp.UserId == userId && lp.LeftAtUtc == null);
 
     internal static async Task<(League? League, Dictionary<string, string[]> Errors)> CreatePrivateLeagueAsync(
         PlayPredictDbContext db, LeagueScoringService scoring, CreateLeagueDto dto, int userId)
@@ -577,7 +570,7 @@ public static class LeagueEndpoints
             .Where(c => c.Id == league.CompetitionId).Select(c => c.Name).FirstAsync();
         var editionName = await db.Editions
             .Where(e => e.Id == league.EditionId).Select(e => e.Name).FirstAsync();
-        var participantsCount = await db.LeagueParticipants.CountAsync(lp => lp.LeagueId == league.Id);
+        var participantsCount = await db.LeagueParticipants.CountAsync(lp => lp.LeagueId == league.Id && lp.LeftAtUtc == null);
         var sourceLeague = league.SourceLeagueId is null ? null : await db.Leagues
             .Where(l => l.Id == league.SourceLeagueId)
             .Select(l => new { l.Name, l.ScopeType, l.RoundFromId, l.RoundToId })
@@ -602,7 +595,7 @@ public static class LeagueEndpoints
         var editionName = await db.Editions
             .Where(e => e.Id == league.EditionId).Select(e => e.Name).FirstAsync();
         var creator = await db.Users.FindAsync(league.CreatedByUserId);
-        var participantsCount = await db.LeagueParticipants.CountAsync(lp => lp.LeagueId == league.Id);
+        var participantsCount = await db.LeagueParticipants.CountAsync(lp => lp.LeagueId == league.Id && lp.LeftAtUtc == null);
         var sourceLeague = league.SourceLeagueId is null ? null : await db.Leagues
             .Where(l => l.Id == league.SourceLeagueId)
             .Select(l => new { l.Name, l.ScopeType, l.RoundFromId, l.RoundToId })

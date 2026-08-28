@@ -6,7 +6,7 @@ import StatusMessage from '../components/StatusMessage'
 import ComingSoonBadge from '../components/player/ComingSoonBadge'
 import ConfirmModal from '../components/ConfirmModal'
 import TeamBadge from '../components/player/TeamBadge'
-import PreferredPlayerPicker from '../components/player/PreferredPlayerPicker'
+import QuickPreferredPlayerPicker from '../components/player/QuickPreferredPlayerPicker'
 import { useAuth } from '../auth/AuthContext'
 import './PlayerPages.css'
 
@@ -32,7 +32,9 @@ function sanitizeDigits(value: string): string {
 function buildInitialRow(match: MatchWithPrediction): RowState {
   const home = match.myPrediction ? String(match.myPrediction.predictedHomeScore) : ''
   const away = match.myPrediction ? String(match.myPrediction.predictedAwayScore) : ''
-  const preferredPlayerId = match.myPrediction?.preferredPlayerId ? String(match.myPrediction.preferredPlayerId) : ''
+  const preferredPlayerId = match.myPrediction?.preferredPlayerId
+    ? String(match.myPrediction.preferredPlayerId)
+    : !match.myPrediction && match.quickPreferredPlayers.length === 1 ? String(match.quickPreferredPlayers[0].id) : ''
   return {
     homeInput: home,
     awayInput: away,
@@ -120,6 +122,7 @@ export default function LeagueDetailPage() {
   const [league, setLeague] = useState<LeagueDetail | null>(null)
   const [participants, setParticipants] = useState<LeagueParticipantInfo[] | null>(null)
   const [ranking, setRanking] = useState<RankingEntry[] | null>(null)
+  const [rankingRoundId, setRankingRoundId] = useState<number | null>(null)
   const [matches, setMatches] = useState<MatchWithPrediction[] | null>(null)
   const [rows, setRows] = useState<Record<number, RowState>>({})
   const [error, setError] = useState<string | null>(null)
@@ -162,11 +165,14 @@ export default function LeagueDetailPage() {
     if (activeTab !== 'ranking' || !leagueId) return
     let cancelled = false
     setRanking(null)
-    api.get<RankingEntry[]>(`/rankings/leagues/${leagueId}`)
+    const rankingUrl = rankingRoundId === null
+      ? `/rankings/leagues/${leagueId}`
+      : `/rankings/leagues/${leagueId}/rounds/${rankingRoundId}`
+    api.get<RankingEntry[]>(rankingUrl)
       .then((data) => { if (!cancelled) setRanking(data) })
       .catch(() => { if (!cancelled) setRanking([]) })
     return () => { cancelled = true }
-  }, [activeTab, leagueId])
+  }, [activeTab, leagueId, rankingRoundId])
 
   useEffect(() => {
     if ((activeTab !== 'pronosticos' && activeTab !== 'resultados') || !leagueId) return
@@ -262,8 +268,8 @@ export default function LeagueDetailPage() {
     try {
       const isUpdate = row.hasPrediction
       const updated = isUpdate
-        ? await api.put<MatchWithPrediction['myPrediction']>(`/predictions/${match.myPrediction!.id}`, { predictedHomeScore: homeScore, predictedAwayScore: awayScore, preferredPlayerId: row.preferredPlayerId ? Number(row.preferredPlayerId) : null })
-        : await api.post<MatchWithPrediction['myPrediction']>('/predictions', { leagueId: Number(leagueId), matchId: match.id, predictedHomeScore: homeScore, predictedAwayScore: awayScore, preferredPlayerId: row.preferredPlayerId ? Number(row.preferredPlayerId) : null })
+        ? await api.put<MatchWithPrediction['myPrediction']>(`/predictions/${match.myPrediction!.id}`, { leagueId: Number(leagueId), predictedHomeScore: homeScore, predictedAwayScore: awayScore, preferredPlayerId: row.preferredPlayerId ? Number(row.preferredPlayerId) : null, updatePreferredPlayer: match.preferredPlayerEnabled })
+        : await api.post<MatchWithPrediction['myPrediction']>('/predictions', { leagueId: Number(leagueId), matchId: match.id, predictedHomeScore: homeScore, predictedAwayScore: awayScore, preferredPlayerId: row.preferredPlayerId ? Number(row.preferredPlayerId) : null, updatePreferredPlayer: match.preferredPlayerEnabled })
       setMatches((prev) => prev ? prev.map((m) => m.id === match.id ? { ...m, myPrediction: updated } : m) : prev)
       updateRow(match.id, {
         saving: false,
@@ -286,7 +292,7 @@ export default function LeagueDetailPage() {
     setDeleteTarget(null)
     updateRow(match.id, { saving: true, error: null, savedMessage: null })
     try {
-      await api.del<void>(`/predictions/${match.myPrediction.id}`)
+      await api.del<void>(`/predictions/${match.myPrediction.id}?leagueId=${leagueId}`)
       setMatches((prev) => prev ? prev.map((m) => m.id === match.id ? { ...m, myPrediction: null } : m) : prev)
       updateRow(match.id, {
         homeInput: '', awayInput: '', savedHome: '', savedAway: '', preferredPlayerId: '', savedPreferredPlayerId: '', hasPrediction: false,
@@ -606,7 +612,7 @@ export default function LeagueDetailPage() {
                                   <label className="pp-match-card__preferred">
                                     <span className="pp-match-card__preferred-label">Jugador Preferido <small>(opcional)</small></span>
                                     {m.homePlayers.length > 0 || m.awayPlayers.length > 0 ? (
-                                      <PreferredPlayerPicker homeTeam={m.participantHome} awayTeam={m.participantAway} homePlayers={m.homePlayers} awayPlayers={m.awayPlayers} value={row.preferredPlayerId} ariaLabel={`Jugador Preferido para ${m.participantHome} vs ${m.participantAway}`} onChange={value => updateRow(m.id, { preferredPlayerId: value, savedMessage: null, error: null })} onSelectionComplete={() => setActionFocusMatchId(m.id)} />
+                                      <QuickPreferredPlayerPicker homeTeam={m.participantHome} awayTeam={m.participantAway} homePlayers={m.homePlayers} awayPlayers={m.awayPlayers} quickPlayers={m.quickPreferredPlayers} value={row.preferredPlayerId} ariaLabel={`Jugador Preferido para ${m.participantHome} vs ${m.participantAway}`} onChange={value => updateRow(m.id, { preferredPlayerId: value, savedMessage: null, error: null })} onSelectionComplete={() => setActionFocusMatchId(m.id)} />
                                     ) : (
                                       <span className="pp-match-card__preferred-empty">No hay jugadores disponibles para las posiciones habilitadas.</span>
                                     )}
@@ -700,7 +706,7 @@ export default function LeagueDetailPage() {
                                   </div>
                                   <div className="pp-match-card__result-row">
                                     <span className="pp-match-card__result-label">Puntos</span>
-                                    <span className={`pp-match-card__result-points ${(m.myPrediction.points ?? 0) > 0 ? 'pp-match-card__result-points--positive' : ''}`}>{m.myPrediction.points ?? 0} pts</span>
+                                    <span className={`pp-match-card__result-points ${(m.myPrediction.points ?? 0) > 0 ? 'pp-match-card__result-points--positive' : ''}`}>{m.predictionEligible ? `${m.myPrediction.points ?? 0} pts` : 'No elegible en esta Liga'}</span>
                                   </div>
                                   {m.myPrediction.evaluationLabel && (
                                     <div className="pp-match-card__result-row">
@@ -732,6 +738,13 @@ export default function LeagueDetailPage() {
       {/* ── RANKING ────────────────────────────────────────── */}
       {activeTab === 'ranking' && (
         <div>
+          <div className="pp-edition-select">
+            <span className="pp-edition-select__label">Alcance del ranking:</span>
+            <select className="pp-edition-select__select" value={rankingRoundId ?? ''} onChange={(event) => setRankingRoundId(event.target.value ? Number(event.target.value) : null)}>
+              <option value="">General de la Liga</option>
+              {roundOptions.map((round) => <option key={round.id} value={round.id}>{round.name}</option>)}
+            </select>
+          </div>
           {!ranking && <StatusMessage kind="loading" message="Cargando ranking..." />}
           {ranking && ranking.length === 0 && (
             <div className="pp-empty">
@@ -741,7 +754,7 @@ export default function LeagueDetailPage() {
           )}
           {ranking && ranking.length > 0 && (
             <div className="pp-ranking">
-              <div className="pp-ranking__header"><h2>Ranking de la Liga</h2></div>
+              <div className="pp-ranking__header"><h2>{rankingRoundId === null ? 'Ranking de la Liga' : `Ranking — ${getRoundName(rankingRoundId)}`}</h2></div>
               <table>
                 <thead><tr><th>#</th><th>Jugador</th><th>Puntos</th><th>Exactos</th><th>Correctos</th><th>Evaluados</th></tr></thead>
                 <tbody>
@@ -750,7 +763,7 @@ export default function LeagueDetailPage() {
                     return (
                       <tr key={r.userId} className={isMe ? 'pp-ranking__me' : ''}>
                         <td><span className={`pp-ranking__pos ${r.position <= 3 ? `pp-ranking__pos--${r.position}` : ''}`}>{r.position}°</span></td>
-                        <td>{r.firstName} {r.lastName}{isMe && <span className="pp-ranking__me-badge">(Vos)</span>}</td>
+                        <td>{r.firstName} {r.lastName}{!r.isActiveParticipant && <span className="pp-ranking__inactive-badge">Retirado</span>}{isMe && <span className="pp-ranking__me-badge">(Vos)</span>}</td>
                         <td className="pp-ranking__points">{r.points}</td>
                         <td>{r.exactCount}</td>
                         <td>{r.correctCount}</td>
@@ -791,7 +804,7 @@ export default function LeagueDetailPage() {
       <ConfirmModal
         open={deleteTarget !== null}
         title="Eliminar pronóstico"
-        message="¿Querés eliminar este pronóstico? Los valores guardados se borrarán definitivamente."
+        message="¿Querés eliminar este pronóstico? Se borrará para este partido en todas las Ligas que lo utilizan."
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
         onConfirm={deletePrediction}

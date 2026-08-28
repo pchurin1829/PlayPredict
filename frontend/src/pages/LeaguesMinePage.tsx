@@ -124,7 +124,7 @@ export default function LeaguesMinePage() {
         leave: { title: 'Dejar de participar', msg: `¿Querés dejar de participar en "${modalTarget.name}"?`, confirm: 'Dejar liga' },
         suspend: { title: 'Suspender Liga', msg: `¿Querés suspender "${modalTarget.name}"? Los participantes y pronósticos se conservarán.`, confirm: 'Suspender' },
         reactivate: { title: 'Reactivar Liga', msg: `¿Querés reactivar "${modalTarget.name}"?`, confirm: 'Reactivar' },
-        delete: { title: 'Eliminar Liga definitivamente', msg: `¿Querés eliminar "${modalTarget.name}"? Se borrarán la Liga, sus participantes, pronósticos, puntos e historial. Esta acción no se puede deshacer.`, confirm: 'Sí, eliminar Liga' },
+        delete: { title: 'Eliminar Liga definitivamente', msg: `¿Querés eliminar "${modalTarget.name}"? Se borrarán la Liga, sus membresías y sus evaluaciones. Los pronósticos deportivos compartidos se conservarán. Esta acción no se puede deshacer.`, confirm: 'Sí, eliminar Liga' },
       }[modalTarget.action]
     : null
 
@@ -206,7 +206,7 @@ export default function LeaguesMinePage() {
                       </span>
                       <span>👥 {l.participantsCount} participante{l.participantsCount !== 1 ? 's' : ''}</span>
                     </div>
-                    <div className="pp-league-card__footer">
+                    <div className={`pp-league-card__footer${isOfficial ? ' pp-league-card__footer--official' : ''}`}>
                       <div className={`pp-league-card__actions-row pp-league-card__actions-row--${isOfficial ? 'official' : 'private'}`}>
                         <Link to={`/leagues/${l.id}`} className="pp-league-card__action">
                           Entrar
@@ -249,7 +249,7 @@ export default function LeaguesMinePage() {
                         )}
                       </div>
                       {isOfficial && (
-                        <Link to={`/leagues/new?officialLeagueId=${l.id}`} className="pp-btn pp-btn--primary pp-btn--sm">
+                        <Link to={`/leagues/new?officialLeagueId=${l.id}`} className="pp-btn pp-btn--primary pp-btn--sm pp-league-card__create-friends">
                           Crear Liga con amigos
                         </Link>
                       )}

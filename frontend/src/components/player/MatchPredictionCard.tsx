@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api, ApiError } from '../../api/client'
 import type { MatchWithPrediction } from '../../api/types'
 import TeamBadge from './TeamBadge'
-import PreferredPlayerPicker from './PreferredPlayerPicker'
+import QuickPreferredPlayerPicker from './QuickPreferredPlayerPicker'
 import './MatchPredictionCard.css'
 
 interface MatchPredictionCardProps {
@@ -26,7 +26,9 @@ export default function MatchPredictionCard({
   const [awayInput, setAwayInput] = useState(
     match.myPrediction ? String(match.myPrediction.predictedAwayScore) : '',
   )
-  const [preferredPlayerId, setPreferredPlayerId] = useState(match.myPrediction?.preferredPlayerId ? String(match.myPrediction.preferredPlayerId) : '')
+  const [preferredPlayerId, setPreferredPlayerId] = useState(match.myPrediction?.preferredPlayerId
+    ? String(match.myPrediction.preferredPlayerId)
+    : !match.myPrediction && match.quickPreferredPlayers.length === 1 ? String(match.quickPreferredPlayers[0].id) : '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
@@ -60,7 +62,7 @@ export default function MatchPredictionCard({
       const updated = match.myPrediction
         ? await api.put<MatchWithPrediction['myPrediction']>(
             `/predictions/${match.myPrediction.id}`,
-            { predictedHomeScore: homeScore, predictedAwayScore: awayScore, preferredPlayerId: preferredPlayerId ? Number(preferredPlayerId) : null },
+            { leagueId, predictedHomeScore: homeScore, predictedAwayScore: awayScore, preferredPlayerId: preferredPlayerId ? Number(preferredPlayerId) : null, updatePreferredPlayer: match.preferredPlayerEnabled },
           )
         : await api.post<MatchWithPrediction['myPrediction']>('/predictions', {
             leagueId,
@@ -68,6 +70,7 @@ export default function MatchPredictionCard({
             predictedHomeScore: homeScore,
             predictedAwayScore: awayScore,
             preferredPlayerId: preferredPlayerId ? Number(preferredPlayerId) : null,
+            updatePreferredPlayer: match.preferredPlayerEnabled,
           })
 
       onPredictionUpdated({ ...match, myPrediction: updated })
@@ -149,7 +152,7 @@ export default function MatchPredictionCard({
               />
             </div>
             {match.preferredPlayerEnabled && <div className="mpcard__preferred"><span>Jugador Preferido <small>(opcional)</small></span>
-              <PreferredPlayerPicker homeTeam={match.participantHome} awayTeam={match.participantAway} homePlayers={match.homePlayers} awayPlayers={match.awayPlayers} value={preferredPlayerId} onChange={value => { setPreferredPlayerId(value); setSavedMessage(null) }} />
+              <QuickPreferredPlayerPicker homeTeam={match.participantHome} awayTeam={match.participantAway} homePlayers={match.homePlayers} awayPlayers={match.awayPlayers} quickPlayers={match.quickPreferredPlayers} value={preferredPlayerId} onChange={value => { setPreferredPlayerId(value); setSavedMessage(null) }} />
             </div>}
             <button
               type="button"
@@ -167,7 +170,7 @@ export default function MatchPredictionCard({
               {match.myPrediction.predictedHomeScore} - {match.myPrediction.predictedAwayScore}
             </span>
             <span className="mpcard__result-points">
-              {match.myPrediction.points} pts
+              {match.predictionEligible ? `${match.myPrediction.points ?? 0} pts` : 'No elegible en esta Liga'}
             </span>
             {match.preferredPlayerEnabled && <span className="mpcard__preferred-summary">Jugador Preferido: {match.myPrediction.preferredPlayerName ? `${match.myPrediction.preferredPlayerName} · ${match.myPrediction.preferredPlayerPoints ?? 0} pts` : 'No seleccionado'}</span>}
           </div>

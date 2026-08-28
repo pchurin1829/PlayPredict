@@ -123,7 +123,6 @@ export type EvaluationType = 'ExactScore' | 'CorrectOutcome' | 'Incorrect'
 
 export interface Prediction {
   id: number
-  leagueId: number
   matchId: number
   userId: number
   predictedHomeScore: number
@@ -196,7 +195,9 @@ export interface MatchWithPrediction {
   awayGoals: number | null
   homePlayers: AvailablePlayer[]
   awayPlayers: AvailablePlayer[]
+  quickPreferredPlayers: AvailablePlayer[]
   preferredPlayerEnabled: boolean
+  predictionEligible: boolean
   myPrediction: Prediction | null
   canPredict: boolean
 }
@@ -214,6 +215,7 @@ export interface RankingEntry {
   correctCount: number
   incorrectCount: number
   evaluatedCount: number
+  isActiveParticipant: boolean
 }
 
 export type PrizeType = 'Money' | 'Product' | 'Service' | 'Coupon' | 'Ticket' | 'Recognition' | 'Other'
@@ -318,6 +320,25 @@ export interface Team {
 }
 
 export interface TeamPlayer { id:number; teamId:number; firstName:string; lastName:string; displayName:string; shirtNumber:number|null; position:string|null; active:boolean; photoUrl:string|null }
+
+export interface UserTeamPreferredPlayer {
+  id: number
+  teamId: number
+  teamName: string
+  teamPlayerId: number
+  teamPlayerName: string
+  isValid: boolean
+  createdAtUtc: string
+  updatedAtUtc: string
+}
+
+export interface PreferredPlayerProfileTeam {
+  teamId: number
+  teamName: string
+  teamShortName: string
+  players: Array<{ id: number; name: string }>
+  preference: UserTeamPreferredPlayer | null
+}
 export interface AvailablePlayer { id:number; teamId:number; firstName:string; lastName:string; nickname:string|null; shirtNumber:number|null; position:PlayerPosition }
 
 export interface AdminOfficialLeague {

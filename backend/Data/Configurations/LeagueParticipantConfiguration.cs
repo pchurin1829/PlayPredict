@@ -13,9 +13,12 @@ public class LeagueParticipantConfiguration : IEntityTypeConfiguration<LeaguePar
         builder.HasKey(lp => lp.Id);
 
         builder.Property(lp => lp.JoinedAtUtc).IsRequired();
+        builder.Property(lp => lp.LeftAtUtc);
 
         // Un usuario no puede unirse dos veces a la misma Liga.
-        builder.HasIndex(lp => new { lp.LeagueId, lp.UserId }).IsUnique();
+        builder.HasIndex(lp => new { lp.LeagueId, lp.UserId })
+            .IsUnique()
+            .HasFilter("\"LeftAtUtc\" IS NULL");
 
         builder.HasOne(lp => lp.League)
             .WithMany(l => l.Participants)

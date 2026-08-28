@@ -39,7 +39,7 @@ export default function RankingPreview({
                   {r.position}°
                 </span>
                 <span className="rpreview__name">
-                  {r.firstName} {r.lastName}
+                  {r.firstName} {r.lastName}{!r.isActiveParticipant && <span className="rpreview__inactive">Retirado</span>}
                   {isMe && <span className="rpreview__me-badge">(Vos)</span>}
                 </span>
                 <span className="rpreview__points">{r.points} pts</span>

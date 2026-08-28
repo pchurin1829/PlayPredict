@@ -365,7 +365,7 @@ public static class DemoDatasetV1Seeder
                 Name = name, Description = $"Liga de {Version}.", CompetitionId = edition.CompetitionId, EditionId = edition.Id,
                 ScopeType = LeagueScopeType.RoundRange, RoundFromId = rounds.First().Id, RoundToId = rounds.Last().Id,
                 LeagueType = type, InviteCode = type == LeagueType.Official ? $"OFF-{Guid.NewGuid():N}"[..16].ToUpperInvariant() : $"V1-{Guid.NewGuid():N}"[..12].ToUpperInvariant(),
-                IsActive = true, CreatedByUserId = ownerId, CreatedAtUtc = now, UpdatedAtUtc = now
+                IsActive = true, CreatedByUserId = ownerId, CreatedAtUtc = DateTime.UnixEpoch, UpdatedAtUtc = now
             };
             db.Leagues.Add(league);
             await db.SaveChangesAsync();
@@ -376,8 +376,8 @@ public static class DemoDatasetV1Seeder
     private static async Task EnsureParticipantsAsync(PlayPredictDbContext db, int leagueId, IEnumerable<User> users)
     {
         foreach (var user in users)
-            if (!await db.LeagueParticipants.AnyAsync(p => p.LeagueId == leagueId && p.UserId == user.Id))
-                db.LeagueParticipants.Add(new LeagueParticipant { LeagueId = leagueId, UserId = user.Id, JoinedAtUtc = DateTime.UtcNow });
+            if (!await db.LeagueParticipants.AnyAsync(p => p.LeagueId == leagueId && p.UserId == user.Id && p.LeftAtUtc == null))
+                db.LeagueParticipants.Add(new LeagueParticipant { LeagueId = leagueId, UserId = user.Id, JoinedAtUtc = DateTime.UnixEpoch });
         await db.SaveChangesAsync();
     }
 
@@ -404,7 +404,7 @@ public static class DemoDatasetV1Seeder
             for (var userIndex = 0; userIndex < users.Count; userIndex++)
             {
                 var user = users[userIndex];
-                if (await db.Predictions.AnyAsync(p => p.LeagueId == league.Id && p.UserId == user.Id && p.MatchId == match.Id)) continue;
+                if (await db.Predictions.AnyAsync(p => p.UserId == user.Id && p.MatchId == match.Id)) continue;
                 var (home, away) = userIndex switch
                 {
                     0 => result,
@@ -415,10 +415,10 @@ public static class DemoDatasetV1Seeder
                 };
                 db.Predictions.Add(new Prediction
                 {
-                    LeagueId = league.Id, MatchId = match.Id, UserId = user.Id,
+                    MatchId = match.Id, UserId = user.Id,
                     PredictedHomeScore = home, PredictedAwayScore = away,
                     PreferredPlayerId = userIndex is 0 or 4 ? homePlayer.Id : null,
-                    CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow
+                    CreatedAtUtc = match.StartsAtUtc.AddDays(-1), UpdatedAtUtc = match.StartsAtUtc.AddDays(-1)
                 });
             }
             await db.SaveChangesAsync();

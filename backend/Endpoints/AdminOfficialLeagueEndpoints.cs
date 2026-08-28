@@ -89,7 +89,9 @@ public static class AdminOfficialLeagueEndpoints
                 || league.ScopeType != scope
                 || league.RoundFromId != (scope == LeagueScopeType.RoundRange ? dto.RoundFromId : null)
                 || league.RoundToId != (scope == LeagueScopeType.RoundRange ? dto.RoundToId : null);
-            if (changesFixtureScope && await db.Predictions.AnyAsync(prediction => prediction.LeagueId == league.Id))
+            var currentScopedMatchIds = GetScopedMatchIds(db, league);
+            if (changesFixtureScope && (await db.PredictionEvaluations.AnyAsync(evaluation => evaluation.LeagueId == league.Id)
+                || await db.Predictions.AnyAsync(prediction => currentScopedMatchIds.Contains(prediction.MatchId))))
             {
                 errors["editionId"] = ["No se puede cambiar la fuente deportiva o el alcance porque la Liga ya tiene pronósticos. Podés editar el nombre y el estado."];
             }
@@ -122,9 +124,7 @@ public static class AdminOfficialLeagueEndpoints
             var league = await db.Leagues.FirstOrDefaultAsync(l => l.Id == id && l.LeagueType == LeagueType.Official);
             if (league is null) return Results.NotFound();
             await using var transaction = await db.Database.BeginTransactionAsync();
-            var predictionIds = await db.Predictions.Where(p => p.LeagueId == league.Id).Select(p => p.Id).ToListAsync();
-            await db.PredictionEvaluations.Where(e => predictionIds.Contains(e.PredictionId)).ExecuteDeleteAsync();
-            await db.Predictions.Where(p => p.LeagueId == league.Id).ExecuteDeleteAsync();
+            await db.PredictionEvaluations.Where(e => e.LeagueId == league.Id).ExecuteDeleteAsync();
             await db.LeagueParticipants.Where(p => p.LeagueId == league.Id).ExecuteDeleteAsync();
             db.Leagues.Remove(league);
             await db.SaveChangesAsync();
@@ -232,12 +232,11 @@ public static class AdminOfficialLeagueEndpoints
 
     private static async Task<OfficialLeagueDependenciesDto> GetDependenciesAsync(PlayPredictDbContext db, League league)
     {
-        var predictionIds = db.Predictions.Where(p => p.LeagueId == league.Id).Select(p => p.Id);
         var matchIds = GetScopedMatchIds(db, league);
         return new OfficialLeagueDependenciesDto(
             await db.LeagueParticipants.CountAsync(p => p.LeagueId == league.Id),
-            await predictionIds.CountAsync(),
-            await db.PredictionEvaluations.CountAsync(e => predictionIds.Contains(e.PredictionId)),
+            await db.Predictions.CountAsync(p => matchIds.Contains(p.MatchId)),
+            await db.PredictionEvaluations.CountAsync(e => e.LeagueId == league.Id),
             await db.Matches.CountAsync(m => matchIds.Contains(m.Id) && m.HomeGoals != null && m.AwayGoals != null));
     }
 
@@ -256,5 +255,5 @@ public static class AdminOfficialLeagueEndpoints
 
 public record OfficialLeagueDependenciesDto(int Participants, int Predictions, int Evaluations, int OfficialResults)
 {
-    public bool CanDelete => Participants == 0 && Predictions == 0 && Evaluations == 0;
+    public bool CanDelete => Participants == 0 && Evaluations == 0;
 }

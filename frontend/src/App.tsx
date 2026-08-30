@@ -40,6 +40,7 @@ import TeamsListPage from './pages/TeamsListPage'
 import TeamFormPage from './pages/TeamFormPage'
 import TeamRosterPage from './pages/TeamRosterPage'
 import TeamPlayerFormPage from './pages/TeamPlayerFormPage'
+import TeamRosterImportPage from './pages/TeamRosterImportPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 import { CompanySettingsProvider } from './company/CompanySettingsContext'
 import './components/admin.css'
@@ -89,6 +90,7 @@ function App() {
         <Route path="/admin/users" element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} />
         <Route path="/admin/teams" element={<RequireAdmin><TeamsListPage /></RequireAdmin>} />
         <Route path="/admin/teams/new" element={<RequireAdmin><TeamFormPage /></RequireAdmin>} />
+        <Route path="/admin/teams/import" element={<RequireAdmin><TeamRosterImportPage /></RequireAdmin>} />
         <Route path="/admin/teams/:teamId/edit" element={<RequireAdmin><TeamFormPage /></RequireAdmin>} />
         <Route path="/admin/teams/:teamId/players" element={<RequireAdmin><TeamRosterPage /></RequireAdmin>} />
         <Route path="/admin/teams/:teamId/players/new" element={<RequireAdmin><TeamPlayerFormPage /></RequireAdmin>} />

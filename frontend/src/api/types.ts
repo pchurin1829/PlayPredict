@@ -348,6 +348,21 @@ export interface Team {
 
 export interface TeamPlayer { id:number; teamId:number; firstName:string; lastName:string; displayName:string; shirtNumber:number|null; position:string|null; active:boolean; photoUrl:string|null }
 
+export type ImportPreviewClassification =
+  | 'TeamNew' | 'TeamUnchanged' | 'TeamUpdatable' | 'TeamSportConflict' | 'TeamAmbiguousConflict'
+  | 'PlayerNew' | 'PlayerUnchanged' | 'PlayerUpdatable' | 'PlayerAmbiguousConflict'
+  | 'UnresolvedTeamError' | 'StructuralError'
+
+export interface ImportIssue { code:string; message:string; sheetName:string|null; rowNumber:number|null; columnName:string|null }
+export interface ImportChange { field:string; currentValue:string|null; proposedValue:string|null }
+export interface TeamImportPreviewRow { sheet:string; rowNumber:number; entity:string; classification:ImportPreviewClassification; message:string; name:string; shortName:string; sport:string; teamId:number|null; proposedChanges:ImportChange[] }
+export interface RosterImportPreviewRow { sheet:string; rowNumber:number; entity:string; classification:ImportPreviewClassification; message:string; clubName:string; firstName:string; lastName:string; displayName:string; position:string|null; teamId:number|null; teamPlayerId:number|null; proposedChanges:ImportChange[] }
+export interface TeamImportPreviewSummary { total:number; new:number; unchanged:number; updatable:number; conflicts:number; errors:number }
+export interface RosterImportPreviewSummary { total:number; new:number; updatable:number; unchanged:number; conflicts:number; errors:number }
+export interface TeamRosterImportPreviewResponse { hash:string; sport:string; teamsSummary:TeamImportPreviewSummary; rostersSummary:RosterImportPreviewSummary; teams:TeamImportPreviewRow[]; rosters:RosterImportPreviewRow[]; issues:ImportIssue[]; canConfirm:boolean }
+export interface ImportConfirmationSummary { created:number; updated:number; unchanged:number }
+export interface TeamRosterImportConfirmationResponse { status:'Success'|'Rejected'|'Failed'; processedHash:string; message:string; teams:ImportConfirmationSummary; rosters:ImportConfirmationSummary; issues:ImportIssue[] }
+
 export interface UserTeamPreferredPlayer {
   id: number
   teamId: number

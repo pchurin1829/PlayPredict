@@ -39,7 +39,7 @@ export default function TeamsListPage() {
     }
   }
   return <div>
-    <div className="admin-header"><div><h1>Equipos</h1><p className="admin-help">Catálogo de equipos disponibles para el fixture.</p></div><Link className="btn btn-primary" to="/admin/teams/new">+ Nuevo Equipo</Link></div>
+    <div className="admin-header"><div><h1>Equipos</h1><p className="admin-help">Catálogo de equipos disponibles para el fixture.</p></div><div className="match-row-actions"><Link className="btn btn-secondary" to="/admin/teams/import">Importar Equipos y Planteles</Link><Link className="btn btn-primary" to="/admin/teams/new">+ Nuevo Equipo</Link></div></div>
     {error && <StatusMessage kind="error" message={error} />}
     {message && <StatusMessage kind="success" message={message} />}
     {!teams && !error && <StatusMessage kind="loading" message="Cargando equipos..." />}

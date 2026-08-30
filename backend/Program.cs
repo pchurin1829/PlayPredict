@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.FileProviders;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Endpoints;
+using PlayPredict.Api.Imports;
 using PlayPredict.Api.Services;
 
 const string AppVersion = "0.1.0";
@@ -46,6 +47,11 @@ builder.Services.AddScoped<PredictionEvaluationService>();
 builder.Services.AddScoped<RankingService>();
 builder.Services.AddScoped<PrizeWinnerService>();
 builder.Services.AddScoped<LeagueScoringService>();
+builder.Services.AddSingleton<SpreadsheetReader>();
+builder.Services.AddScoped<TeamRosterImportPreviewService>();
+builder.Services.AddScoped<TeamRosterImportConfirmationService>();
+builder.Services.Configure<TeamRosterImportOptions>(
+    builder.Configuration.GetSection(TeamRosterImportOptions.SectionName));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -116,6 +122,7 @@ app.MapAdminExperienceEndpoints();
 app.MapLeagueEndpoints();
 app.MapAdminOfficialLeagueEndpoints();
 app.MapCompanySettingsEndpoints();
+app.MapAdminTeamRosterImportEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { AdminLoginAppearanceSlot, LoginImageFitMode, LoginImageSlot } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import LoginAppearanceHelpModal from './LoginAppearanceHelpModal'
 import './AdminLoginAppearancePage.css'
 
 const SLOT_META: Record<LoginImageSlot, { label: string; hint: string; minWidth: number; minHeight: number; recommendedWidth: number; recommendedHeight: number }> = {
@@ -195,6 +196,7 @@ function SlotCard({ slot, data, onChanged }: { slot: LoginImageSlot; data: Admin
 export default function AdminLoginAppearancePage() {
   const [slots, setSlots] = useState<AdminLoginAppearanceSlot[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -217,7 +219,12 @@ export default function AdminLoginAppearancePage() {
           <h1>Apariencia del login</h1>
           <p className="admin-help">Configurá las imágenes de los cuatro paneles de la pantalla de inicio de sesión. Proporción recomendada: 4:3.</p>
         </div>
+        <button type="button" className="btn btn-secondary" onClick={() => setHelpOpen(true)}>
+          ? Ayuda sobre las imágenes
+        </button>
       </div>
+
+      <LoginAppearanceHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       {error && <StatusMessage kind="error" message={error} />}
       {!slots && !error && <StatusMessage kind="loading" message="Cargando apariencia..." />}

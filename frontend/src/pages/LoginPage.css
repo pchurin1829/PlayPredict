@@ -1,428 +1,122 @@
-/* ──────────────────────────────────────────────────────────────
-   Login — dark sports direction. Self-contained: does not touch
-   .auth-page / .form-card (still used by RegisterPage).
-   ────────────────────────────────────────────────────────────── */
-
+/* Login — Copa El Nene. Shared variables remain available to RegisterPage. */
 .pp-login,
 .pp-register {
-  /* Shared with the PLAYER dark theme (PlayerTheme.css). */
   --pp-login-primary: #8676ff;
   --pp-login-primary-dark: #6a5aeb;
-  --pp-login-bg: #0e0e1a;
-  --pp-login-surface: #1a1a2e;
-  --pp-login-surface-2: #23233a;
-  --pp-login-border: #2c2c46;
-  --pp-login-text: #f5f5fa;
-  --pp-login-text-secondary: #a3a3c2;
-  --pp-login-text-muted: #8585a6;
+  --pp-login-bg: #080d18;
+  --pp-login-surface: #111827;
+  --pp-login-surface-2: #1d2638;
+  --pp-login-border: rgba(255, 255, 255, 0.16);
+  --pp-login-text: #f8fafc;
+  --pp-login-text-secondary: #c6cedc;
+  --pp-login-text-muted: #929caf;
   --pp-login-danger: #ff9aab;
-  /* Asset slot intentionally inactive until this local file is provided:
-     frontend/public/assets/login-football.webp
-     Enable with: --pp-auth-football-image: url('/assets/login-football.webp'); */
 }
 
 .pp-login {
-  --pp-auth-football-image: url('/assets/login-football.webp');
-  min-height: 100svh;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
   display: grid;
-  grid-template-columns: 1fr 300px;
-  background:
-    radial-gradient(900px 600px at 18% 15%, rgba(134, 118, 255, 0.2), transparent 62%),
-    linear-gradient(135deg, #12122a 0%, var(--pp-login-bg) 58%, #19152f 100%);
+  grid-template-columns: minmax(420px, 1fr) clamp(280px, 24vw, 360px) clamp(320px, 28vw, 500px);
+  gap: 4px;
+  padding: 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #07101e;
   font-family: var(--font-sans);
 }
 
-/* ── Stage (photo + brand copy + form) ─────────────────────── */
 .pp-login__stage {
   position: relative;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  min-height: 100svh;
-  padding: 3rem 3.5rem;
-  box-sizing: border-box;
-  background:
-    radial-gradient(750px 520px at 24% 42%, rgba(106, 90, 235, 0.26), transparent 70%),
-    linear-gradient(115deg, #201947 0%, #17152f 52%, #111126 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: radial-gradient(circle at 20% 40%, rgba(19, 62, 112, 0.34), transparent 48%), #050b14;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
 }
 
-/* ── Background photo slot ───────────────────────────────────
-   When a real football photo is available, add a <div> or <img>
-   with class pp-login__bg-photo inside .pp-login__stage.
-   The photo renders behind everything as a grayscale image
-   with a dark overlay for legibility.
-   ──────────────────────────────────────────────────────────── */
-.pp-login__bg-photo {
+.pp-login__hero {
   position: absolute;
-  inset: 0;
+  inset: 0 auto 0 0;
   width: 100%;
   height: 100%;
-  background-image: var(--pp-auth-football-image, none);
-  background-position: center center;
-  background-size: cover;
-  filter: brightness(0.74) contrast(1.04) saturate(0.9);
-  z-index: 0;
+  object-fit: contain;
+  object-position: left center;
+  display: block;
 }
 
-.pp-login__bg-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(55, 39, 112, 0.36) 0%,
-    rgba(38, 30, 81, 0.5) 48%,
-    rgba(20, 18, 47, 0.8) 100%
-  );
-  z-index: 1;
-}
-
-.pp-login__scene {
-  display: none;
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  opacity: 0.56;
-  filter: sepia(0.1) hue-rotate(210deg) saturate(1.35) brightness(1.18);
-}
-
-.pp-login__content {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 3.5rem;
-  width: 100%;
-  flex-wrap: wrap;
-}
-
-/* ── Intro copy ─────────────────────────────────────────────── */
-.pp-login__intro {
-  flex: 1 1 320px;
-  min-width: 280px;
-  color: var(--pp-login-text);
-}
-
-.pp-login__brand {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-bottom: 0.6rem;
-}
-
-.pp-login__brand strong {
-  font-weight: 800;
-}
-
-.pp-login__logo-mark {
-  color: var(--pp-login-primary);
-  filter: drop-shadow(0 0 10px rgba(134, 118, 255, 0.55));
-}
-
-.pp-login__tagline {
-  margin: 0 0 1.75rem;
-  font-size: 1.05rem;
-  color: var(--pp-login-text-secondary);
-  max-width: 380px;
-  line-height: 1.5;
-}
-
-.pp-login__features {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-  max-width: 360px;
-}
-
-.pp-login__features li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.9rem;
-  color: var(--pp-login-text-secondary);
-}
-
-.pp-login__features strong {
-  color: var(--pp-login-text);
-  font-weight: 700;
-}
-
-.pp-login__feature-icon {
+.pp-login__form-position {
+  min-width: 0;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: rgba(134, 118, 255, 0.14);
-  font-size: 1rem;
-}
-
-/* ── Form panel ─────────────────────────────────────────────── */
-.pp-login__form {
-  flex: 0 1 380px;
-  min-width: 300px;
-  background: rgba(26, 26, 46, 0.94);
-  border: 1px solid var(--pp-login-border);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 24px 60px rgba(8, 7, 24, 0.42), 0 0 0 1px rgba(134, 118, 255, 0.05);
-  backdrop-filter: blur(10px);
-}
-
-.pp-login__form h1 {
-  margin: 0 0 1.5rem;
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: var(--pp-login-text);
-}
-
-.pp-login__form .status-message--error {
-  background: rgba(239, 68, 68, 0.14);
-  color: var(--pp-login-danger);
-}
-
-.pp-login__field {
-  margin-bottom: 1.1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.pp-login__field label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--pp-login-text-secondary);
-}
-
-.pp-login__input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background: var(--pp-login-surface-2);
-  border: 1px solid var(--pp-login-border);
-  border-radius: 10px;
-  padding: 0 0.75rem;
-  transition: border-color 0.15s;
-}
-
-.pp-login__input-wrap:focus-within {
-  border-color: var(--pp-login-primary);
-  box-shadow: 0 0 0 3px rgba(134, 118, 255, 0.16);
-}
-
-.pp-login__input-wrap svg {
-  color: var(--pp-login-text-muted);
-  flex-shrink: 0;
-}
-
-.pp-login__input-wrap input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 0.7rem 0.6rem;
-  font-size: 0.92rem;
-  font-family: inherit;
-  color: var(--pp-login-text);
-  outline: none;
-}
-
-.pp-login__input-wrap input::placeholder {
-  color: var(--pp-login-text-muted);
-}
-
-/* Chrome autofill renders its own light background (white/blue) on top of
-   the input regardless of our CSS; the box-shadow inset trick is the only
-   way to override it, since background-color has no effect on :-webkit-autofill. */
-.pp-login__input-wrap input {
-  color-scheme: dark;
-}
-
-.pp-login__input-wrap input:-webkit-autofill,
-.pp-login__input-wrap input:-webkit-autofill:hover,
-.pp-login__input-wrap input:-webkit-autofill:focus,
-.pp-login__input-wrap input:-webkit-autofill:active {
-  -webkit-text-fill-color: var(--pp-login-text);
-  -webkit-box-shadow: 0 0 0 1000px var(--pp-login-surface-2) inset;
-  box-shadow: 0 0 0 1000px var(--pp-login-surface-2) inset;
-  caret-color: var(--pp-login-text);
-  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
-}
-
-.pp-login__eye {
-  border: none;
-  background: transparent;
-  color: var(--pp-login-text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  padding: 0.3rem;
-}
-
-.pp-login__eye:hover {
-  color: var(--pp-login-text-secondary);
-}
-
-.pp-login__actions {
-  margin-top: 1.5rem;
-}
-
-.pp-login__submit {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--pp-login-primary), var(--pp-login-primary-dark));
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  transition: filter 0.15s, transform 0.1s;
-  box-shadow: 0 10px 24px rgba(134, 118, 255, 0.3);
-}
-
-.pp-login__submit:hover:not(:disabled) {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
-}
-
-.pp-login__submit:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.pp-login__alt {
-  margin: 1.25rem 0 0;
-  font-size: 0.85rem;
-  color: var(--pp-login-text-secondary);
-  text-align: center;
-}
-
-.pp-login__alt a {
-  color: var(--pp-login-primary);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.pp-login__alt a:hover {
-  text-decoration: underline;
-}
-
-.pp-login__footer {
-  margin: 1.25rem 0 0;
-  font-size: 0.7rem;
-  color: var(--pp-login-text-muted);
-  text-align: center;
-}
-
-/* ── Sponsor rail ───────────────────────────────────────────── */
-.pp-login__ads {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  background: #24213d;
-  border-left: 1px solid var(--pp-login-border);
-}
-
-.pp-login__ad {
-  flex: 1;
-  background: linear-gradient(155deg, #23233a 0%, #1a1930 100%);
-  padding: 1.75rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  position: relative;
+  padding: clamp(8px, 1vw, 16px);
+  box-sizing: border-box;
   overflow: hidden;
 }
 
-.pp-login__ad::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 100% 100%, rgba(134, 118, 255, 0.16), transparent 60%);
-  pointer-events: none;
-}
-
-.pp-login__ad-eyebrow {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--pp-login-text-muted);
-}
-
-.pp-login__ad-title {
-  font-size: 1.05rem;
-  font-weight: 800;
+.pp-login__form {
+  width: 100%;
+  box-sizing: border-box;
+  padding: clamp(1.35rem, 2.1vw, 2rem);
   color: var(--pp-login-text);
-  line-height: 1.25;
+  background: rgba(8, 13, 25, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(14px) saturate(0.9);
+  -webkit-backdrop-filter: blur(14px) saturate(0.9);
 }
 
-.pp-login__ad-text {
-  font-size: 0.82rem;
-  color: var(--pp-login-text-secondary);
-  margin-bottom: 0.35rem;
+.pp-login__brand { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.75rem; font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; }
+.pp-login__brand strong { font-weight: 800; }
+.pp-login__logo-mark { color: var(--pp-login-primary); filter: drop-shadow(0 0 10px rgba(134, 118, 255, 0.55)); }
+.pp-login__form h1 { margin: 0 0 1.4rem; font-size: 1.35rem; font-weight: 800; color: var(--pp-login-text); }
+.pp-login__form .status-message--error { background: rgba(239, 68, 68, 0.14); color: var(--pp-login-danger); }
+
+.pp-login__field { margin-bottom: 1.05rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.pp-login__field label { font-size: 0.8rem; font-weight: 600; color: var(--pp-login-text-secondary); }
+.pp-login__input-wrap { position: relative; display: flex; align-items: center; padding: 0 0.75rem; background: rgba(29, 38, 56, 0.96); border: 1px solid var(--pp-login-border); border-radius: 10px; transition: border-color 0.15s, box-shadow 0.15s; }
+.pp-login__input-wrap:focus-within { border-color: var(--pp-login-primary); box-shadow: 0 0 0 3px rgba(134, 118, 255, 0.18); }
+.pp-login__input-wrap svg { color: var(--pp-login-text-muted); flex-shrink: 0; }
+.pp-login__input-wrap input { flex: 1; min-width: 0; padding: 0.72rem 0.6rem; border: 0; outline: 0; color: var(--pp-login-text); background: transparent; font: 0.92rem var(--font-sans); color-scheme: dark; }
+.pp-login__input-wrap input::placeholder { color: var(--pp-login-text-muted); }
+.pp-login__input-wrap input:-webkit-autofill,
+.pp-login__input-wrap input:-webkit-autofill:hover,
+.pp-login__input-wrap input:-webkit-autofill:focus,
+.pp-login__input-wrap input:-webkit-autofill:active { -webkit-text-fill-color: var(--pp-login-text); -webkit-box-shadow: 0 0 0 1000px var(--pp-login-surface-2) inset; box-shadow: 0 0 0 1000px var(--pp-login-surface-2) inset; caret-color: var(--pp-login-text); transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s; }
+.pp-login__eye { display: flex; align-items: center; padding: 0.3rem; border: 0; color: var(--pp-login-text-muted); background: transparent; cursor: pointer; }
+.pp-login__eye:hover { color: var(--pp-login-text-secondary); }
+.pp-login__actions { margin-top: 1.4rem; }
+.pp-login__submit { width: 100%; padding: 0.8rem 1rem; border: 0; border-radius: 10px; color: #fff; background: linear-gradient(135deg, var(--pp-login-primary), var(--pp-login-primary-dark)); box-shadow: 0 10px 24px rgba(134, 118, 255, 0.3); font: 700 0.95rem var(--font-sans); cursor: pointer; transition: filter 0.15s, transform 0.1s; }
+.pp-login__submit:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.pp-login__submit:disabled { opacity: 0.65; cursor: not-allowed; }
+.pp-login__alt { margin: 1.2rem 0 0; color: var(--pp-login-text-secondary); font-size: 0.85rem; text-align: center; }
+.pp-login__alt a { color: #a99cff; font-weight: 700; text-decoration: none; }
+.pp-login__alt a:hover { text-decoration: underline; }
+.pp-login__footer { margin: 1.15rem 0 0; color: var(--pp-login-text-muted); font-size: 0.7rem; text-align: center; }
+
+.pp-login__ads { min-width: 0; min-height: 0; display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 3px; }
+.pp-login__ad { min-width: 0; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; background: #07101e; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28); }
+.pp-login__ad img { width: 100%; height: 100%; display: block; object-fit: contain; }
+
+@media (max-width: 1100px) {
+  .pp-login { height: auto; min-height: 100dvh; grid-template-columns: 1fr; overflow: visible; }
+  .pp-login__stage { min-height: max(760px, 100svh); }
+  .pp-login__hero { object-position: center top; }
+  .pp-login__form-position { padding: 18px; overflow: visible; }
+  .pp-login__form { max-width: 390px; }
+  .pp-login__ads { grid-template-columns: repeat(3, minmax(270px, 1fr)); grid-template-rows: none; overflow-x: auto; }
+  .pp-login__ad { aspect-ratio: 3 / 2; }
 }
 
-.pp-login__ad-cta {
-  align-self: flex-start;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--pp-login-text);
-  background: var(--pp-login-border);
-  padding: 0.4rem 0.85rem;
-  border-radius: 999px;
-}
-
-@media (max-width: 1080px) {
-  .pp-login {
-    grid-template-columns: 1fr;
-  }
-
-  .pp-login__ads {
-    flex-direction: row;
-    border-left: none;
-    border-top: 1px solid var(--pp-login-border);
-    overflow-x: auto;
-  }
-
-  .pp-login__ad {
-    min-width: 240px;
-  }
-}
-
-@media (max-width: 720px) {
-  .pp-login__stage {
-    padding: 2rem 1.25rem;
-  }
-
-  .pp-login__content {
-    gap: 2rem;
-  }
-
-  .pp-login__intro {
-    text-align: center;
-    margin: 0 auto;
-  }
-
-  .pp-login__features {
-    margin: 0 auto;
-  }
-
-  .pp-login__form {
-    flex: 1 1 100%;
-    margin: 0 auto;
-  }
-
-  .pp-login__ads {
-    display: none;
-  }
+@media (max-width: 620px) {
+  .pp-login__stage { min-height: 820px; }
+  .pp-login__form-position { inset-inline: 10px; bottom: 10px; }
+  .pp-login__form { padding: 1.25rem; }
+  .pp-login__ads { display: none; }
 }

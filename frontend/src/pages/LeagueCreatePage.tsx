@@ -3,12 +3,14 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { LEAGUE_SCOPE_LABELS, type LeagueScopeType, type LeagueSummary, type Round } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
+import { resolveLeagueCreateReturnTo } from '../utils/leagueCreateReturnTo'
 import './PlayerPages.css'
 
 export default function LeagueCreatePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const officialLeagueId = Number(searchParams.get('officialLeagueId'))
+  const returnContext = resolveLeagueCreateReturnTo(searchParams.get('returnTo'))
   const [officialLeague, setOfficialLeague] = useState<LeagueSummary | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -87,7 +89,7 @@ export default function LeagueCreatePage() {
     : availableRounds
 
   return <div>
-    <Link to="/competitions/explore" className="pp-back">← Volver a Competencias Oficiales</Link>
+    <Link to={returnContext.path} className="pp-back">← Volver{returnContext.label ? ` a ${returnContext.label}` : ''}</Link>
     <div className="pp-header">
       <h1>Crear Liga de Amigos</h1>
       <p className="pp-header__subtitle">Tu Liga heredará el fixture, alcance y reglas actuales de la Competencia Oficial elegida.</p>
@@ -142,9 +144,9 @@ export default function LeagueCreatePage() {
           </div>
         </div>}
         {fieldErrors.officialLeagueId && <span className="pp-form__error">{fieldErrors.officialLeagueId[0]}</span>}
-        <div className="pp-form__actions">
+        <div className="pp-form__actions pp-form__actions--league-create">
           <button type="submit" className="pp-btn pp-btn--primary" disabled={saving}>{saving ? 'Creando...' : 'Crear Liga'}</button>
-          <Link to="/competitions/explore" className="pp-btn pp-btn--secondary">Cancelar</Link>
+          <Link to={returnContext.path} className="pp-btn pp-btn--secondary">Cancelar</Link>
         </div>
       </form>
     </>}

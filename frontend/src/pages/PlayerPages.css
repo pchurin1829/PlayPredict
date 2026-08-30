@@ -989,6 +989,10 @@
   margin-top: 1.25rem;
 }
 
+.pp-form__actions--league-create {
+  gap: 1.25rem;
+}
+
 .pp-form__hint {
   font-size: 0.8rem;
   color: var(--color-text-muted);

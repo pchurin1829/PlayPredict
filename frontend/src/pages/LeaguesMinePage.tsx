@@ -5,6 +5,7 @@ import { LEAGUE_SCOPE_LABELS, type LeagueSummary } from '../api/types'
 import ConfirmModal from '../components/ConfirmModal'
 import StatusMessage from '../components/StatusMessage'
 import { useCompanySettings } from '../company/CompanySettingsContext'
+import { leagueCreatePath } from '../utils/leagueCreateReturnTo'
 import './PlayerPages.css'
 
 interface ModalTarget {
@@ -249,7 +250,7 @@ export default function LeaguesMinePage() {
                         )}
                       </div>
                       {isOfficial && (
-                        <Link to={`/leagues/new?officialLeagueId=${l.id}`} className="pp-btn pp-btn--primary pp-btn--sm pp-league-card__create-friends">
+                        <Link to={leagueCreatePath(l.id, '/leagues')} className="pp-btn pp-btn--primary pp-btn--sm pp-league-card__create-friends">
                           Crear Liga con amigos
                         </Link>
                       )}

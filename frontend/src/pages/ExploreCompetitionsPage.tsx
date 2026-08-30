@@ -4,6 +4,7 @@ import { api, ApiError } from '../api/client'
 import type { LeagueSummary } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 import { useCompanySettings } from '../company/CompanySettingsContext'
+import { leagueCreatePath } from '../utils/leagueCreateReturnTo'
 import './PlayerPages.css'
 
 export default function ExploreCompetitionsPage() {
@@ -63,7 +64,7 @@ export default function ExploreCompetitionsPage() {
               ? <Link to={`/leagues/${league.id}`} className="pp-comp-card__action pp-comp-card__action--view">Ver</Link>
               : <button type="button" className="pp-comp-card__action" disabled={joiningId === league.id} onClick={() => handleJoinOfficial(league.id, league.name)}>{joiningId === league.id ? 'Uniéndose...' : 'Participar'}</button>}
           </div>
-          <Link to={`/leagues/new?officialLeagueId=${league.id}`} className="pp-comp-card__action pp-comp-card__action--secondary">Crear Liga con amigos</Link>
+          <Link to={leagueCreatePath(league.id, '/competitions/explore')} className="pp-comp-card__action pp-comp-card__action--secondary">Crear Liga con amigos</Link>
         </div>
       </div>)}
     </div>}

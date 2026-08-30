@@ -7,6 +7,7 @@ using Microsoft.Extensions.FileProviders;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Endpoints;
 using PlayPredict.Api.Imports;
+using PlayPredict.Api.LoginAppearance;
 using PlayPredict.Api.Services;
 
 const string AppVersion = "0.1.0";
@@ -52,6 +53,12 @@ builder.Services.AddScoped<TeamRosterImportPreviewService>();
 builder.Services.AddScoped<TeamRosterImportConfirmationService>();
 builder.Services.Configure<TeamRosterImportOptions>(
     builder.Configuration.GetSection(TeamRosterImportOptions.SectionName));
+builder.Services.Configure<LoginAppearanceOptions>(builder.Configuration.GetSection(LoginAppearanceOptions.SectionName));
+builder.Services.AddScoped<ILoginAppearanceCompanyResolver, ConfiguredLoginAppearanceCompanyResolver>();
+builder.Services.AddSingleton<ILoginImageStorage, LocalLoginImageStorage>();
+builder.Services.AddSingleton<LoginImageValidator>();
+builder.Services.AddScoped<LoginAppearanceService>();
+builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -86,7 +93,8 @@ app.UseStaticFiles();
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadRoot),
-    RequestPath = "/api/uploads"
+    RequestPath = "/api/uploads",
+    OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable"
 });
 
 app.UseAuthentication();
@@ -123,6 +131,7 @@ app.MapLeagueEndpoints();
 app.MapAdminOfficialLeagueEndpoints();
 app.MapCompanySettingsEndpoints();
 app.MapAdminTeamRosterImportEndpoints();
+app.MapLoginAppearanceEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {

@@ -18,4 +18,5 @@ public class Company
     public PlayerPosition GeneralPreferredPlayerPositions { get; set; } = PlayerPosition.Midfielder | PlayerPosition.Forward;
 
     public ICollection<User> Users { get; set; } = new List<User>();
+    public ICollection<CompanyLoginImageSlot> LoginImageSlots { get; set; } = new List<CompanyLoginImageSlot>();
 }

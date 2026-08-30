@@ -39,6 +39,7 @@ services:
       DevSeed__AdminPassword: ${DEV_ADMIN_PASSWORD:-}
       DemoSeed__RankingDense: ${DEMO_SEED_RANKING_DENSE:-false}
       UploadStorage__RootPath: /data/uploads
+      LoginAppearance__PublicCompanyId: ${LOGIN_APPEARANCE_PUBLIC_COMPANY_ID:-1}
     ports:
       - "${BACKEND_PORT:-8006}:8080"
     volumes:

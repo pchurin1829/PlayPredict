@@ -1,16 +1,18 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import type { AuthResponse } from '../api/types'
+import type { AuthResponse, PublicLoginAppearance } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import StatusMessage from '../components/StatusMessage'
 import './LoginPage.css'
 
-const LOGIN_ADS = [
-  { src: '/assets/el-nene-login/producto-1.png', alt: 'Oferta de aceite de girasol Natura' },
-  { src: '/assets/el-nene-login/producto-2.png', alt: 'Oferta de arroz Gallo' },
-  { src: '/assets/el-nene-login/producto-3.png', alt: 'Oferta de vino tinto Reserva' },
-]
+const DEFAULT_APPEARANCE: PublicLoginAppearance = {
+  version: 'default-v1',
+  main: { imageUrl: '/assets/el-nene-login/copa-el-nene-panel-principal.png', fitMode: 'Contain' },
+  adTop: { imageUrl: '/assets/el-nene-login/producto-1.png', fitMode: 'Cover' },
+  adMiddle: { imageUrl: '/assets/el-nene-login/producto-2.png', fitMode: 'Cover' },
+  adBottom: { imageUrl: '/assets/el-nene-login/producto-3.png', fitMode: 'Cover' },
+}
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -22,6 +24,22 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [appearance, setAppearance] = useState<PublicLoginAppearance>(DEFAULT_APPEARANCE)
+
+  useEffect(() => {
+    let active = true
+    api
+      .get<PublicLoginAppearance>('/public/login-appearance')
+      .then((data) => { if (active) setAppearance(data) })
+      .catch(() => { /* mantiene la apariencia por defecto si falla o no está configurada */ })
+    return () => { active = false }
+  }, [])
+
+  const ads = [
+    { ...appearance.adTop, alt: 'Publicidad destacada 1' },
+    { ...appearance.adMiddle, alt: 'Publicidad destacada 2' },
+    { ...appearance.adBottom, alt: 'Publicidad destacada 3' },
+  ]
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -57,13 +75,13 @@ export default function LoginPage() {
       <div className="pp-login__stage">
         <img
           className="pp-login__hero"
-          src="/assets/el-nene-login/copa-el-nene-panel-principal.png"
+          src={appearance.main.imageUrl}
           alt="Copa El Nene: competí, sumá puntos y ganá premios"
+          style={{ objectFit: appearance.main.fitMode === 'Cover' ? 'cover' : 'contain' }}
         />
-      </div>
 
-      <div className="pp-login__form-position">
-        <form className="pp-login__form" onSubmit={handleSubmit}>
+        <div className="pp-login__form-position">
+          <form className="pp-login__form" onSubmit={handleSubmit}>
             <div className="pp-login__brand">
               <svg width="30" height="30" viewBox="0 0 48 46" fill="none" className="pp-login__logo-mark">
                 <path
@@ -145,13 +163,14 @@ export default function LoginPage() {
             </p>
 
             <p className="pp-login__footer">PlayPredict © 2026 · Todos los derechos reservados</p>
-        </form>
+          </form>
+        </div>
       </div>
 
       <aside className="pp-login__ads" aria-label="Ofertas de Supermercados El Nene">
-        {LOGIN_ADS.map((ad) => (
-          <div className="pp-login__ad" key={ad.src}>
-            <img src={ad.src} alt={ad.alt} />
+        {ads.map((ad) => (
+          <div className="pp-login__ad" key={ad.imageUrl}>
+            <img src={ad.imageUrl} alt={ad.alt} style={{ objectFit: ad.fitMode === 'Contain' ? 'contain' : 'cover' }} />
           </div>
         ))}
       </aside>

@@ -119,6 +119,40 @@ export interface CompanySettings {
   generalPreferredPlayerPositions: PlayerPosition[]
 }
 
+export type LoginImageFitMode = 'Contain' | 'Cover'
+export type LoginImageSlot = 'Main' | 'AdTop' | 'AdMiddle' | 'AdBottom'
+
+export interface LoginAppearanceImage {
+  imageUrl: string
+  fitMode: LoginImageFitMode
+}
+
+export interface PublicLoginAppearance {
+  version: string
+  main: LoginAppearanceImage
+  adTop: LoginAppearanceImage
+  adMiddle: LoginAppearanceImage
+  adBottom: LoginAppearanceImage
+}
+
+export interface LoginAppearanceWarning {
+  code: string
+  message: string
+}
+
+export interface AdminLoginAppearanceSlot {
+  slot: LoginImageSlot
+  effectiveImageUrl: string
+  isDefault: boolean
+  fitMode: LoginImageFitMode
+  updatedAtUtc: string | null
+  originalWidth: number
+  originalHeight: number
+  aspectRatio: number
+  recommendedAspectRatio: number
+  warnings: LoginAppearanceWarning[]
+}
+
 export type EvaluationType = 'ExactScore' | 'CorrectOutcome' | 'Incorrect'
 
 export interface Prediction {

@@ -42,6 +42,7 @@ import TeamRosterPage from './pages/TeamRosterPage'
 import TeamPlayerFormPage from './pages/TeamPlayerFormPage'
 import TeamRosterImportPage from './pages/TeamRosterImportPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
+import AdminLoginAppearancePage from './pages/AdminLoginAppearancePage'
 import { CompanySettingsProvider } from './company/CompanySettingsContext'
 import './components/admin.css'
 import './components/player/ComingSoonBadge.css'
@@ -87,6 +88,7 @@ function App() {
         <Route path="/admin/results" element={<RequireAdmin><AdminOperationEntryPage operation="results" /></RequireAdmin>} />
         <Route path="/admin/scoring" element={<RequireAdmin><Navigate to="/admin/settings" replace /></RequireAdmin>} />
         <Route path="/admin/settings" element={<RequireAdmin><AdminSettingsPage /></RequireAdmin>} />
+        <Route path="/admin/login-appearance" element={<RequireAdmin><AdminLoginAppearancePage /></RequireAdmin>} />
         <Route path="/admin/users" element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} />
         <Route path="/admin/teams" element={<RequireAdmin><TeamsListPage /></RequireAdmin>} />
         <Route path="/admin/teams/new" element={<RequireAdmin><TeamFormPage /></RequireAdmin>} />

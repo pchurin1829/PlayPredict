@@ -10,6 +10,7 @@ function getAdminAreas(companyName: string) { return [
   { title: 'Rankings', text: 'Consultar rankings generados.', to: '/rankings' },
   { title: 'Configuración', text: 'Empresa, identidad, puntuación y reglas de juego.', to: '/admin/settings' },
   { title: 'Apariencia del login', text: 'Imágenes de los paneles de la pantalla de inicio de sesión.', to: '/admin/login-appearance' },
+  { title: 'Campaña de bienvenida', text: 'Publicidad post-login que ven los jugadores antes de entrar a PlayPredict.', to: '/admin/welcome-campaign' },
 ] }
 
 export default function AdminDashboardPage() {

@@ -43,6 +43,8 @@ import TeamPlayerFormPage from './pages/TeamPlayerFormPage'
 import TeamRosterImportPage from './pages/TeamRosterImportPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 import AdminLoginAppearancePage from './pages/AdminLoginAppearancePage'
+import AdminWelcomeCampaignPage from './pages/AdminWelcomeCampaignPage'
+import WelcomeCampaignInterstitialPage from './pages/WelcomeCampaignInterstitialPage'
 import { CompanySettingsProvider } from './company/CompanySettingsContext'
 import './components/admin.css'
 import './components/player/ComingSoonBadge.css'
@@ -58,6 +60,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/welcome" element={<RequireAuth><WelcomeCampaignInterstitialPage /></RequireAuth>} />
 
       <Route
         element={
@@ -89,6 +92,7 @@ function App() {
         <Route path="/admin/scoring" element={<RequireAdmin><Navigate to="/admin/settings" replace /></RequireAdmin>} />
         <Route path="/admin/settings" element={<RequireAdmin><AdminSettingsPage /></RequireAdmin>} />
         <Route path="/admin/login-appearance" element={<RequireAdmin><AdminLoginAppearancePage /></RequireAdmin>} />
+        <Route path="/admin/welcome-campaign" element={<RequireAdmin><AdminWelcomeCampaignPage /></RequireAdmin>} />
         <Route path="/admin/users" element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} />
         <Route path="/admin/teams" element={<RequireAdmin><TeamsListPage /></RequireAdmin>} />
         <Route path="/admin/teams/new" element={<RequireAdmin><TeamFormPage /></RequireAdmin>} />

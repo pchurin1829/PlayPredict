@@ -19,6 +19,8 @@ public class PlayPredictDbContext : DbContext
     public DbSet<MatchScorer> MatchScorers => Set<MatchScorer>();
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<CompanyLoginImageSlot> CompanyLoginImageSlots => Set<CompanyLoginImageSlot>();
+    public DbSet<WelcomeCampaign> WelcomeCampaigns => Set<WelcomeCampaign>();
+    public DbSet<WelcomeCampaignSlide> WelcomeCampaignSlides => Set<WelcomeCampaignSlide>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();

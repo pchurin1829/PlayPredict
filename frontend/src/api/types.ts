@@ -153,6 +153,50 @@ export interface AdminLoginAppearanceSlot {
   warnings: LoginAppearanceWarning[]
 }
 
+export type WelcomeCampaignFitMode = 'Contain' | 'Cover'
+
+export interface WelcomeCampaignWarning {
+  code: string
+  message: string
+}
+
+export interface WelcomeCampaignSlide {
+  id: number
+  imageUrl: string
+  sortOrder: number
+  durationSeconds: number
+  fitMode: WelcomeCampaignFitMode
+  originalWidth: number
+  originalHeight: number
+  updatedAtUtc: string
+  warnings: WelcomeCampaignWarning[]
+}
+
+export interface WelcomeCampaign {
+  id: number
+  name: string
+  isActive: boolean
+  validFromUtc: string | null
+  validToUtc: string | null
+  createdAtUtc: string
+  updatedAtUtc: string
+  slides: WelcomeCampaignSlide[]
+}
+
+export interface ActiveWelcomeCampaignSlide {
+  id: number
+  imageUrl: string
+  sortOrder: number
+  durationSeconds: number
+  fitMode: WelcomeCampaignFitMode
+}
+
+export interface ActiveWelcomeCampaign {
+  campaignId: number
+  name: string
+  slides: ActiveWelcomeCampaignSlide[]
+}
+
 export type EvaluationType = 'ExactScore' | 'CorrectOutcome' | 'Incorrect'
 
 export interface Prediction {

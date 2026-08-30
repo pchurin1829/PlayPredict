@@ -49,10 +49,17 @@ export default function LoginPage() {
     try {
       const response = await api.post<AuthResponse>('/auth/login', { email, password })
       login(response.token, response.user)
-      const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname
+      const fromLocation = (location.state as { from?: { pathname: string; search?: string } } | null)?.from
+      const from = fromLocation ? `${fromLocation.pathname}${fromLocation.search ?? ''}` : undefined
       const isAdmin = response.user.roles.includes('ADMIN')
       const home = isAdmin ? '/admin' : '/'
-      navigate(isAdmin ? home : from ?? home, { replace: true })
+      if (isAdmin) {
+        navigate(home, { replace: true })
+      } else {
+        // El PLAYER siempre pasa primero por la Campaña de Bienvenida (si corresponde);
+        // esa pantalla decide si hay algo para mostrar y preserva el destino original.
+        navigate('/welcome', { replace: true, state: { destination: from ?? home } })
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 401) {

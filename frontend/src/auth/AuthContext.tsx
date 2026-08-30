@@ -10,6 +10,7 @@ import { api } from '../api/client'
 import type { User } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 import { clearToken, getToken, setToken } from './token'
+import { clearWelcomeCampaignSeenForSession } from '../utils/welcomeCampaignSeen'
 
 interface AuthContextValue {
   user: User | null
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearToken()
     setUser(null)
     localStorage.removeItem('playpredict_view_mode')
+    clearWelcomeCampaignSeenForSession()
   }
 
   function setViewMode(mode: 'admin' | 'player') {

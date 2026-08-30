@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlayPredict.Api.Data;
@@ -11,9 +12,11 @@ using PlayPredict.Api.Data;
 namespace PlayPredict.Api.Migrations
 {
     [DbContext(typeof(PlayPredictDbContext))]
-    partial class PlayPredictDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260830021501_AddWelcomeCampaigns")]
+    partial class AddWelcomeCampaigns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -957,11 +960,6 @@ namespace PlayPredict.Api.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CompanyId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_WelcomeCampaigns_CompanyId_ActiveOnly")
-                        .HasFilter("\"IsActive\" = true");
 
                     b.HasIndex("CreatedByUserId");
 

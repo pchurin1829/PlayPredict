@@ -9,6 +9,7 @@ using PlayPredict.Api.Endpoints;
 using PlayPredict.Api.Imports;
 using PlayPredict.Api.LoginAppearance;
 using PlayPredict.Api.Services;
+using PlayPredict.Api.WelcomeCampaigns;
 
 const string AppVersion = "0.1.0";
 const string FrontendCorsPolicy = "FrontendCorsPolicy";
@@ -58,6 +59,9 @@ builder.Services.AddScoped<ILoginAppearanceCompanyResolver, ConfiguredLoginAppea
 builder.Services.AddSingleton<ILoginImageStorage, LocalLoginImageStorage>();
 builder.Services.AddSingleton<LoginImageValidator>();
 builder.Services.AddScoped<LoginAppearanceService>();
+builder.Services.AddSingleton<IWelcomeCampaignImageStorage, LocalWelcomeCampaignImageStorage>();
+builder.Services.AddSingleton<WelcomeCampaignImageValidator>();
+builder.Services.AddScoped<WelcomeCampaignService>();
 builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -132,6 +136,7 @@ app.MapAdminOfficialLeagueEndpoints();
 app.MapCompanySettingsEndpoints();
 app.MapAdminTeamRosterImportEndpoints();
 app.MapLoginAppearanceEndpoints();
+app.MapWelcomeCampaignEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {

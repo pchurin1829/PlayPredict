@@ -652,6 +652,18 @@
   color: var(--color-text);
 }
 
+.pp-ranking__heading {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.pp-ranking__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
 .pp-ranking__current-summary {
   margin: 0.3rem 0 0;
   color: var(--color-text-secondary);
@@ -667,6 +679,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
+  margin-left: auto;
 }
 
 .pp-ranking__my-position,

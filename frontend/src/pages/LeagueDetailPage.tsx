@@ -778,14 +778,16 @@ export default function LeagueDetailPage() {
           {ranking && ranking.length > 0 && (
             <div className="pp-ranking">
               <div className="pp-ranking__header">
-                <div>
-                  <h2>{rankingView === 'ranking' ? rankingRoundId === null ? 'Ranking de la Liga' : `Ranking — ${getRoundName(rankingRoundId)}` : 'Posiciones para premios'}</h2>
+                <div className="pp-ranking__heading">
+                  <div className="pp-ranking__title-row">
+                    <h2>{rankingRoundId === null ? 'Ranking de la Liga' : `Ranking — ${getRoundName(rankingRoundId)}`}</h2>
+                    <button type="button" className="pp-ranking__policy" onClick={() => { if (rankingView === 'ranking') setAwardStandings(null); setRankingView(current => current === 'ranking' ? 'prizes' : 'ranking') }}>{rankingView === 'ranking' ? 'Ver posiciones para premios' : 'Volver al ranking'}</button>
+                    {rankingView === 'ranking' && currentRankingEntry && <button type="button" className="pp-ranking__my-position" onClick={scrollToRankingUser} aria-label="Ir a mi posición en el ranking"><span aria-hidden="true">⌖</span> Mi posición</button>}
+                  </div>
                   {rankingView === 'ranking' && currentRankingEntry && <p className="pp-ranking__current-summary">{currentRankingEntry.position}° · {currentRankingEntry.points} puntos{currentRankingEntry.sharedCount > 0 && <> · <span>(compartido con {currentRankingEntry.sharedCount} jugadores más)</span></>}</p>}
                 </div>
                 <div className="pp-ranking__header-actions">
                   <button type="button" className="pp-ranking__policy" onClick={() => setRankingPolicyOpen(true)}>Ver política de desempate</button>
-                  <button type="button" className="pp-ranking__policy" onClick={() => { if (rankingView === 'ranking') setAwardStandings(null); setRankingView(current => current === 'ranking' ? 'prizes' : 'ranking') }}>{rankingView === 'ranking' ? 'Ver posiciones para premios' : 'Volver al ranking'}</button>
-                  {rankingView === 'ranking' && currentRankingEntry && <button type="button" className="pp-ranking__my-position" onClick={scrollToRankingUser} aria-label="Ir a mi posición en el ranking"><span aria-hidden="true">⌖</span> Mi posición</button>}
                 </div>
               </div>
               {rankingView === 'ranking' ? <table>

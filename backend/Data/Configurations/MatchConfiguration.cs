@@ -36,6 +36,12 @@ public class MatchConfiguration : IEntityTypeConfiguration<Match>
         builder.HasIndex(m => m.AwayTeamId);
         builder.HasIndex(m => m.StartsAtUtc);
 
+        // Segunda barrera de integridad para la identidad de UPSERT de la importación XLS de
+        // partidos: a lo sumo un Match por (Round, HomeTeam, AwayTeam), reforzado a nivel DB.
+        builder.HasIndex(m => new { m.RoundId, m.HomeTeamId, m.AwayTeamId })
+            .IsUnique()
+            .HasDatabaseName("IX_Matches_RoundId_HomeTeamId_AwayTeamId");
+
         builder.HasOne(m => m.HomeTeam)
             .WithMany(t => t.HomeMatches)
             .HasForeignKey(m => m.HomeTeamId)

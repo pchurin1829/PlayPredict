@@ -52,6 +52,8 @@ builder.Services.AddScoped<LeagueScoringService>();
 builder.Services.AddSingleton<SpreadsheetReader>();
 builder.Services.AddScoped<TeamRosterImportPreviewService>();
 builder.Services.AddScoped<TeamRosterImportConfirmationService>();
+builder.Services.AddScoped<MatchImportPreviewService>();
+builder.Services.AddScoped<MatchImportConfirmationService>();
 builder.Services.Configure<TeamRosterImportOptions>(
     builder.Configuration.GetSection(TeamRosterImportOptions.SectionName));
 builder.Services.Configure<LoginAppearanceOptions>(builder.Configuration.GetSection(LoginAppearanceOptions.SectionName));
@@ -135,6 +137,7 @@ app.MapLeagueEndpoints();
 app.MapAdminOfficialLeagueEndpoints();
 app.MapCompanySettingsEndpoints();
 app.MapAdminTeamRosterImportEndpoints();
+app.MapAdminMatchImportEndpoints();
 app.MapLoginAppearanceEndpoints();
 app.MapWelcomeCampaignEndpoints();
 

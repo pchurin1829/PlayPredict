@@ -6,9 +6,8 @@ Este directorio contiene los artefactos versionados necesarios para reconstruir 
 
 - `PlayPredict_Base_Inicial_v1.0_2026-09-01.xlsx`: definición de competencias, usuarios, participación y fixture oficial de las Fechas 8 a 11.
 - `PlayPredict_Planteles_Clausura_AFA_2026_v2.xlsx`: 30 equipos y 1.045 jugadores preparados para el importador.
-- `playpredict_base_inicial_v1.sql`: dump lógico completo y opcional, generado desde una instalación limpia.
 
-El mecanismo canónico de reconstrucción es el seeder `--seed-initial-v1`, que aplica los importadores XLS existentes. El dump es una alternativa para restaurar exactamente la instantánea materializada sin volver a procesar los XLS.
+La fuente reproducible del dataset es el seeder `--seed-initial-v1`, que aplica los importadores XLS existentes de este directorio. El snapshot oficial congelado es `docs/database/backups/DB0_PlayPredict_BaseInicial_v1_2026-09-01.sql`.
 
 ## Requisitos
 
@@ -52,20 +51,20 @@ dotnet run --project backend/PlayPredict.Api.csproj -- --seed-initial-v1 `
   --initial-rosters=C:\ruta\PlayPredict_Planteles_Clausura_AFA_2026_v2.xlsx
 ```
 
-## Restauración alternativa desde el dump
+## Restauración rápida desde DB0
 
-El dump contiene esquema, historial de migraciones y datos. Se restaura directamente sobre una base PostgreSQL vacía; no se ejecutan migraciones antes de importarlo.
+DB0 contiene esquema, historial de migraciones y datos. Se restaura directamente sobre una base PostgreSQL vacía; no se ejecutan migraciones antes de importarlo.
 
 Con una base nueva y vacía:
 
 ```powershell
 docker compose up -d db
-Get-Content -Raw docs/datos-iniciales/playpredict_base_inicial_v1.sql |
+Get-Content -Raw docs/database/backups/DB0_PlayPredict_BaseInicial_v1_2026-09-01.sql |
   docker exec -i playpredict_db psql -v ON_ERROR_STOP=1 -U playpredict_user -d playpredict_db
 docker compose up -d --build backend frontend
 ```
 
-La base destino debe estar vacía. No se debe ejecutar previamente ni el seeder XLS ni las migraciones, porque el dump ya contiene ambos resultados. Para instalaciones mantenibles y futuras actualizaciones se recomienda el mecanismo canónico desde migraciones + XLS.
+La base destino debe estar vacía. No se debe ejecutar previamente ni el seeder XLS ni las migraciones, porque DB0 ya contiene ambos resultados. Para instalaciones mantenibles y futuras actualizaciones se recomienda el mecanismo reproducible desde migraciones + XLS. La documentación completa de DB0 está en `docs/database/backups/README.md`.
 
 ## Validaciones esperadas
 

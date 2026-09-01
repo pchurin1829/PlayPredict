@@ -146,6 +146,16 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<PlayPredictDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
+    if (app.Environment.IsEnvironment(LoadTestSeeder.EnvironmentName))
+    {
+        var databaseName = string.IsNullOrWhiteSpace(connectionString)
+            ? "<missing>"
+            : new Npgsql.NpgsqlConnectionStringBuilder(connectionString).Database;
+        logger.LogWarning("========== LOADTEST ENVIRONMENT ==========");
+        logger.LogWarning("LOADTEST backend connected to database: {Database}", databaseName);
+        logger.LogWarning("==========================================");
+    }
+
     // --- Migraciones: aplicar antes de cualquier seeder ---
     // Si una migración falla, el proceso aborta aquí. Nunca se ejecuta
     // un seeder contra un esquema incompleto.
@@ -176,7 +186,11 @@ using (var scope = app.Services.CreateScope())
     }
 
     // --- Seeders: solo después de que el schema esté completo ---
-    await DataSeeder.SeedCoreDataAsync(db);
+    // LoadTest tiene su propio catálogo y no debe recibir equipos/datos de Development.
+    if (!app.Environment.IsEnvironment(LoadTestSeeder.EnvironmentName))
+    {
+        await DataSeeder.SeedCoreDataAsync(db);
+    }
 
     if (app.Environment.IsDevelopment())
     {
@@ -190,7 +204,18 @@ using (var scope = app.Services.CreateScope())
         return;
     }
 
-    await DataSeeder.SeedEditionScoringConfigurationsAsync(db);
+    if (!app.Environment.IsEnvironment(LoadTestSeeder.EnvironmentName))
+    {
+        await DataSeeder.SeedEditionScoringConfigurationsAsync(db);
+    }
+
+    if (args.Contains("--seed-loadtest", StringComparer.OrdinalIgnoreCase))
+    {
+        var options = builder.Configuration.GetSection(LoadTestSeedOptions.SectionName)
+            .Get<LoadTestSeedOptions>() ?? new LoadTestSeedOptions();
+        await LoadTestSeeder.SeedAsync(db, options, app.Environment.EnvironmentName, connectionString, logger);
+        return;
+    }
 
     if (app.Environment.IsDevelopment())
     {

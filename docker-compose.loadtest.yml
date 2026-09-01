@@ -1,0 +1,90 @@
+name: playpredict-loadtest
+
+services:
+  db-loadtest:
+    image: postgres:18-alpine
+    container_name: playpredict_loadtest_db
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${LOADTEST_POSTGRES_DB:?LOADTEST_POSTGRES_DB is required}
+      POSTGRES_USER: ${LOADTEST_POSTGRES_USER:?LOADTEST_POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${LOADTEST_POSTGRES_PASSWORD:?LOADTEST_POSTGRES_PASSWORD is required}
+    ports:
+      - "${LOADTEST_POSTGRES_PORT:-55436}:5432"
+    volumes:
+      - playpredict_loadtest_db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LOADTEST_POSTGRES_USER} -d ${LOADTEST_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - playpredict-loadtest
+
+  backend-loadtest:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: playpredict_loadtest_backend
+    restart: "no"
+    environment:
+      ASPNETCORE_ENVIRONMENT: LoadTest
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=db-loadtest;Port=5432;Database=${LOADTEST_POSTGRES_DB};Username=${LOADTEST_POSTGRES_USER};Password=${LOADTEST_POSTGRES_PASSWORD}
+      Jwt__Key: ${LOADTEST_JWT_KEY:?LOADTEST_JWT_KEY is required}
+      Jwt__Issuer: PlayPredict.LoadTest
+      Jwt__Audience: PlayPredict.LoadTest
+      Jwt__ExpiresMinutes: 120
+      LoadTest__Enabled: "true"
+      LoadTest__UserCount: ${LOADTEST_USER_COUNT:-100}
+      LoadTest__UserPassword: ${LOADTEST_USER_PASSWORD:?LOADTEST_USER_PASSWORD is required}
+      UploadStorage__RootPath: /data/loadtest-uploads
+    ports:
+      - "${LOADTEST_BACKEND_PORT:-18006}:8080"
+    volumes:
+      - ./backend:/app
+      - playpredict_loadtest_backend_bin:/app/bin
+      - playpredict_loadtest_backend_obj:/app/obj
+      - playpredict_loadtest_uploads:/data/loadtest-uploads
+    depends_on:
+      db-loadtest:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - playpredict-loadtest
+
+  k6-smoke:
+    image: grafana/k6:latest
+    profiles: ["smoke"]
+    environment:
+      LOADTEST_BASE_URL: ${LOADTEST_BASE_URL:-http://backend-loadtest:8080}
+      LOADTEST_LEAGUE_NAME: ${LOADTEST_LEAGUE_NAME:-PLAYPREDICT LOADTEST OFFICIAL}
+      LOADTEST_USER_INDEX: ${LOADTEST_USER_INDEX:-1}
+      LOADTEST_USER_PASSWORD: ${LOADTEST_USER_PASSWORD:?LOADTEST_USER_PASSWORD is required}
+    volumes:
+      - ./tests/load:/scripts:ro
+    working_dir: /scripts
+    depends_on:
+      backend-loadtest:
+        condition: service_healthy
+    networks:
+      - playpredict-loadtest
+
+volumes:
+  playpredict_loadtest_db_data:
+    name: playpredict_loadtest_db_data
+  playpredict_loadtest_backend_bin:
+    name: playpredict_loadtest_backend_bin
+  playpredict_loadtest_backend_obj:
+    name: playpredict_loadtest_backend_obj
+  playpredict_loadtest_uploads:
+    name: playpredict_loadtest_uploads
+
+networks:
+  playpredict-loadtest:
+    name: playpredict_loadtest_network

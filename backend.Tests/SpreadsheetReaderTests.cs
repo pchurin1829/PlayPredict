@@ -39,6 +39,26 @@ public class SpreadsheetReaderTests
     }
 
     [Fact]
+    public void Reads_matches_with_documentation_preamble_and_traceability_columns()
+    {
+        var sheet = new SheetData(SpreadsheetReader.MatchesSheet,
+            ["Partidos importables", null, null, null, null, null, null, null, null, null],
+            ["Programación oficial", null, null, null, null, null, null, null, null, null],
+            ["TORNEO", "EDICION", "FECHA_NRO", "FECHA", "HORA", "LOCAL", "VISITANTE", "ESTADO", "ZONA", "FUENTE"],
+            ["TORNEO CLAUSURA AFA 2026", "CLAUSURA_2026", 8, "2026-09-04", "16:45",
+                "Estudiantes de Río Cuarto", "Sarmiento", "SCHEDULED", "Zona B", "https://www.afa.com.ar"]);
+        using var stream = SpreadsheetTestWorkbook.CreateXlsx(sheet);
+
+        var result = reader.Read(stream, "fixture.xlsx", SpreadsheetImportKind.Matches);
+
+        Assert.True(result.IsValid);
+        var match = Assert.Single(result.Matches);
+        Assert.Equal(4, match.RowNumber);
+        Assert.Equal((8, new DateOnly(2026, 9, 4), new TimeOnly(16, 45)),
+            (match.RoundNumber, match.Date, match.Time));
+    }
+
+    [Fact]
     public void Reports_missing_required_sheet()
     {
         using var stream = SpreadsheetTestWorkbook.CreateXlsx(ValidTeams());

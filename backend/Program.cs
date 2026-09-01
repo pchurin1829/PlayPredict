@@ -185,6 +185,23 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("Database schema is up to date. No pending migrations.");
     }
 
+    if (args.Contains("--migrate-only", StringComparer.OrdinalIgnoreCase))
+    {
+        logger.LogInformation("Database migration completed; exiting because --migrate-only was requested.");
+        return;
+    }
+
+    if (args.Contains("--seed-initial-v1", StringComparer.OrdinalIgnoreCase))
+    {
+        var baseWorkbook = GetArgumentValue(args, "--initial-base=")
+            ?? ResolveInitialWorkbook("PlayPredict_Base_Inicial_v1.0_2026-09-01.xlsx");
+        var rosterWorkbook = GetArgumentValue(args, "--initial-rosters=")
+            ?? ResolveInitialWorkbook("PlayPredict_Planteles_Clausura_AFA_2026_v2.xlsx");
+        await InitialDatasetV1Seeder.SeedAsync(db, baseWorkbook, rosterWorkbook);
+        logger.LogInformation("Initial dataset v1.0 installed successfully.");
+        return;
+    }
+
     // --- Seeders: solo después de que el schema esté completo ---
     // LoadTest tiene su propio catálogo y no debe recibir equipos/datos de Development.
     if (!app.Environment.IsEnvironment(LoadTestSeeder.EnvironmentName))
@@ -192,7 +209,7 @@ using (var scope = app.Services.CreateScope())
         await DataSeeder.SeedCoreDataAsync(db);
     }
 
-    if (app.Environment.IsDevelopment())
+    if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("DevSeed:Enabled"))
     {
         await DataSeeder.SeedAdminUsersAsync(db, app.Configuration, app.Environment);
     }
@@ -217,7 +234,7 @@ using (var scope = app.Services.CreateScope())
         return;
     }
 
-    if (app.Environment.IsDevelopment())
+    if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("DemoSeed:Enabled"))
     {
         var evaluationService = scope.ServiceProvider.GetRequiredService<PredictionEvaluationService>();
         await DemoDatasetV1Seeder.SeedAsync(db, evaluationService);
@@ -230,3 +247,17 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+static string? GetArgumentValue(string[] arguments, string prefix) =>
+    arguments.FirstOrDefault(argument => argument.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))?[prefix.Length..];
+
+static string ResolveInitialWorkbook(string fileName)
+{
+    var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+    for (var directory = current; directory is not null; directory = directory.Parent)
+    {
+        var candidate = Path.Combine(directory.FullName, "docs", "datos-iniciales", fileName);
+        if (File.Exists(candidate)) return candidate;
+    }
+    return Path.Combine(current.FullName, "docs", "datos-iniciales", fileName);
+}

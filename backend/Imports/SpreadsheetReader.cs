@@ -13,6 +13,8 @@ public sealed class SpreadsheetReader
     private static readonly string[] TeamHeaders = ["NOMBRE DEL EQUIPO", "NOMBRE CORTO"];
     private static readonly string[] RosterHeaders = ["NOMBRE DEL CLUB", "NOMBRE", "APELLIDO", "NOMBRE PARA MOSTRAR", "POSICION"];
     private static readonly string[] MatchHeaders = ["FECHA_NRO", "FECHA", "HORA", "LOCAL", "VISITANTE", "ESTADO"];
+    private static readonly HashSet<string> OptionalMatchHeaders =
+        new(["TORNEO", "EDICION", "ZONA", "FUENTE"], StringComparer.Ordinal);
 
     static SpreadsheetReader()
     {
@@ -78,10 +80,10 @@ public sealed class SpreadsheetReader
 
     private static void ReadTeams(IExcelDataReader reader, List<ImportTeamRow> rows, List<SpreadsheetValidationIssue> issues)
     {
-        var headers = ReadHeaders(reader, TeamsSheet, TeamHeaders, issues);
+        var headers = ReadHeaders(reader, TeamsSheet, TeamHeaders, issues, out var headerRowNumber);
         if (headers is null) return;
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        var rowNumber = 1;
+        var rowNumber = headerRowNumber;
         while (reader.Read())
         {
             rowNumber++;
@@ -106,10 +108,10 @@ public sealed class SpreadsheetReader
 
     private static void ReadRosters(IExcelDataReader reader, List<ImportRosterRow> rows, List<SpreadsheetValidationIssue> issues)
     {
-        var headers = ReadHeaders(reader, RostersSheet, RosterHeaders, issues);
+        var headers = ReadHeaders(reader, RostersSheet, RosterHeaders, issues, out var headerRowNumber);
         if (headers is null) return;
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        var rowNumber = 1;
+        var rowNumber = headerRowNumber;
         while (reader.Read())
         {
             rowNumber++;
@@ -151,10 +153,10 @@ public sealed class SpreadsheetReader
 
     private static void ReadMatches(IExcelDataReader reader, List<ImportMatchRow> rows, List<SpreadsheetValidationIssue> issues)
     {
-        var headers = ReadHeaders(reader, MatchesSheet, MatchHeaders, issues);
+        var headers = ReadHeaders(reader, MatchesSheet, MatchHeaders, issues, out var headerRowNumber, OptionalMatchHeaders);
         if (headers is null) return;
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        var rowNumber = 1;
+        var rowNumber = headerRowNumber;
         while (reader.Read())
         {
             rowNumber++;
@@ -205,15 +207,31 @@ public sealed class SpreadsheetReader
         }
     }
 
-    private static Dictionary<string, int>? ReadHeaders(IExcelDataReader reader, string sheetName, string[] expected, List<SpreadsheetValidationIssue> issues)
+    private static Dictionary<string, int>? ReadHeaders(
+        IExcelDataReader reader,
+        string sheetName,
+        string[] expected,
+        List<SpreadsheetValidationIssue> issues,
+        out int headerRowNumber,
+        IReadOnlySet<string>? optional = null)
     {
-        if (!reader.Read())
+        headerRowNumber = 0;
+        var expectedSet = expected.ToHashSet(StringComparer.Ordinal);
+        while (headerRowNumber < 10 && reader.Read())
+        {
+            headerRowNumber++;
+            var containsContractHeader = Enumerable.Range(0, reader.FieldCount)
+                .Select(index => SpreadsheetTextNormalizer.Normalize(FormatOriginal(reader.GetValue(index))))
+                .Any(expectedSet.Contains);
+            if (containsContractHeader) break;
+        }
+
+        if (headerRowNumber == 0 || reader.FieldCount == 0)
         {
             issues.Add(new("EMPTY_SHEET", $"La hoja {sheetName} no contiene encabezados.", sheetName));
             return null;
         }
 
-        var expectedSet = expected.ToHashSet(StringComparer.Ordinal);
         var headers = new Dictionary<string, int>(StringComparer.Ordinal);
         for (var index = 0; index < reader.FieldCount; index++)
         {
@@ -221,20 +239,20 @@ public sealed class SpreadsheetReader
             var normalized = SpreadsheetTextNormalizer.Normalize(original);
             if (normalized.Length == 0)
             {
-                issues.Add(new("EMPTY_HEADER", "Hay una columna sin encabezado.", sheetName, 1));
+                issues.Add(new("EMPTY_HEADER", "Hay una columna sin encabezado.", sheetName, headerRowNumber));
                 continue;
             }
-            if (!expectedSet.Contains(normalized))
+            if (!expectedSet.Contains(normalized) && !(optional?.Contains(normalized) ?? false))
             {
-                issues.Add(new("UNKNOWN_HEADER", $"El encabezado '{original}' no pertenece al contrato de {sheetName}.", sheetName, 1, original));
+                issues.Add(new("UNKNOWN_HEADER", $"El encabezado '{original}' no pertenece al contrato de {sheetName}.", sheetName, headerRowNumber, original));
                 continue;
             }
             if (!headers.TryAdd(normalized, index))
-                issues.Add(new("DUPLICATE_HEADER", $"El encabezado {normalized} aparece m\u00e1s de una vez.", sheetName, 1, normalized));
+                issues.Add(new("DUPLICATE_HEADER", $"El encabezado {normalized} aparece m\u00e1s de una vez.", sheetName, headerRowNumber, normalized));
         }
 
         foreach (var missing in expected.Where(header => !headers.ContainsKey(header)))
-            issues.Add(new("MISSING_HEADER", $"Falta el encabezado obligatorio {missing}.", sheetName, 1, missing));
+            issues.Add(new("MISSING_HEADER", $"Falta el encabezado obligatorio {missing}.", sheetName, headerRowNumber, missing));
         return headers;
     }
 

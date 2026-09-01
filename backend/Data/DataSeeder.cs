@@ -117,12 +117,6 @@ public static class DataSeeder
             }
         }
 
-        var existingTeamNames = await db.Teams.Select(t => t.Name).ToListAsync();
-        foreach (var (name, shortName) in ArgentineTeams.Where(t => !existingTeamNames.Contains(t.Name)))
-        {
-            db.Teams.Add(new Team { Name = name, ShortName = shortName, Sport = "Fútbol", Active = true });
-        }
-
         await db.SaveChangesAsync();
     }
 

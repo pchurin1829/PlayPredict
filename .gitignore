@@ -35,3 +35,12 @@ Thumbs.db
 backups/*.dump
 backups/*.zip
 backups/*.tar.gz
+
+# Datos físicos/temporales de PostgreSQL y Docker
+pgdata/
+**/pgdata/
+postgres-data/
+**/postgres-data/
+.docker/
+docker-data/
+**/docker-data/

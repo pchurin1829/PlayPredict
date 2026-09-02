@@ -23,40 +23,62 @@ public class RankingService
 
     private static async Task<List<RankingEntryDto>> GetLeagueRankingCoreAsync(PlayPredictDbContext db, int leagueId, int? roundId)
     {
-        var rows = db.PredictionEvaluations
+        var aggregates = await db.PredictionEvaluations
             .Where(e => e.LeagueId == leagueId && (!roundId.HasValue || e.Prediction.Match.RoundId == roundId.Value))
-            .Select(e => new EvaluationRow(
+            .GroupBy(e => new
+            {
                 e.Prediction.UserId,
                 e.Prediction.User.FirstName,
-                e.Prediction.User.LastName,
-                e.Points,
-                e.EvaluationType,
-                Math.Abs(e.Prediction.PredictedHomeScore - e.OfficialHomeScore)
-                    + Math.Abs(e.Prediction.PredictedAwayScore - e.OfficialAwayScore),
-                e.PreferredPlayerPoints));
+                e.Prediction.User.LastName
+            })
+            .Select(group => new RankingAggregateRow(
+                group.Key.UserId,
+                group.Key.FirstName,
+                group.Key.LastName,
+                group.Sum(item => item.Points),
+                group.Count(item => item.EvaluationType == EvaluationType.ExactScore),
+                group.Count(item => item.EvaluationType == EvaluationType.CorrectOutcome),
+                group.Count(item => item.EvaluationType == EvaluationType.Incorrect),
+                group.Count()))
+            .ToListAsync();
 
-        var list = await rows.ToListAsync();
         var participants = await db.LeagueParticipants
             .Where(participant => participant.LeagueId == leagueId)
-            .Select(participant => new
+            .GroupBy(participant => new
             {
                 participant.UserId,
                 participant.User.FirstName,
-                participant.User.LastName,
-                IsActive = participant.LeftAtUtc == null
+                participant.User.LastName
             })
+            .Select(group => new ParticipantState(
+                group.Key.UserId,
+                group.Key.FirstName,
+                group.Key.LastName,
+                group.Any(participant => participant.LeftAtUtc == null)))
             .ToListAsync();
-        var participantStates = participants.GroupBy(p => new { p.UserId, p.FirstName, p.LastName })
-            .Select(group => new { group.Key.UserId, group.Key.FirstName, group.Key.LastName, IsActive = group.Any(p => p.IsActive) })
-            .ToList();
-        foreach (var participant in participantStates.Where(participant => list.All(row => row.UserId != participant.UserId)))
+
+        var aggregatesByUser = aggregates.ToDictionary(item => item.UserId);
+        foreach (var participant in participants)
         {
-            list.Add(new EvaluationRow(participant.UserId, participant.FirstName, participant.LastName, 0, null, 0, 0, false, participant.IsActive));
+            aggregatesByUser.TryAdd(participant.UserId, new RankingAggregateRow(
+                participant.UserId, participant.FirstName, participant.LastName, 0, 0, 0, 0, 0));
         }
 
-        list = list.Select(row => row with { IsActiveParticipant = participantStates.FirstOrDefault(p => p.UserId == row.UserId)?.IsActive ?? false }).ToList();
+        var activeByUser = participants.ToDictionary(item => item.UserId, item => item.IsActive);
+        var orderedEntries = aggregatesByUser.Values
+            .OrderByDescending(item => item.Points)
+            .ThenByDescending(item => item.ExactCount)
+            .ThenByDescending(item => item.CorrectCount)
+            .ThenBy(item => item.IncorrectCount)
+            .ThenBy(item => item.LastName)
+            .ThenBy(item => item.FirstName)
+            .Select(item => new RankingEntryDto(
+                0, item.UserId, item.FirstName, item.LastName,
+                item.Points, item.ExactCount, item.CorrectCount, item.IncorrectCount, item.EvaluatedCount,
+                0, activeByUser.GetValueOrDefault(item.UserId)))
+            .ToList();
 
-        return BuildRanking(list);
+        return ApplyDensePositions(orderedEntries);
     }
 
     private static async Task<List<AwardStandingDto>> GetLeagueAwardStandingsCoreAsync(PlayPredictDbContext db, int leagueId, int? roundId)
@@ -218,6 +240,13 @@ public class RankingService
         int UserId, string FirstName, string LastName, int Points,
         EvaluationType? EvaluationType, int ScoreError = 0, int PreferredPlayerPoints = 0,
         bool IsEvaluated = true, bool IsActiveParticipant = false);
+
+    private record RankingAggregateRow(
+        int UserId, string FirstName, string LastName, int Points,
+        int ExactCount, int CorrectCount, int IncorrectCount, int EvaluatedCount);
+
+    private record ParticipantState(
+        int UserId, string FirstName, string LastName, bool IsActive);
 
     private static bool gActive(List<EvaluationRow> rows, int userId) => rows.Any(row => row.UserId == userId && row.IsActiveParticipant);
 }

@@ -14,7 +14,7 @@ public static class UserEndpoints
 
         group.MapGet("/me", async (ClaimsPrincipal principal, PlayPredictDbContext db) =>
         {
-            var user = await GetCurrentUserAsync(principal, db);
+            var user = await GetCurrentUserAsync(principal, db, includeRoles: true);
             if (user is null)
             {
                 return Results.NotFound();
@@ -43,7 +43,7 @@ public static class UserEndpoints
                 return Results.ValidationProblem(errors);
             }
 
-            var user = await GetCurrentUserAsync(principal, db);
+            var user = await GetCurrentUserAsync(principal, db, includeRoles: true);
             if (user is null)
             {
                 return Results.NotFound();
@@ -58,7 +58,10 @@ public static class UserEndpoints
         });
     }
 
-    internal static async Task<User?> GetCurrentUserAsync(ClaimsPrincipal principal, PlayPredictDbContext db)
+    internal static async Task<User?> GetCurrentUserAsync(
+        ClaimsPrincipal principal,
+        PlayPredictDbContext db,
+        bool includeRoles = false)
     {
         var idClaim = principal.FindFirstValue(ClaimTypes.NameIdentifier);
         if (idClaim is null || !int.TryParse(idClaim, out var userId))
@@ -66,8 +69,12 @@ public static class UserEndpoints
             return null;
         }
 
-        return await db.Users
-            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Id == userId);
+        IQueryable<User> users = db.Users;
+        if (includeRoles)
+        {
+            users = users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role);
+        }
+
+        return await users.FirstOrDefaultAsync(u => u.Id == userId);
     }
 }

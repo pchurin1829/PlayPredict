@@ -39,6 +39,7 @@ services:
       LoadTest__UserCount: ${LOADTEST_USER_COUNT:-100}
       LoadTest__UserPassword: ${LOADTEST_USER_PASSWORD:?LOADTEST_USER_PASSWORD is required}
       UploadStorage__RootPath: /data/loadtest-uploads
+      Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command: Warning
     ports:
       - "${LOADTEST_BACKEND_PORT:-18006}:8080"
     volumes:

@@ -1,0 +1,131 @@
+PlayPredict — DEMO 1
+
+Orden exacto de clics para grabación manual
+
+IMPORTANTE - Iniciá Movavi ANTES del Paso 1. - Esperá 2–3 segundos con
+el Login quieto. - Durante la grabación, Codex no debe hacer nada. -
+Esta primera toma puede ser la definitiva.
+
+DATOS PARA LA GRABACIÓN Nombre: Pablo Apellido: Demo Email:
+demo1@playpredict.test Contraseña: Demo1234! Liga de amigos: Los del
+Trabajo
+
+  --------------------------------------------------
+  PASO 1 — REGISTRO
+  --------------------------------------------------
+  1. Estar en: http://localhost:5175/login 2.
+  Iniciar grabación en Movavi. 3. Esperar 2–3
+  segundos. 4. Click: Registrate 5. Completar:
+  Nombre: Pablo Apellido: Demo Email:
+  demo1@playpredict.test Contraseña: Demo1234!
+  Repetir contraseña: Demo1234! 6. Click: Crear
+  cuenta 7. Esperar que aparezca Inicio PLAYER. 8.
+  Dejar la pantalla quieta 2–3 segundos.
+
+  --------------------------------------------------
+
+PASO 2 — PARTICIPAR EN COMPETENCIA OFICIAL
+
+1.  Menú izquierdo → Competencias Oficiales
+2.  Buscar: Liga Profesional / Clausura 2026
+3.  Mostrar brevemente que dice: Todavía no participás
+4.  Click: Participar
+5.  Esperar que cambie a: ✓ Estás participando
+6.  Menú izquierdo → Mis Ligas
+7.  Mostrar: Liga General - Liga Profesional (demo)
+8.  Mostrar badge: OFICIAL
+9.  Click: Entrar
+
+  --------------------------------------------------
+  PASO 3 — PRONOSTICAR EN LIGA OFICIAL
+  --------------------------------------------------
+  1. Click pestaña: Pronósticos 2. Si aparece filtro
+  de fecha → elegir Fecha 4
+
+  Partido: Independiente vs Boca Juniors 3. Local: 0
+  4. ENTER 5. Visitante: 0 6. ENTER 7. Guardar
+  pronóstico 8. Mostrar brevemente: PRONOSTICADO
+
+  Demostrar modificación: 9. Cambiar resultado local
+  de 0 a 2 10. Mostrar que aparece: Guardar cambios
+  11. Guardar cambios 12. Mostrar que vuelve a:
+  PRONOSTICADO
+
+  Segundo partido: River Plate vs Gimnasia 13.
+  Local: 1 14. ENTER 15. Visitante: 0 16. ENTER 17.
+  Guardar pronóstico 18. Mostrar: PRONOSTICADO
+
+  No hace falta cargar más partidos para la
+  grabación.
+  --------------------------------------------------
+
+PASO 4 — CREAR LIGA CON AMIGOS
+
+1.  Menú izquierdo → Competencias Oficiales
+2.  En Liga Profesional → + Crear Liga con amigos
+3.  Nombre: Los del Trabajo
+4.  Descripción opcional: La Liga de la oficina para jugar el Clausura
+5.  Elegir: Rango de Fechas
+6.  Torneo/Edición: Clausura 2026
+7.  Fecha inicial: Fecha 4
+8.  Fecha final: Fecha 5
+9.  Click: Crear Liga
+10. Esperar que abra la Liga.
+11. Mostrar brevemente Resumen y código de invitación.
+12. NO entrar en Premios.
+
+  --------------------------------------------------
+  PASO 5 — PRONOSTICAR EN LIGA DE AMIGOS
+  --------------------------------------------------
+  1. Click pestaña: Pronósticos 2. Buscar:
+  Independiente vs Boca Juniors 3. Local: 0 4. ENTER
+  5. Visitante: 1 6. ENTER 7. Guardar pronóstico 8.
+  Mostrar: PRONOSTICADO
+
+  Con un partido alcanza para el video.
+  --------------------------------------------------
+
+PASO 6 — MOSTRAR RESULTADOS
+
+1.  Menú izquierdo → Mis Ligas
+2.  Buscar: Liga General - Liga Profesional (demo)
+3.  Click: Entrar
+4.  Click pestaña: Resultados
+5.  Elegir: Fecha 1
+6.  Dejar la pantalla quieta unos segundos.
+7.  Mostrar:
+    -   Fecha/calendario
+    -   equipos
+    -   escudos
+    -   resultados oficiales
+    -   Mi pronóstico: Sin pronóstico
+
+Eso es correcto: el usuario recién creado no pronosticó esos partidos
+históricos.
+
+  --------------------------------------------------
+  PASO 7 — MOSTRAR RANKING
+  --------------------------------------------------
+  1. Click pestaña: Ranking 2. Mostrar Ranking de la
+  Liga. 3. Dejarlo visible 3–4 segundos.
+
+  IMPORTANTE: Pablo puede no aparecer todavía en el
+  ranking porque sus pronósticos son de partidos
+  futuros. Eso es correcto.
+
+  Si hablás durante el video podés decir: “Pablo
+  todavía no suma puntos porque sus pronósticos
+  corresponden a partidos que todavía no se
+  jugaron.”
+  --------------------------------------------------
+
+PASO 8 — CIERRE
+
+1.  Menú izquierdo → Mis Ligas
+2.  Mostrar juntas:
+    -   Liga General - Liga Profesional (demo) → OFICIAL
+    -   Los del Trabajo → MI LIGA
+3.  Dejar esta pantalla quieta 3–5 segundos.
+4.  Detener grabación de Movavi.
+
+FIN DEMO 1

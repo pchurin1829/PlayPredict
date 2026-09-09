@@ -10,7 +10,9 @@ interface MatchResultModalProps {
 }
 
 interface ScorerRow {
-  teamPlayerId: number
+  teamPlayerId: number | null
+  teamId: number | null
+  isOwnGoal: boolean
   goals: number
   confirmed: boolean
 }
@@ -29,7 +31,7 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
   const [scorerRequirements, setScorerRequirements] = useState<ScorerRequirements | null>(null)
   const [scorers, setScorers] = useState<ScorerRow[]>(match.scorers
     .filter(s => (s.teamId === match.homeTeamId && (match.homeGoals ?? 0) > 0) || (s.teamId === match.awayTeamId && (match.awayGoals ?? 0) > 0))
-    .map(s => ({ teamPlayerId: s.teamPlayerId, goals: s.goals, confirmed: true })))
+    .map(s => ({ teamPlayerId: s.teamPlayerId, teamId: s.teamId, isOwnGoal: s.isOwnGoal, goals: s.goals, confirmed: true })))
   const homeGoalsRef = useRef<HTMLInputElement>(null)
   const awayGoalsRef = useRef<HTMLInputElement>(null)
   const scorerSelectRefs = useRef<Array<HTMLSelectElement | null>>([])
@@ -42,7 +44,7 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
     || (player.teamId === match.awayTeamId && awayGoals > 0),
   )
   const assignedGoals = scorers.reduce((total, scorer) => total + scorer.goals, 0)
-  const canAddScorer = eligiblePlayers.length > 0 && assignedGoals < homeGoals + awayGoals
+  const canAddScorer = assignedGoals < homeGoals + awayGoals && (eligiblePlayers.length > 0 || homeGoals + awayGoals > 0)
   const showScorerSection = scorerRequirements?.showScorerSection ?? players.length > 0
   const requiresScorerDetail = scorerRequirements?.requiresScorerDetail === true
 
@@ -78,10 +80,11 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
       return
     }
     if (requiresScorerDetail && homeGoals + awayGoals > 0) {
-      const homePlayerIds = new Set(players.filter(player => player.teamId === match.homeTeamId).map(player => player.id))
-      const awayPlayerIds = new Set(players.filter(player => player.teamId === match.awayTeamId).map(player => player.id))
-      const assignedHomeGoals = scorers.filter(row => homePlayerIds.has(row.teamPlayerId)).reduce((total, row) => total + row.goals, 0)
-      const assignedAwayGoals = scorers.filter(row => awayPlayerIds.has(row.teamPlayerId)).reduce((total, row) => total + row.goals, 0)
+      const creditedSide = (row: ScorerRow) => row.isOwnGoal
+        ? row.teamId
+        : players.find(player => player.id === row.teamPlayerId)?.teamId ?? null
+      const assignedHomeGoals = scorers.filter(row => creditedSide(row) === match.homeTeamId).reduce((total, row) => total + row.goals, 0)
+      const assignedAwayGoals = scorers.filter(row => creditedSide(row) === match.awayTeamId).reduce((total, row) => total + row.goals, 0)
       if (assignedHomeGoals !== homeGoals || assignedAwayGoals !== awayGoals) {
         setBlockingError('Para calcular los puntos de Jugador Preferido debés completar los goleadores del partido.')
         return
@@ -94,7 +97,9 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
       const updated = await api.put<Match>(`/matches/${match.id}/result`, {
         homeGoals,
         awayGoals,
-        scorers: scorers.filter(s => s.teamPlayerId > 0 && s.goals > 0),
+        scorers: scorers
+          .filter(s => s.goals > 0 && (s.isOwnGoal ? s.teamId !== null : (s.teamPlayerId ?? 0) > 0))
+          .map(s => ({ teamPlayerId: s.isOwnGoal ? null : s.teamPlayerId, goals: s.goals, isOwnGoal: s.isOwnGoal, teamId: s.isOwnGoal ? s.teamId : null })),
       })
       onSaved(updated)
     } catch (err) {
@@ -120,7 +125,8 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
     if (goals === 0) {
       const teamId = side === 'home' ? match.homeTeamId : match.awayTeamId
       const teamPlayerIds = new Set(players.filter(player => player.teamId === teamId).map(player => player.id))
-      setScorers(current => current.filter(scorer => !teamPlayerIds.has(scorer.teamPlayerId)))
+      setScorers(current => current.filter(scorer =>
+        (scorer.isOwnGoal ? scorer.teamId !== teamId : !teamPlayerIds.has(scorer.teamPlayerId ?? 0))))
     }
   }
 
@@ -143,14 +149,22 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
 
   function addScorer() {
     const nextIndex = scorers.length
-    setScorers(current => [...current, { teamPlayerId: 0, goals: 1, confirmed: false }])
+    setScorers(current => [...current, { teamPlayerId: null, teamId: null, isOwnGoal: false, goals: 1, confirmed: false }])
     setTimeout(() => scorerSelectRefs.current[nextIndex]?.focus())
+  }
+
+  function toggleOwnGoal(index: number) {
+    setScorers(current => current.map((item, itemIndex) => itemIndex === index
+      ? { ...item, isOwnGoal: !item.isOwnGoal, teamPlayerId: null, teamId: null, confirmed: false }
+      : item))
   }
 
   function confirmScorer(index: number) {
     const row = scorers[index]
-    if (!row || row.teamPlayerId <= 0 || row.goals <= 0) {
-      setBlockingError('Seleccioná un jugador y una cantidad de goles válida para confirmar la asignación.')
+    if (!row || row.goals <= 0 || (row.isOwnGoal ? row.teamId === null : (row.teamPlayerId ?? 0) <= 0)) {
+      setBlockingError(row?.isOwnGoal
+        ? 'Indicá a qué equipo se acredita el autogol y una cantidad de goles válida.'
+        : 'Seleccioná un jugador y una cantidad de goles válida para confirmar la asignación.')
       return
     }
     setScorers(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, confirmed: true } : item))
@@ -196,17 +210,26 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
             </div>
             {team(match.participantAway, match.awayTeamLogoUrl, true)}
           </div>
-          {showScorerSection && <section className="result-scorers"><h3>Goleadores ({requiresScorerDetail ? 'obligatorio' : 'opcional'})</h3><p className="admin-help">Incluye jugadores activos de cualquier posición.</p>
+          {showScorerSection && <section className="result-scorers"><h3>Goleadores ({requiresScorerDetail ? 'obligatorio' : 'opcional'})</h3><p className="admin-help">Incluye jugadores activos de cualquier posición. Si un gol fue en contra, agregalo como autogol a favor del equipo beneficiado (no lleva jugador).</p>
             {scorers.map((row,index) => <div className={`result-scorer-row ${row.confirmed ? 'result-scorer-row--confirmed' : ''}`} key={index}>
-              <select ref={element => { scorerSelectRefs.current[index] = element }} aria-label={`Goleador ${index + 1}`} value={row.teamPlayerId} onChange={event => { const teamPlayerId=Number(event.target.value); setScorers(current => current.map((item,itemIndex) => itemIndex===index ? {...item,teamPlayerId,confirmed:false} : item)); if(teamPlayerId > 0) setTimeout(()=>scorerGoalsRefs.current[index]?.focus()) }} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();scorerGoalsRefs.current[index]?.focus();scorerGoalsRefs.current[index]?.select()}}}>
+              {row.isOwnGoal ? (
+              <select ref={element => { scorerSelectRefs.current[index] = element }} aria-label={`Autogol ${index + 1} a favor de`} value={row.teamId ?? 0} onChange={event => { const teamId = Number(event.target.value); setScorers(current => current.map((item,itemIndex) => itemIndex===index ? {...item, teamId: teamId > 0 ? teamId : null, confirmed:false} : item)) }}>
+                <option value={0}>Autogol a favor de…</option>
+                {homeGoals > 0 && <option value={match.homeTeamId}>{match.participantHome}</option>}
+                {awayGoals > 0 && <option value={match.awayTeamId}>{match.participantAway}</option>}
+              </select>
+              ) : (
+              <select ref={element => { scorerSelectRefs.current[index] = element }} aria-label={`Goleador ${index + 1}`} value={row.teamPlayerId ?? 0} onChange={event => { const teamPlayerId=Number(event.target.value); setScorers(current => current.map((item,itemIndex) => itemIndex===index ? {...item,teamPlayerId: teamPlayerId > 0 ? teamPlayerId : null,confirmed:false} : item)); if(teamPlayerId > 0) setTimeout(()=>scorerGoalsRefs.current[index]?.focus()) }} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();scorerGoalsRefs.current[index]?.focus();scorerGoalsRefs.current[index]?.select()}}}>
                 <option value={0}>Seleccionar jugador</option>
                 {homeGoals > 0 && <optgroup label={match.participantHome}>{eligiblePlayers.filter(player=>player.teamId===match.homeTeamId).map(player=><option value={player.id} key={player.id}>{player.displayName}</option>)}</optgroup>}
                 {awayGoals > 0 && <optgroup label={match.participantAway}>{eligiblePlayers.filter(player=>player.teamId===match.awayTeamId).map(player=><option value={player.id} key={player.id}>{player.displayName}</option>)}</optgroup>}
               </select>
+              )}
               <input ref={element => { scorerGoalsRefs.current[index] = element }} aria-label="Cantidad de goles" type="number" min={1} max={99} inputMode="numeric" value={row.goals} onFocus={selectValue} onChange={event=>setScorers(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,goals:Math.max(1,Number(event.target.value)),confirmed:false}:item))} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();confirmScorer(index)}}}/>
               <div className="result-scorer-row__actions">
                 {!row.confirmed && <button type="button" className="btn btn-primary" onClick={()=>confirmScorer(index)}>Confirmar</button>}
-                {row.confirmed && <span className="result-scorer-row__confirmed">Asignado</span>}
+                {row.confirmed && <span className="result-scorer-row__confirmed">{row.isOwnGoal ? 'Autogol asignado' : 'Asignado'}</span>}
+                {!row.confirmed && <button type="button" className="btn btn-tertiary" onClick={()=>toggleOwnGoal(index)}>{row.isOwnGoal ? 'Es de un jugador' : 'Es autogol'}</button>}
                 <button type="button" className="btn btn-tertiary" onClick={()=>setScorers(current=>current.filter((_,itemIndex)=>itemIndex!==index))}>Quitar</button>
               </div>
             </div>)}

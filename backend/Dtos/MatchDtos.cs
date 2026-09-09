@@ -33,8 +33,8 @@ public record MatchResultDto(
     int AwayGoals,
     IReadOnlyList<MatchScorerInputDto>? Scorers);
 
-public record MatchScorerInputDto(int TeamPlayerId, int Goals);
-public record MatchScorerDto(int TeamPlayerId, string PlayerName, int TeamId, int Goals);
+public record MatchScorerInputDto(int? TeamPlayerId, int Goals, bool IsOwnGoal = false, int? TeamId = null);
+public record MatchScorerDto(int? TeamPlayerId, string PlayerName, int TeamId, int Goals, bool IsOwnGoal);
 
 public record TeamDto(int Id, string Name, string ShortName, string? LogoUrl, string Sport, bool Active);
 

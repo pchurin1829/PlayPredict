@@ -179,6 +179,7 @@ public class CompetitionCreationTests
                 Assert.Equal(2, await db.Users.CountAsync());
                 Assert.Equal(2, await db.Leagues.CountAsync());
                 Assert.Equal(0, await db.Predictions.CountAsync());
+                Assert.Equal(await db.MatchScorers.CountAsync(), await db.MatchScorers.CountAsync(s => s.TeamId != 0));
             }
             await app.StartAsync();
             var api = new Db0Api(app, connection);
@@ -225,6 +226,12 @@ public class CompetitionCreationTests
                 }
             }
             await transaction.CommitAsync();
+            // Backfill equivalente a la migración AddMatchScorerOwnGoals: el SQL canónico de
+            // DB0 precede a la columna TeamId, y en filas históricas el equipo beneficiado es
+            // el equipo del goleador.
+            using var backfill = connection.CreateCommand();
+            backfill.CommandText = @"UPDATE ""MatchScorers"" AS s SET ""TeamId"" = p.""TeamId"" FROM ""TeamPlayers"" AS p WHERE p.""Id"" = s.""TeamPlayerId""";
+            await backfill.ExecuteNonQueryAsync();
         }
 
         public async Task Authenticate(string? role)

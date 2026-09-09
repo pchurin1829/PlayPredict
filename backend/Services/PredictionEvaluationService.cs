@@ -39,8 +39,15 @@ public class PredictionEvaluationService
 
                 var (type, resultPoints) = Evaluate(prediction.PredictedHomeScore, prediction.PredictedAwayScore,
                     match.HomeGoals.Value, match.AwayGoals.Value, config.ExactScorePoints, config.CorrectOutcomePoints, config.IncorrectPoints);
-                var preferredGoals = config.PreferredPlayerEnabled && prediction.PreferredPlayerId.HasValue
-                    ? match.Scorers.Where(s => s.TeamPlayerId == prediction.PreferredPlayerId.Value).Sum(s => s.Goals) : 0;
+                // Una liga solo otorga puntos por Jugador Preferido si la posición del jugador
+                // está habilitada en esa liga. La elección global se conserva intacta: solo se
+                // ignora a efectos del puntaje cuando la posición no puntúa acá.
+                var preferredAllowed = config.PreferredPlayerEnabled && prediction.PreferredPlayerId.HasValue
+                    && prediction.PreferredPlayer is not null
+                    && PlayerPositionCatalog.TryParse(prediction.PreferredPlayer.Position, out var preferredPosition)
+                    && config.PreferredPlayerPositions.HasFlag(preferredPosition);
+                var preferredGoals = preferredAllowed
+                    ? match.Scorers.Where(s => !s.IsOwnGoal && s.TeamPlayerId == prediction.PreferredPlayerId!.Value).Sum(s => s.Goals) : 0;
                 var preferredPoints = preferredGoals * config.PreferredPlayerPointsPerGoal;
                 var evaluation = evaluations.FirstOrDefault(e => e.PredictionId == prediction.Id && e.LeagueId == league.Id);
                 if (evaluation is null)

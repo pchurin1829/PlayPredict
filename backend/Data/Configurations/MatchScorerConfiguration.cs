@@ -10,9 +10,13 @@ public class MatchScorerConfiguration : IEntityTypeConfiguration<MatchScorer>
     {
         builder.ToTable("MatchScorers");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.TeamPlayerId).IsRequired(false);
+        builder.Property(x => x.TeamId).IsRequired();
+        builder.Property(x => x.IsOwnGoal).IsRequired().HasDefaultValue(false);
         builder.Property(x => x.Goals).IsRequired();
         builder.HasIndex(x => new { x.MatchId, x.TeamPlayerId }).IsUnique();
         builder.HasOne(x => x.Match).WithMany(x => x.Scorers).HasForeignKey(x => x.MatchId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.TeamPlayer).WithMany().HasForeignKey(x => x.TeamPlayerId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.Team).WithMany().HasForeignKey(x => x.TeamId).OnDelete(DeleteBehavior.Restrict);
     }
 }

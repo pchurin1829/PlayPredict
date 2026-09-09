@@ -48,7 +48,7 @@ export interface Match {
   createdAtUtc: string
 }
 
-export interface MatchScorer { teamPlayerId:number; playerName:string; teamId:number; goals:number }
+export interface MatchScorer { teamPlayerId:number | null; playerName:string; teamId:number; goals:number; isOwnGoal:boolean }
 
 export const EDITION_STATUSES: EditionStatus[] = ['Draft', 'Active', 'Finished', 'Cancelled']
 export const MATCH_STATUSES: MatchStatus[] = ['Scheduled', 'InProgress', 'Suspended', 'Cancelled']

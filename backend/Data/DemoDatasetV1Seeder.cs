@@ -492,8 +492,8 @@ public static class DemoDatasetV1Seeder
             var awayPlayer = await db.TeamPlayers.Where(p => p.TeamId == match.AwayTeamId && p.Active).OrderBy(p => p.Id).FirstAsync();
             db.MatchScorers.RemoveRange(match.Scorers);
             match.Scorers = [];
-            if (result.Home > 0) match.Scorers.Add(new MatchScorer { MatchId = match.Id, TeamPlayerId = homePlayer.Id, Goals = result.Home });
-            if (result.Away > 0) match.Scorers.Add(new MatchScorer { MatchId = match.Id, TeamPlayerId = awayPlayer.Id, Goals = result.Away });
+            if (result.Home > 0) match.Scorers.Add(new MatchScorer { MatchId = match.Id, TeamPlayerId = homePlayer.Id, TeamId = homePlayer.TeamId, Goals = result.Home });
+            if (result.Away > 0) match.Scorers.Add(new MatchScorer { MatchId = match.Id, TeamPlayerId = awayPlayer.Id, TeamId = awayPlayer.TeamId, Goals = result.Away });
 
             foreach (var league in leagues)
             for (var userIndex = 0; userIndex < users.Count; userIndex++)

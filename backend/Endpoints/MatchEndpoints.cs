@@ -193,14 +193,25 @@ public static class MatchEndpoints
             }
 
             var scorerInputs = (dto.Scorers ?? []).Where(s => s.Goals > 0).ToList();
-            if (scorerInputs.Select(s => s.TeamPlayerId).Distinct().Count() != scorerInputs.Count)
+            var normalInputs = scorerInputs.Where(s => !s.IsOwnGoal).ToList();
+            var ownGoalInputs = scorerInputs.Where(s => s.IsOwnGoal).ToList();
+            var normalPlayerIds = normalInputs.Select(s => s.TeamPlayerId).ToList();
+            if (normalPlayerIds.Any(id => id is null) || normalPlayerIds.Distinct().Count() != normalPlayerIds.Count)
                 errors["scorers"] = ["Cada jugador debe aparecer una sola vez."];
-            var playerIds = scorerInputs.Select(s => s.TeamPlayerId).ToList();
+            // Un autogol cuenta para el marcador del equipo beneficiado pero no se atribuye
+            // a ningún jugador: exige equipo válido y prohíbe informar jugador.
+            if (ownGoalInputs.Any(s => s.TeamPlayerId.HasValue))
+                errors["scorers"] = ["Un autogol no lleva jugador: solo se indica el equipo beneficiado."];
+            if (ownGoalInputs.Any(s => s.TeamId != match.HomeTeamId && s.TeamId != match.AwayTeamId))
+                errors["scorers"] = ["El autogol debe acreditarse a uno de los equipos del partido."];
+            var playerIds = normalPlayerIds.Where(id => id.HasValue).Select(id => id!.Value).ToList();
             var scorerPlayers = await db.TeamPlayers.Where(p => playerIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
             if (scorerPlayers.Count != playerIds.Distinct().Count() || scorerPlayers.Values.Any(p => p.TeamId != match.HomeTeamId && p.TeamId != match.AwayTeamId))
                 errors["scorers"] = ["Cada goleador debe pertenecer a uno de los equipos del partido."];
-            var homeScorerGoals = scorerInputs.Where(s => scorerPlayers.TryGetValue(s.TeamPlayerId, out var p) && p.TeamId == match.HomeTeamId).Sum(s => s.Goals);
-            var awayScorerGoals = scorerInputs.Where(s => scorerPlayers.TryGetValue(s.TeamPlayerId, out var p) && p.TeamId == match.AwayTeamId).Sum(s => s.Goals);
+            var homeScorerGoals = normalInputs.Where(s => s.TeamPlayerId.HasValue && scorerPlayers.TryGetValue(s.TeamPlayerId.Value, out var p) && p.TeamId == match.HomeTeamId).Sum(s => s.Goals)
+                + ownGoalInputs.Where(s => s.TeamId == match.HomeTeamId).Sum(s => s.Goals);
+            var awayScorerGoals = normalInputs.Where(s => s.TeamPlayerId.HasValue && scorerPlayers.TryGetValue(s.TeamPlayerId.Value, out var p) && p.TeamId == match.AwayTeamId).Sum(s => s.Goals)
+                + ownGoalInputs.Where(s => s.TeamId == match.AwayTeamId).Sum(s => s.Goals);
             var requiresScorerDetail = false;
             if (dto.HomeGoals + dto.AwayGoals > 0)
             {
@@ -222,12 +233,18 @@ public static class MatchEndpoints
             match.Status = MatchStatus.Finished;
 
             db.MatchScorers.RemoveRange(match.Scorers);
-            match.Scorers = scorerInputs.Select(s => new MatchScorer
+            match.Scorers = scorerInputs.Select(s =>
             {
-                MatchId = match.Id,
-                TeamPlayerId = s.TeamPlayerId,
-                TeamPlayer = scorerPlayers[s.TeamPlayerId],
-                Goals = s.Goals
+                var player = s is { IsOwnGoal: false, TeamPlayerId: not null } ? scorerPlayers[s.TeamPlayerId.Value] : null;
+                return new MatchScorer
+                {
+                    MatchId = match.Id,
+                    TeamPlayerId = player?.Id,
+                    TeamId = s.IsOwnGoal ? s.TeamId!.Value : player!.TeamId,
+                    IsOwnGoal = s.IsOwnGoal,
+                    TeamPlayer = player,
+                    Goals = s.Goals
+                };
             }).ToList();
 
             // Evalúa (crea o recalcula) los Pronósticos de este partido con la configuración
@@ -368,5 +385,5 @@ public static class MatchEndpoints
     internal static MatchDto ToDto(Match m) =>
         new(m.Id, m.RoundId, m.HomeTeamId, m.AwayTeamId, m.ParticipantHome, m.ParticipantAway,
             m.HomeTeam?.LogoUrl, m.AwayTeam?.LogoUrl, m.StartsAtUtc, m.Status.ToString(), m.HomeGoals, m.AwayGoals,
-            m.Scorers.Select(s => new MatchScorerDto(s.TeamPlayerId, s.TeamPlayer.DisplayName, s.TeamPlayer.TeamId, s.Goals)).ToList(), m.CreatedAtUtc);
+            m.Scorers.Select(s => new MatchScorerDto(s.TeamPlayerId, s.IsOwnGoal ? "Autogol" : s.TeamPlayer!.DisplayName, s.TeamId, s.Goals, s.IsOwnGoal)).ToList(), m.CreatedAtUtc);
 }

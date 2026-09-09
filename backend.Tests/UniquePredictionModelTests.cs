@@ -53,8 +53,10 @@ public sealed class UniquePredictionModelTests
         data.Match.Status = MatchStatus.Finished;
         data.Match.HomeGoals = 2;
         data.Match.AwayGoals = 1;
-        var scorer = new MatchScorer { Match = data.Match, MatchId = data.Match.Id, TeamPlayerId = 77, Goals = 2 };
+        var scorer = new MatchScorer { Match = data.Match, MatchId = data.Match.Id, TeamPlayerId = 77, TeamId = 1, Goals = 2 };
         db.MatchScorers.Add(scorer);
+        db.TeamPlayers.Add(new TeamPlayer { Id = 77, TeamId = 1, FirstName = "Goleador", LastName = "Preferido",
+            DisplayName = "Goleador Preferido", Position = "Delantero", Active = true });
         db.Predictions.Add(new Prediction { UserId = data.User.Id, MatchId = data.Match.Id,
             PredictedHomeScore = 2, PredictedAwayScore = 1, PreferredPlayerId = 77,
             CreatedAtUtc = data.Match.StartsAtUtc.AddHours(-1), UpdatedAtUtc = data.Match.StartsAtUtc.AddHours(-1) });

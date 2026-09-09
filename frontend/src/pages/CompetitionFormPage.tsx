@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import type { Competition } from '../api/types'
+import type { Competition, Experience } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 
 export default function CompetitionFormPage() {
@@ -13,35 +13,52 @@ export default function CompetitionFormPage() {
   const [description, setDescription] = useState('')
   const [sport, setSport] = useState('')
   const [isActive, setIsActive] = useState(true)
+  const [experiences, setExperiences] = useState<Experience[]>([])
+  const [experienceId, setExperienceId] = useState<number | ''>('')
+  const [loadFailed, setLoadFailed] = useState(false)
 
-  const [loading, setLoading] = useState(isEdit)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    if (!isEdit) return
-    api
-      .get<Competition>(`/competitions/${competitionId}`)
-      .then((c) => {
-        setName(c.name)
-        setDescription(c.description ?? '')
-        setSport(c.sport)
-        setIsActive(c.isActive)
+    let cancelled = false
+    setLoading(true)
+    setLoadFailed(false)
+    setError(null)
+    Promise.all([
+      api.get<Experience[]>('/admin/experiences'),
+      isEdit ? api.get<Competition>(`/competitions/${competitionId}`) : Promise.resolve(null),
+    ])
+      .then(([items, c]) => {
+        if (cancelled) return
+        setExperiences(items)
+        setExperienceId(c?.experienceId ?? (items.length === 1 ? items[0].id : ''))
+        setName(c?.name ?? '')
+        setDescription(c?.description ?? '')
+        setSport(c?.sport ?? '')
+        setIsActive(c?.isActive ?? true)
       })
-      .catch((err) => setError(err.message ?? 'No se pudo cargar la competencia.'))
-      .finally(() => setLoading(false))
+      .catch((err) => {
+        if (cancelled) return
+        setLoadFailed(true)
+        setError(err.message ?? 'No se pudieron cargar la competencia y sus experiencias.')
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [competitionId, isEdit])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (loadFailed || experienceId === '') return
     setSaving(true)
     setError(null)
     setFieldErrors({})
     setSaved(false)
 
-    const payload = { name, description: description || null, sport, isActive }
+    const payload = { name, description: description || null, sport, isActive, experienceId }
 
     try {
       if (isEdit) {
@@ -86,6 +103,18 @@ export default function CompetitionFormPage() {
 
       <form className="form-card" onSubmit={handleSubmit}>
         <div className="form-field">
+          <label htmlFor="experienceId">Experiencia</label>
+          <select id="experienceId" required value={experienceId} disabled={loadFailed || saving}
+            onChange={(e) => setExperienceId(e.target.value === '' ? '' : Number(e.target.value))}>
+            <option value="">Seleccioná una experiencia</option>
+            {experiences.map((experience) => (
+              <option key={experience.id} value={experience.id}>{experience.name} · {experience.statusLabel}</option>
+            ))}
+          </select>
+          {fieldErrors.experienceId && <span className="form-field-error">{fieldErrors.experienceId[0]}</span>}
+          {!loadFailed && experiences.length === 0 && <p>Primero debés <Link to="/admin/experiences/new">crear una experiencia</Link>.</p>}
+        </div>
+        <div className="form-field">
           <label htmlFor="name">Nombre de la competencia de referencia</label>
           <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
           {fieldErrors.name && <span className="form-field-error">{fieldErrors.name[0]}</span>}
@@ -117,7 +146,7 @@ export default function CompetitionFormPage() {
         </div>
 
         <div className="form-actions">
-          <button type="submit" className="btn btn-primary" disabled={saving}>
+          <button type="submit" className="btn btn-primary" disabled={saving || loadFailed || experienceId === ''}>
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
           <Link to="/competitions" className="btn btn-secondary">Cancelar</Link>

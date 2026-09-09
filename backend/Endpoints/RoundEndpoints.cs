@@ -119,7 +119,7 @@ public static class RoundEndpoints
             }
 
             return Results.Created($"/api/rounds/{round.Id}", ToDto(round));
-        }).WithTags("Rounds");
+        }).WithTags("Rounds").RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
 
         app.MapPut("/api/rounds/{id:int}", async (int id, UpdateRoundDto dto, PlayPredictDbContext db) =>
         {
@@ -162,7 +162,7 @@ public static class RoundEndpoints
             }
 
             return Results.Ok(ToDto(round));
-        }).WithTags("Rounds");
+        }).WithTags("Rounds").RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
     }
 
     private static Dictionary<string, string[]> ValidateRound(string name, int order, DateTime? startDateUtc, DateTime? endDateUtc)

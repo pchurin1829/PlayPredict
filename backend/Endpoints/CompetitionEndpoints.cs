@@ -34,20 +34,11 @@ public static class CompetitionEndpoints
         {
             var errors = ValidateCompetition(dto.Name, dto.Sport);
 
-            // Si no se indica Experience, se asocia a "PlayPredict Demo" para no romper el
-            // alta existente de Competencias (Sprints 1 a 7 no envían este campo).
+            // Cada competencia pertenece a la Experience elegida por el administrador.
             var experienceId = dto.ExperienceId;
             if (experienceId is null)
             {
-                experienceId = await db.Experiences
-                    .Where(e => e.Name == DemoExperienceName)
-                    .Select(e => (int?)e.Id)
-                    .FirstOrDefaultAsync();
-
-                if (experienceId is null)
-                {
-                    errors["experienceId"] = ["No se encontró la Experience de demostración; indique una Experience explícita."];
-                }
+                errors["experienceId"] = ["Seleccioná una experiencia para la competencia."];
             }
             else if (!await db.Experiences.AnyAsync(e => e.Id == experienceId))
             {
@@ -73,7 +64,7 @@ public static class CompetitionEndpoints
             await db.SaveChangesAsync();
 
             return Results.Created($"/api/competitions/{competition.Id}", ToDto(competition));
-        });
+        }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
 
         group.MapPut("/{id:int}", async (int id, UpdateCompetitionDto dto, PlayPredictDbContext db) =>
         {
@@ -109,7 +100,7 @@ public static class CompetitionEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(ToDto(competition));
-        });
+        }).RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
 
         group.MapGet("/{id:int}/dependencies", async (int id, PlayPredictDbContext db) =>
         {
@@ -146,8 +137,6 @@ public static class CompetitionEndpoints
             await db.Prizes.CountAsync(p => editionIds.Contains(p.EditionId)),
             await db.EditionScoringConfigurations.CountAsync(c => editionIds.Contains(c.EditionId)));
     }
-
-    private const string DemoExperienceName = "PlayPredict Demo";
 
     private static Dictionary<string, string[]> ValidateCompetition(string name, string sport)
     {

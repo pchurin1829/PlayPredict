@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PlayPredict.Api.Data;
+using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Domain.Enums;
 using PlayPredict.Api.Dtos;
@@ -78,7 +79,7 @@ public static class EditionEndpoints
             await db.SaveChangesAsync();
 
             return Results.Created($"/api/editions/{edition.Id}", ToDto(edition));
-        }).WithTags("Editions");
+        }).WithTags("Editions").RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
 
         app.MapPut("/api/editions/{id:int}", async (int id, UpdateEditionDto dto, PlayPredictDbContext db) =>
         {
@@ -103,7 +104,7 @@ public static class EditionEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(ToDto(edition));
-        }).WithTags("Editions");
+        }).WithTags("Editions").RequireAuthorization(policy => policy.RequireRole(RoleNames.Admin));
     }
 
     private static (Dictionary<string, string[]> Errors, EditionStatus Status) ValidateEdition(

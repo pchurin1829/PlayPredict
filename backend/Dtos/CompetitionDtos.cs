@@ -14,8 +14,7 @@ public record CreateCompetitionDto(
     string? Description,
     string Sport,
     bool IsActive = true,
-    // Opcional: si no se indica, se asocia a la Experience "PlayPredict Demo" para no
-    // romper el flujo existente de alta de Competencias (Sprints 1 a 7 sin cambios).
+    // Obligatorio al crear; nullable para devolver un error de validación por campo si falta.
     int? ExperienceId = null);
 
 public record UpdateCompetitionDto(

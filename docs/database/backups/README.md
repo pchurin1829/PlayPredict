@@ -12,20 +12,39 @@ DB0_PlayPredict_BaseInicial_v1_2026-09-01.sql
 
 Es un dump SQL plano de PostgreSQL que incluye el esquema, el historial de migraciones y los datos. No incluye propietarios ni privilegios específicos de la instalación que lo generó.
 
-## Contenido esperado
+## BASE INICIAL PLAYPREDICT v1.0 — CERRADA
+
+Cierre aprobado el 2026-09-08 (opción B). Se mantiene este archivo como único DB0 canónico, sin modificaciones:
 
 ```text
-Migraciones: 22
-Competition: 1
-Ligas: 2
-Usuarios: 2
-Equipos: 30
-Jugadores: 1.045
-Partidos: 60
-Pronósticos: 0
-Evaluaciones: 0
-Preferencias: 0
+docs/database/backups/DB0_PlayPredict_BaseInicial_v1_2026-09-01.sql
+SHA-256: 3FCE46A9AE1FAFA4A2AFE4A087F84E6A079FE2552980749A3D2B9FC7AD4D231E
 ```
+
+Una reconstrucción independiente generó una base funcionalmente equivalente al DB0. La comparación de esquema, migraciones y datos confirmó que el candidato no incorporaba ninguna corrección material que justificara reemplazarlo. Sus diferencias eran identificadores y secuencias, timestamps, hashes demo, códigos de invitación, orden de filas y versión generadora del dump. Por ello se elimina el archivo `.candidate.sql` y se conserva el canónico.
+
+## Contenido validado al cierre
+
+```text
+Migraciones: 22/22
+Head: 20260831013127_AddMatchesUniqueRoundHomeAway
+Competitions: 1
+Leagues: 2
+Users: 2
+Teams: 30
+Players (TeamPlayers): 1.045
+Matches: 60
+Participations (LeagueParticipants): 1
+Predictions: 0
+PredictionEvaluations: 0
+PreferredPlayers (UserTeamPreferredPlayers): 0
+Goleadores registrados (MatchScorers): 0
+FK validadas: 37
+```
+
+Sin FK rotas, datos huérfanos, duplicados relevantes, datos load-test ni residuos de tests. Los 60 partidos están programados (`Scheduled`), sin resultados cargados: Fechas 8, 9, 10 y 11, con 15 partidos cada una. La única participación corresponde a `USUARIO` en `COPA EL NENE`.
+
+El restore del DB0 canónico y del candidato se probó correctamente en bases temporales de una instancia PostgreSQL 18.4 independiente, con transacción única y `ON_ERROR_STOP`, sin aplicar migraciones ni seeders. Tras eliminar la primera base candidata, un segundo restore desde cero reprodujo los conteos críticos, el head y las 37 FK validadas. Las bases temporales se eliminaron y la instancia aislada se detuvo; no se utilizó ni modificó `playpredict_db`.
 
 Ligas:
 

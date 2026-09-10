@@ -4,15 +4,9 @@ import { api, ApiError } from '../api/client'
 import type { AuthResponse, PublicLoginAppearance } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import StatusMessage from '../components/StatusMessage'
+import { LOGIN_APPEARANCE, resolveLoginAppearance } from '../login/appearance'
+import { LoginAdsColumn, LoginCampaign } from '../login/LoginVisuals'
 import './LoginPage.css'
-
-const DEFAULT_APPEARANCE: PublicLoginAppearance = {
-  version: 'default-v1',
-  main: { imageUrl: '/assets/el-nene-login/copa-el-nene-panel-principal.png', fitMode: 'Contain' },
-  adTop: { imageUrl: '/assets/el-nene-login/producto-1.png', fitMode: 'Cover' },
-  adMiddle: { imageUrl: '/assets/el-nene-login/producto-2.png', fitMode: 'Cover' },
-  adBottom: { imageUrl: '/assets/el-nene-login/producto-3.png', fitMode: 'Cover' },
-}
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -24,22 +18,16 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [appearance, setAppearance] = useState<PublicLoginAppearance>(DEFAULT_APPEARANCE)
+  const [appearance, setAppearance] = useState<PublicLoginAppearance>(LOGIN_APPEARANCE.fallback)
 
   useEffect(() => {
     let active = true
     api
       .get<PublicLoginAppearance>('/public/login-appearance')
-      .then((data) => { if (active) setAppearance(data) })
+      .then((data) => { if (active) setAppearance(resolveLoginAppearance(data)) })
       .catch(() => { /* mantiene la apariencia por defecto si falla o no está configurada */ })
     return () => { active = false }
   }, [])
-
-  const ads = [
-    { ...appearance.adTop, alt: 'Publicidad destacada 1' },
-    { ...appearance.adMiddle, alt: 'Publicidad destacada 2' },
-    { ...appearance.adBottom, alt: 'Publicidad destacada 3' },
-  ]
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -79,13 +67,13 @@ export default function LoginPage() {
 
   return (
     <div className="pp-login">
-      <div className="pp-login__stage">
-        <img
-          className="pp-login__hero"
-          src={appearance.main.imageUrl}
-          alt="Copa El Nene: competí, sumá puntos y ganá premios"
-          style={{ objectFit: appearance.main.fitMode === 'Cover' ? 'cover' : 'contain' }}
-        />
+      <div
+        className="pp-login__stage"
+        style={LOGIN_APPEARANCE.backgroundImageUrl
+          ? { backgroundImage: `url(${JSON.stringify(LOGIN_APPEARANCE.backgroundImageUrl)})` }
+          : undefined}
+      >
+        <LoginCampaign imageUrl={appearance.main.imageUrl} />
 
         <div className="pp-login__form-position">
           <form className="pp-login__form" onSubmit={handleSubmit}>
@@ -174,13 +162,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <aside className="pp-login__ads" aria-label="Ofertas de Supermercados El Nene">
-        {ads.map((ad) => (
-          <div className="pp-login__ad" key={ad.imageUrl}>
-            <img src={ad.imageUrl} alt={ad.alt} style={{ objectFit: ad.fitMode === 'Contain' ? 'contain' : 'cover' }} />
-          </div>
-        ))}
-      </aside>
+      <LoginAdsColumn appearance={appearance} />
     </div>
   )
 }

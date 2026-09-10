@@ -1,41 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import type { AdminLoginAppearanceSlot, LoginImageFitMode, LoginImageSlot } from '../api/types'
+import type { AdminLoginAppearanceSlot, LoginImageSlot } from '../api/types'
+import { LOGIN_IMAGE_CONTRACTS, getLoginImageWarnings } from '../login/imageContracts'
+import { resolveLoginCampaignUrl } from '../login/appearance'
 import StatusMessage from '../components/StatusMessage'
 import LoginAppearanceHelpModal from './LoginAppearanceHelpModal'
 import './AdminLoginAppearancePage.css'
 
-const SLOT_META: Record<LoginImageSlot, { label: string; hint: string; minWidth: number; minHeight: number; recommendedWidth: number; recommendedHeight: number }> = {
-  Main: { label: 'Panel principal', hint: 'Imagen central de la pantalla de login.', minWidth: 1024, minHeight: 768, recommendedWidth: 1440, recommendedHeight: 1080 },
-  AdTop: { label: 'Publicidad superior', hint: 'Primer panel de la columna de publicidad.', minWidth: 480, minHeight: 360, recommendedWidth: 960, recommendedHeight: 720 },
-  AdMiddle: { label: 'Publicidad media', hint: 'Segundo panel de la columna de publicidad.', minWidth: 480, minHeight: 360, recommendedWidth: 960, recommendedHeight: 720 },
-  AdBottom: { label: 'Publicidad inferior', hint: 'Tercer panel de la columna de publicidad.', minWidth: 480, minHeight: 360, recommendedWidth: 960, recommendedHeight: 720 },
-}
-
 const SLOT_ORDER: LoginImageSlot[] = ['Main', 'AdTop', 'AdMiddle', 'AdBottom']
-const RECOMMENDED_RATIO = 4 / 3
-const RATIO_WARNING_THRESHOLD = 0.05
 
 interface PendingSelection {
   file: File
   previewUrl: string
   width: number
   height: number
-  warnings: { code: string; message: string }[]
-}
-
-function buildClientWarnings(slot: LoginImageSlot, width: number, height: number) {
-  const meta = SLOT_META[slot]
-  const warnings: { code: string; message: string }[] = []
-  if (width < meta.minWidth || height < meta.minHeight) {
-    warnings.push({ code: 'LOW_RESOLUTION', message: `Resolución inferior a la mínima recomendada de ${meta.minWidth}×${meta.minHeight}.` })
-  }
-  const ratio = width / height
-  if (Math.abs(ratio / RECOMMENDED_RATIO - 1) > RATIO_WARNING_THRESHOLD) {
-    warnings.push({ code: 'ASPECT_RATIO_MISMATCH', message: 'La proporción difiere más de 5% de la recomendada 4:3 y puede dejar márgenes o requerir recorte.' })
-  }
-  return warnings
 }
 
 function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
@@ -49,16 +28,14 @@ function readImageDimensions(file: File): Promise<{ width: number; height: numbe
 }
 
 function SlotCard({ slot, data, onChanged }: { slot: LoginImageSlot; data: AdminLoginAppearanceSlot; onChanged: (updated: AdminLoginAppearanceSlot) => void }) {
-  const meta = SLOT_META[slot]
+  const meta = LOGIN_IMAGE_CONTRACTS[slot]
   const input = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState<PendingSelection | null>(null)
-  const [fitMode, setFitMode] = useState<LoginImageFitMode>(data.fitMode)
+  const [loadedImage, setLoadedImage] = useState<{ url: string; width: number; height: number } | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [savingFitMode, setSavingFitMode] = useState(false)
   const [restoring, setRestoring] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => { setFitMode(data.fitMode) }, [data.fitMode])
   useEffect(() => () => { if (pending) URL.revokeObjectURL(pending.previewUrl) }, [pending])
 
   async function choose(file?: File) {
@@ -67,7 +44,7 @@ function SlotCard({ slot, data, onChanged }: { slot: LoginImageSlot; data: Admin
     try {
       const { width, height } = await readImageDimensions(file)
       if (pending) URL.revokeObjectURL(pending.previewUrl)
-      setPending({ file, previewUrl: URL.createObjectURL(file), width, height, warnings: buildClientWarnings(slot, width, height) })
+      setPending({ file, previewUrl: URL.createObjectURL(file), width, height })
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se pudo leer la imagen seleccionada.')
     }
@@ -96,19 +73,6 @@ function SlotCard({ slot, data, onChanged }: { slot: LoginImageSlot; data: Admin
     }
   }
 
-  async function saveFitMode() {
-    setSavingFitMode(true)
-    setError(null)
-    try {
-      const updated = await api.put<AdminLoginAppearanceSlot>(`/admin/login-appearance/${slot.toLowerCase()}/fit-mode`, { fitMode })
-      onChanged(updated)
-    } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'No se pudo guardar el modo de ajuste.')
-    } finally {
-      setSavingFitMode(false)
-    }
-  }
-
   async function restoreDefault() {
     setRestoring(true)
     setError(null)
@@ -123,12 +87,16 @@ function SlotCard({ slot, data, onChanged }: { slot: LoginImageSlot; data: Admin
     }
   }
 
-  const previewFitMode: LoginImageFitMode = pending ? fitMode : data.fitMode
-  const previewUrl = pending?.previewUrl ?? data.effectiveImageUrl
-  const previewWidth = pending?.width ?? data.originalWidth
-  const previewHeight = pending?.height ?? data.originalHeight
-  const previewRatio = pending ? previewWidth / previewHeight : data.aspectRatio
-  const warnings = pending ? pending.warnings : data.warnings
+  const previewUrl = pending?.previewUrl ?? (slot === 'Main' ? resolveLoginCampaignUrl(data.effectiveImageUrl) : data.effectiveImageUrl)
+  const actualImage = loadedImage?.url === previewUrl ? loadedImage : null
+  const previewWidth = pending?.width ?? actualImage?.width ?? data.originalWidth
+  const previewHeight = pending?.height ?? actualImage?.height ?? data.originalHeight
+  const previewRatio = previewWidth / previewHeight
+  // Replace only obsolete geometry advice from the server; retain other warnings.
+  const warnings = [
+    ...getLoginImageWarnings(slot, previewWidth, previewHeight, pending?.file.size),
+    ...(!pending ? data.warnings.filter((warning) => !['LOW_RESOLUTION', 'ASPECT_RATIO_MISMATCH'].includes(warning.code)) : []),
+  ]
 
   return (
     <article className="login-slot-card">
@@ -140,14 +108,22 @@ function SlotCard({ slot, data, onChanged }: { slot: LoginImageSlot; data: Admin
         {data.isDefault && !pending && <span className="badge badge--draft">Imagen por defecto</span>}
       </div>
 
-      <div className="login-slot-card__preview" data-fit={previewFitMode.toLowerCase()}>
-        <img src={previewUrl} alt={`Vista previa de ${meta.label}`} style={{ objectFit: previewFitMode === 'Cover' ? 'cover' : 'contain' }} />
+      <div className="login-slot-card__preview" style={{ aspectRatio: `${meta.width} / ${meta.height}` }}>
+        <img
+          src={previewUrl}
+          alt={`Vista previa de ${meta.label}`}
+          style={{ objectFit: meta.fit, objectPosition: slot === 'Main' ? 'left center' : 'center' }}
+          onLoad={(event) => setLoadedImage({ url: previewUrl, width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })}
+        />
       </div>
 
       <dl className="login-slot-card__meta">
         <div><dt>Dimensiones</dt><dd>{previewWidth}×{previewHeight}px</dd></div>
-        <div><dt>Proporción</dt><dd>{previewRatio.toFixed(2)}:1 <span className="login-slot-card__muted">(recomendado {RECOMMENDED_RATIO.toFixed(2)}:1 ≈ 4:3)</span></dd></div>
-        <div><dt>Mínimo / recomendado</dt><dd>{meta.minWidth}×{meta.minHeight}px / {meta.recommendedWidth}×{meta.recommendedHeight}px</dd></div>
+        <div><dt>Proporción</dt><dd>{previewRatio.toFixed(2)}:1 <span className="login-slot-card__muted">(recomendado {meta.ratio})</span></dd></div>
+        <div><dt>Canvas recomendado</dt><dd>{meta.width}×{meta.height} px</dd></div>
+        <div><dt>Formatos</dt><dd>{meta.formats}</dd></div>
+        <div><dt>Safe area</dt><dd>{meta.safeArea} px desde cada borde</dd></div>
+        <div><dt>Peso recomendado</dt><dd>≤{meta.recommendedKB} KB</dd></div>
         {data.updatedAtUtc && !pending && <div><dt>Actualizado</dt><dd>{new Date(data.updatedAtUtc).toLocaleString()}</dd></div>}
       </dl>
 
@@ -159,23 +135,12 @@ function SlotCard({ slot, data, onChanged }: { slot: LoginImageSlot; data: Admin
 
       {error && <StatusMessage kind="error" message={error} />}
 
-      <div className="login-slot-card__fit">
-        <label>
-          Modo de ajuste
-          <select value={fitMode} onChange={(e) => setFitMode(e.target.value as LoginImageFitMode)}>
-            <option value="Contain">Contain (muestra la imagen completa, puede dejar bandas)</option>
-            <option value="Cover">Cover (llena el panel, puede recortar)</option>
-          </select>
-        </label>
-        {fitMode !== data.fitMode && !pending && (
-          <button type="button" className="btn btn-secondary" onClick={saveFitMode} disabled={savingFitMode}>
-            {savingFitMode ? 'Guardando...' : 'Guardar modo de ajuste'}
-          </button>
-        )}
-      </div>
+      <p className="login-slot-card__muted">
+        Ajuste fijo: {meta.fit === 'contain' ? 'imagen completa (contain), sin recortar la campaña.' : 'cubrir el slot (cover), con posible recorte si no es 3:2.'}
+      </p>
 
       <div className="login-slot-card__actions">
-        <input ref={input} className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => void choose(e.target.files?.[0])} />
+        <input ref={input} className="visually-hidden" type="file" accept={meta.accept} onChange={(e) => void choose(e.target.files?.[0])} />
         <button type="button" className="btn btn-secondary" onClick={() => input.current?.click()}>Seleccionar imagen</button>
         {pending && (
           <>
@@ -217,7 +182,7 @@ export default function AdminLoginAppearancePage() {
         <div>
           <span className="admin-eyebrow">LOGIN</span>
           <h1>Apariencia del login</h1>
-          <p className="admin-help">Configurá las imágenes de los cuatro paneles de la pantalla de inicio de sesión. Proporción recomendada: 4:3.</p>
+          <p className="admin-help">Configurá la campaña 8:9 y las tres publicidades 3:2. El estadio es un fondo fijo de PlayPredict, independiente de estas imágenes.</p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={() => setHelpOpen(true)}>
           ? Ayuda sobre las imágenes

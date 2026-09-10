@@ -1,6 +1,6 @@
 .login-slots-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 1.25rem;
 }
 
@@ -36,7 +36,6 @@
 .login-slot-card__preview {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: 10px;
   background: repeating-conic-gradient(#f1f3f6 0% 25%, #e6e9ee 0% 50%) 50% / 16px 16px;
@@ -92,32 +91,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-}
-
-.login-slot-card__fit {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.login-slot-card__fit label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #4d5665;
-  flex: 1;
-  min-width: 220px;
-}
-
-.login-slot-card__fit select {
-  padding: 0.5rem 0.6rem;
-  border: 1px solid #c9d0dc;
-  border-radius: 8px;
-  font-size: 0.85rem;
 }
 
 .login-slot-card__actions {

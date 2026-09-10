@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { LOGIN_IMAGE_CONTRACTS } from '../login/imageContracts'
 import './LoginAppearanceHelpModal.css'
 
 interface Props {
@@ -27,61 +28,47 @@ export default function LoginAppearanceHelpModal({ open, onClose }: Props) {
         </div>
 
         <p>
-          PlayPredict puede utilizar imágenes de distintas dimensiones y proporciones. No es obligatorio preparar una imagen con una medida exacta,
-          pero utilizar las proporciones recomendadas permite obtener un mejor resultado visual.
+          El estadio es un fondo fijo de PlayPredict. La campaña y las publicidades se reemplazan
+          independientemente; el formulario de login siempre es HTML.
         </p>
 
-        <h3>Modos de ajuste</h3>
-        <div className="login-help__modes">
-          <div className="login-help__mode">
-            <strong>Mostrar completa (Contain)</strong>
-            <p>La imagen se muestra completa y mantiene sus proporciones.</p>
-            <p className="login-help__pro">Ventaja: no se pierde ninguna parte de la imagen.</p>
-            <p className="login-help__con">Consideración: si la proporción de la imagen es diferente a la del panel pueden aparecer márgenes o franjas alrededor.</p>
-          </div>
-          <div className="login-help__mode">
-            <strong>Cubrir panel (Cover)</strong>
-            <p>La imagen se amplía manteniendo sus proporciones hasta cubrir completamente el panel.</p>
-            <p className="login-help__pro">Ventaja: no quedan espacios ni franjas vacías.</p>
-            <p className="login-help__con">Consideración: algunas partes de la imagen pueden quedar recortadas.</p>
-          </div>
-        </div>
-
-        <h3>Tamaños recomendados</h3>
+        <h3>Contrato de imágenes</h3>
         <div className="login-help__sizes">
-          <div>
-            <strong>Panel principal</strong>
-            <span>Proporción recomendada: 4:3</span>
-            <span>Resolución recomendada: 1440 × 1080 px</span>
-          </div>
-          <div>
-            <strong>Paneles publicitarios</strong>
-            <span>Proporción recomendada: 4:3</span>
-            <span>Resolución recomendada: 960 × 720 px</span>
-            <span>Para mayor calidad también puede utilizarse 1200 × 900 px</span>
-          </div>
+          {(['Main', 'AdTop'] as const).map((slot) => {
+            const contract = LOGIN_IMAGE_CONTRACTS[slot]
+            return (
+              <div key={slot}>
+                <strong>{slot === 'Main' ? 'Campaña principal' : 'Las tres publicidades'}</strong>
+                <span>{contract.width} × {contract.height} px · {contract.ratio}</span>
+                <span>{contract.formats}</span>
+                <span>Safe area: {contract.safeArea} px desde cada borde</span>
+                <span>Peso recomendado: ≤{contract.recommendedKB} KB</span>
+              </div>
+            )
+          })}
         </div>
-        <p className="login-help__note">
-          No es obligatorio utilizar exactamente estas resoluciones. Lo más importante para evitar márgenes o recortes importantes es utilizar una
-          imagen con una proporción cercana a 4:3.
+        <p>
+          Campaña: transparencia recomendada. No incluir estadio ni césped: PlayPredict aporta el
+          fondo. Una imagen opaca conservará su rectángulo; el sistema no elimina su fondo.
         </p>
 
-        <h3>Si la imagen tiene otra proporción</h3>
-        <p>
-          PlayPredict analiza automáticamente las dimensiones y la proporción de la imagen seleccionada. Si la imagen no es adecuada para el panel,
-          el sistema muestra una advertencia.
-        </p>
-        <p>
-          El administrador puede igualmente utilizarla y elegir:
-        </p>
+        <h3>Ajustes fijos del login</h3>
         <ul>
-          <li>Mostrar completa → puede dejar márgenes.</li>
-          <li>Cubrir panel → puede producir recortes.</li>
+          <li>Campaña: contain, se muestra completa sin deformación. Otras proporciones pueden dejar espacio alrededor.</li>
+          <li>Publicidades: cover, cubren slots 3:2. Otras proporciones pueden recortar contenido.</li>
         </ul>
+        <p>No es necesario configurar estos ajustes. La vista previa de cada slot utiliza el mismo modo que el login.</p>
 
+        <h3>Preparación y exportación</h3>
+        <ul>
+          <li>Mantener textos, precios, logos y productos importantes dentro de la safe area.</li>
+          <li>Evitar texto pequeño y asegurar contraste, especialmente sobre transparencia.</li>
+          <li>Exportar en sRGB y optimizar el peso manteniendo la legibilidad.</li>
+        </ul>
         <aside>
-          Para publicidades diseñadas específicamente para PlayPredict, utilizar imágenes 4:3 y mantener textos, precios, logos y productos
-          importantes alejados de los bordes para tolerar pequeños recortes en diferentes resoluciones de pantalla.
+          Los tamaños y pesos indicados son recomendaciones de Diseño, no nuevos bloqueos de subida.
+          Se mantienen los límites técnicos existentes. Las advertencias no sustituyen la revisión visual.
+          Guardar imagen aplica el cambio directamente; la publicación programada no está implementada.
         </aside>
 
         <div className="login-help__actions">

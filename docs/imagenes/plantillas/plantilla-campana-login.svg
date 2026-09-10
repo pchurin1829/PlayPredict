@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="900" viewBox="0 0 800 900" role="img" aria-labelledby="title desc">
+  <title id="title">Plantilla técnica campaña login — 800 × 900 px</title>
+  <desc id="desc">Safe area de 700 × 800 px, con margen de 50 px en los cuatro bordes. Quitar guías antes de exportar.</desc>
+  <rect x="1" y="1" width="798" height="898" fill="white" stroke="#334155" stroke-width="2"/>
+  <rect x="50" y="50" width="700" height="800" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="10 6"/>
+  <g fill="#334155" font-family="Arial, sans-serif" text-anchor="middle">
+    <text x="400" y="31" font-size="18">800 × 900 px · 8:9 · margen 50 px</text>
+    <text x="400" y="420" font-size="32">SAFE AREA</text>
+    <text x="400" y="461" font-size="24">700 × 800 px</text>
+    <text x="400" y="505" font-size="18">Contenido esencial dentro del borde punteado</text>
+    <text x="400" y="880" font-size="16">Guía técnica · quitar guías y etiquetas antes de exportar</text>
+  </g>
+</svg>

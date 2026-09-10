@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400" role="img" aria-labelledby="title desc">
+  <title id="title">Plantilla técnica publicidad lateral — 600 × 400 px</title>
+  <desc id="desc">Safe area de 540 × 340 px, con margen de 30 px en los cuatro bordes. Igual para los tres slots.</desc>
+  <rect x="1" y="1" width="598" height="398" fill="white" stroke="#334155" stroke-width="2"/>
+  <rect x="30" y="30" width="540" height="340" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="10 6"/>
+  <g fill="#334155" font-family="Arial, sans-serif" text-anchor="middle">
+    <text x="300" y="21" font-size="15">600 × 400 px · 3:2 · margen 30 px</text>
+    <text x="300" y="177" font-size="28">SAFE AREA</text>
+    <text x="300" y="213" font-size="22">540 × 340 px</text>
+    <text x="300" y="252" font-size="16">Precios, logos y textos dentro del borde punteado</text>
+    <text x="300" y="391" font-size="13">Guía técnica · quitar guías y etiquetas antes de exportar</text>
+  </g>
+</svg>

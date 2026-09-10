@@ -17,6 +17,7 @@
   width: 100%;
   height: 100vh;
   height: 100dvh;
+  min-height: 560px;
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
   gap: 4px;
@@ -29,32 +30,43 @@
 
 .pp-login__stage {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 56fr) minmax(320px, 32fr) minmax(16px, 12fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: center;
+  padding: 12px;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;
   background: #031226;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
 }
 
-.pp-login__hero {
-  position: absolute;
-  inset: 0;
+.pp-login__campaign {
+  min-width: 0;
+  width: 100%;
+  aspect-ratio: 8 / 9;
+  max-height: 100%;
+}
+
+.pp-login__campaign img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  object-position: center center;
+  object-position: left center;
   display: block;
 }
 
 .pp-login__form-position {
-  position: absolute;
+  position: relative;
   z-index: 1;
-  top: 50%;
-  left: 50%;
-  width: clamp(320px, 26vw, 360px);
-  transform: translate(-50%, -50%);
+  justify-self: center;
+  width: min(100%, 360px);
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -106,23 +118,26 @@
 .pp-login__alt a:hover { text-decoration: underline; }
 .pp-login__footer { margin: 1.15rem 0 0; color: #667083; font-size: 0.7rem; text-align: center; }
 
-.pp-login__ads { min-width: 0; min-height: 0; display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 3px; }
-.pp-login__ad { min-width: 0; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; background: #07101e; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28); }
+.pp-login__ads { min-width: 0; min-height: 0; width: min(100%, calc((100dvh - 20px) / 2)); align-self: center; justify-self: center; display: grid; gap: 3px; }
+.pp-login__ad { width: 100%; aspect-ratio: 3 / 2; box-sizing: border-box; min-width: 0; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; background: #07101e; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28); }
 .pp-login__ad img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; }
+
+@media (min-width: 1440px) {
+  .pp-login__form-position { transform: translateX(40px); }
+}
 
 @media (max-width: 1100px) {
   .pp-login { height: auto; min-height: 100dvh; grid-template-columns: 1fr; overflow: visible; }
-  .pp-login__stage { min-height: max(760px, 100svh); }
-  .pp-login__hero { object-position: center top; }
-  .pp-login__form-position { inset: auto 16px 18px 16px; width: auto; transform: none; justify-content: center; }
+  .pp-login__stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 24px; padding: 24px 16px; }
+  .pp-login__campaign { width: min(100%, 560px); max-height: none; justify-self: center; }
+  .pp-login__campaign img { object-position: center; }
+  .pp-login__form-position { grid-row: 1; width: min(100%, 390px); }
   .pp-login__form { max-width: 390px; }
-  .pp-login__ads { grid-template-columns: repeat(3, minmax(270px, 1fr)); grid-template-rows: none; overflow-x: auto; }
-  .pp-login__ad { aspect-ratio: 3 / 2; }
+  .pp-login__ads { width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 620px) {
-  .pp-login__stage { min-height: 820px; }
-  .pp-login__form-position { inset-inline: 10px; bottom: 10px; }
+  .pp-login__stage { padding: 16px 10px; }
   .pp-login__form { padding: 1.25rem; }
   .pp-login__ads { display: none; }
 }

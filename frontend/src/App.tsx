@@ -41,6 +41,7 @@ import TeamFormPage from './pages/TeamFormPage'
 import TeamRosterPage from './pages/TeamRosterPage'
 import TeamPlayerFormPage from './pages/TeamPlayerFormPage'
 import TeamRosterImportPage from './pages/TeamRosterImportPage'
+import MatchFixtureImportPage from './pages/MatchFixtureImportPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 import AdminLoginAppearancePage from './pages/AdminLoginAppearancePage'
 import AdminWelcomeCampaignPage from './pages/AdminWelcomeCampaignPage'
@@ -88,6 +89,7 @@ function App() {
         {/* ADMIN ROUTES */}
         <Route path="/admin" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />
         <Route path="/admin/fixture" element={<RequireAdmin><AdminOperationEntryPage operation="fixture" /></RequireAdmin>} />
+        <Route path="/admin/fixture/import" element={<RequireAdmin><MatchFixtureImportPage /></RequireAdmin>} />
         <Route path="/admin/results" element={<RequireAdmin><AdminOperationEntryPage operation="results" /></RequireAdmin>} />
         <Route path="/admin/scoring" element={<RequireAdmin><Navigate to="/admin/settings" replace /></RequireAdmin>} />
         <Route path="/admin/settings" element={<RequireAdmin><AdminSettingsPage /></RequireAdmin>} />

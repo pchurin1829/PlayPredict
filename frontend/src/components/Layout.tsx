@@ -19,6 +19,7 @@ function getAdminNav(companyShortName: string) { return [
   ] },
   { title: 'OPERACIÓN', items: [
     { label: 'Fixture / Partidos', to: '/admin/fixture' },
+    { label: 'Importar Fixture', to: '/admin/fixture/import' },
     { label: `Competencias ${companyShortName}`, to: '/admin/official-leagues' },
     { label: 'Resultados', to: '/admin/results' },
   ] },

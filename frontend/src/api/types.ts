@@ -441,6 +441,16 @@ export interface TeamRosterImportPreviewResponse { hash:string; sport:string; te
 export interface ImportConfirmationSummary { created:number; updated:number; unchanged:number }
 export interface TeamRosterImportConfirmationResponse { status:'Success'|'Rejected'|'Failed'; processedHash:string; message:string; teams:ImportConfirmationSummary; rosters:ImportConfirmationSummary; issues:ImportIssue[] }
 
+export type MatchImportClassification =
+  | 'MatchCreate' | 'MatchUpdate' | 'MatchUnchanged'
+  | 'MatchFinishedConflict' | 'MatchTeamChangeConflict' | 'MatchRoundChangeConflict'
+  | 'UnresolvedTeamError' | 'DuplicateMatchRowError' | 'StructuralError'
+
+export interface MatchImportPreviewRow { sheet:string; rowNumber:number; entity:string; classification:MatchImportClassification; message:string; roundOrder:number|null; roundName:string|null; roundId:number|null; roundIsNew:boolean; homeTeam:string; awayTeam:string; homeTeamId:number|null; awayTeamId:number|null; startsAtUtc:string|null; status:string|null; matchId:number|null; proposedChanges:ImportChange[] }
+export interface MatchImportPreviewSummary { total:number; create:number; update:number; unchanged:number; conflicts:number; errors:number }
+export interface MatchImportPreviewResponse { hash:string; editionId:number; summary:MatchImportPreviewSummary; matches:MatchImportPreviewRow[]; issues:ImportIssue[]; canConfirm:boolean }
+export interface MatchImportConfirmationResponse { status:'Success'|'Rejected'|'Failed'; processedHash:string; message:string; matches:ImportConfirmationSummary; issues:ImportIssue[] }
+
 export interface UserTeamPreferredPlayer {
   id: number
   teamId: number

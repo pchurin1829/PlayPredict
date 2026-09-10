@@ -88,7 +88,7 @@ export default function RoundsListPage() {
       </div>
       <div className="admin-header">
         <div><h1>{adminFlow === 'results' ? 'Resultados' : 'Fixture / Partidos'} {edition ? `— ${edition.name}` : ''}</h1>{rounds && <p className="admin-help">Fechas actuales: <strong>{rounds.length}</strong></p>}</div>
-        {edition && <button type="button" className="btn btn-secondary" onClick={exportFixture}>Exportar fixture CSV</button>}
+        {edition && <div style={{ display: 'flex', gap: '0.5rem' }}><button type="button" className="btn btn-secondary" onClick={exportFixture}>Exportar fixture CSV</button><Link className="btn btn-secondary" to="/admin/fixture/import">Importar fixture XLSX</Link></div>}
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}

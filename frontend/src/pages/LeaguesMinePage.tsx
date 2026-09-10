@@ -23,6 +23,9 @@ export default function LeaguesMinePage() {
   const [message, setMessage] = useState<string | null>(null)
   const [modalTarget, setModalTarget] = useState<ModalTarget | null>(null)
   const [manageTargetId, setManageTargetId] = useState<number | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editErrors, setEditErrors] = useState<Record<string, string[]>>({})
 
   useEffect(() => {
     let cancelled = false
@@ -51,6 +54,43 @@ export default function LeaguesMinePage() {
   function openModal(id: number, name: string, action: ModalTarget['action']) {
     setManageTargetId(null)
     setModalTarget({ id, name, action })
+  }
+
+  function openManage(id: number) {
+    const target = myLeagues?.find((l) => l.id === id)
+    setEditName(target?.name ?? '')
+    setEditDescription(target?.description ?? '')
+    setEditErrors({})
+    setManageTargetId(id)
+  }
+
+  async function saveManageEdit() {
+    const target = myLeagues?.find((l) => l.id === manageTargetId)
+    if (!target) return
+    setActingId(target.id)
+    setEditErrors({})
+    setMessage(null)
+
+    try {
+      await api.put(`/leagues/${target.id}`, {
+        name: editName,
+        description: editDescription.trim() === '' ? null : editDescription,
+        isActive: target.isActive,
+      })
+      setManageTargetId(null)
+      setMessage('Liga actualizada correctamente.')
+      await refresh()
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setEditErrors(err.fieldErrors)
+        setMessage(err.message)
+      } else {
+        setMessage('Ocurrió un error.')
+      }
+    } finally {
+      setActingId(null)
+      setTimeout(() => setMessage(null), 5000)
+    }
   }
 
   function cancelModal() {
@@ -243,7 +283,7 @@ export default function LeaguesMinePage() {
                             type="button"
                             className="pp-btn pp-btn--card-secondary pp-btn--sm"
                             disabled={actingId === l.id}
-                            onClick={() => setManageTargetId(l.id)}
+                            onClick={() => openManage(l.id)}
                           >
                             Administrar
                           </button>
@@ -273,6 +313,42 @@ export default function LeaguesMinePage() {
           <div className="cmodal-overlay" onClick={() => setManageTargetId(null)}>
             <div className="cmodal pp-manage-modal" onClick={(event) => event.stopPropagation()}>
               <h3 className="cmodal__title">Administrar {target.name}</h3>
+              <div className="pp-form__field">
+                <label className="pp-form__label" htmlFor="manage-name">Nombre</label>
+                <input
+                  id="manage-name"
+                  className="pp-form__input"
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                />
+                {editErrors.name && (
+                  <span className="pp-form__error">{editErrors.name[0]}</span>
+                )}
+              </div>
+              <div className="pp-form__field">
+                <label className="pp-form__label" htmlFor="manage-description">Descripción</label>
+                <input
+                  id="manage-description"
+                  className="pp-form__input"
+                  type="text"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                />
+                {editErrors.description && (
+                  <span className="pp-form__error">{editErrors.description[0]}</span>
+                )}
+              </div>
+              <div className="pp-manage-modal__actions">
+                <button
+                  type="button"
+                  className="pp-btn pp-btn--primary"
+                  disabled={actingId === target.id}
+                  onClick={saveManageEdit}
+                >
+                  {actingId === target.id ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
               <p className="cmodal__message">
                 La suspensión conserva participantes, pronósticos, resultados y ranking, pero impide nuevas participaciones y pronósticos.
               </p>

@@ -117,31 +117,14 @@ public static class LeagueEndpoints
                 return Results.Unauthorized();
             }
 
-            var league = await db.Leagues.FindAsync(id);
-            if (league is null)
+            var (result, errors, league) = await UpdateLeagueAsync(db, id, dto, user.Id);
+            return result switch
             {
-                return Results.NotFound();
-            }
-
-            if (league.CreatedByUserId != user.Id)
-            {
-                return Forbidden("Solo el creador de la Liga puede editarla.");
-            }
-
-            var errors = ValidateNameDescription(dto.Name, dto.Description);
-            if (errors.Count > 0)
-            {
-                return Results.ValidationProblem(errors);
-            }
-
-            league.Name = dto.Name.Trim();
-            league.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
-            league.IsActive = dto.IsActive;
-            league.UpdatedAtUtc = DateTime.UtcNow;
-
-            await db.SaveChangesAsync();
-
-            return Results.Ok(await ToSummaryDtoAsync(db, league, user.Id));
+                LeagueUpdateResult.Updated => Results.Ok(await ToSummaryDtoAsync(db, league!, user.Id)),
+                LeagueUpdateResult.LeagueNotFound => Results.NotFound(),
+                LeagueUpdateResult.Invalid => Results.ValidationProblem(errors),
+                _ => Forbidden("Solo el creador de la Liga puede editarla."),
+            };
         });
 
         group.MapPost("/{id:int}/join", async (int id, ClaimsPrincipal principal, PlayPredictDbContext db) =>
@@ -214,14 +197,37 @@ public static class LeagueEndpoints
                 });
             }
 
-            // Política temporal para la demo: abandonar una Liga elimina solamente la
-            // participación. Los pronósticos se conservan para que, si el usuario vuelve
-            // a participar, recupere los valores cargados. La política definitiva sobre
-            // pronósticos al abandonar una Liga queda pendiente de decisión de producto.
+            // Política MVP (POLITICA_MEMBRESIA_LIGAS_v1.0): abandonar cierra el período
+            // de membresía (LeftAtUtc). Los pronósticos globales se conservan y las
+            // evaluaciones ya otorgadas quedan como historial.
             participant.LeftAtUtc = DateTime.UtcNow;
             await db.SaveChangesAsync();
 
             return Results.Ok(new { message = "Dejaste la Liga correctamente." });
+        });
+
+        // P1.1: el creador expulsa a otro participante de su Liga de Amigos.
+        // Cierra únicamente la membresía en ESTA liga (LeftAtUtc): los pronósticos
+        // globales (UserId+MatchId) y las evaluaciones ya otorgadas se conservan.
+        group.MapDelete("/{id:int}/participants/{userId:int}", async (int id, int userId, ClaimsPrincipal principal, PlayPredictDbContext db) =>
+        {
+            var actor = await UserEndpoints.GetCurrentUserAsync(principal, db);
+            if (actor is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return await ExpelParticipantAsync(db, id, userId, actor.Id) switch
+            {
+                LeagueExpelResult.Expelled => Results.Ok(new { message = "Participante expulsado correctamente." }),
+                LeagueExpelResult.LeagueNotFound => Results.NotFound(),
+                LeagueExpelResult.NotActiveParticipant => Results.NotFound(new { message = "Ese usuario no participa activamente en esta Liga." }),
+                LeagueExpelResult.SelfExpel => Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["userId"] = ["No podés expulsarte a vos mismo: el creador no puede abandonar su Liga."]
+                }),
+                _ => Forbidden("Solo el creador puede expulsar participantes de su Liga de Amigos."),
+            };
         });
 
         group.MapDelete("/{id:int}", async (int id, ClaimsPrincipal principal, PlayPredictDbContext db) =>
@@ -398,6 +404,74 @@ public static class LeagueEndpoints
 
     private static Task<bool> IsParticipantAsync(PlayPredictDbContext db, int leagueId, int userId) =>
         db.LeagueParticipants.AnyAsync(lp => lp.LeagueId == leagueId && lp.UserId == userId && lp.LeftAtUtc == null);
+
+    internal enum LeagueUpdateResult { Updated, LeagueNotFound, Forbidden, Invalid }
+
+    internal static async Task<(LeagueUpdateResult Result, Dictionary<string, string[]> Errors, League? League)> UpdateLeagueAsync(
+        PlayPredictDbContext db, int leagueId, UpdateLeagueDto dto, int actorUserId)
+    {
+        var league = await db.Leagues.FindAsync(leagueId);
+        if (league is null)
+        {
+            return (LeagueUpdateResult.LeagueNotFound, new(), null);
+        }
+
+        if (league.CreatedByUserId != actorUserId)
+        {
+            return (LeagueUpdateResult.Forbidden, new(), null);
+        }
+
+        var errors = ValidateNameDescription(dto.Name, dto.Description);
+        if (errors.Count > 0)
+        {
+            return (LeagueUpdateResult.Invalid, errors, null);
+        }
+
+        league.Name = dto.Name.Trim();
+        league.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
+        league.IsActive = dto.IsActive;
+        league.UpdatedAtUtc = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+
+        return (LeagueUpdateResult.Updated, new(), league);
+    }
+
+    internal enum LeagueExpelResult { Expelled, LeagueNotFound, Forbidden, SelfExpel, NotActiveParticipant }
+
+    internal static async Task<LeagueExpelResult> ExpelParticipantAsync(
+        PlayPredictDbContext db, int leagueId, int targetUserId, int actorUserId)
+    {
+        var league = await db.Leagues.FindAsync(leagueId);
+        if (league is null)
+        {
+            return LeagueExpelResult.LeagueNotFound;
+        }
+
+        if (league.LeagueType != LeagueType.Private || league.CreatedByUserId != actorUserId)
+        {
+            return LeagueExpelResult.Forbidden;
+        }
+
+        if (targetUserId == actorUserId)
+        {
+            return LeagueExpelResult.SelfExpel;
+        }
+
+        var membership = await db.LeagueParticipants
+            .FirstOrDefaultAsync(lp => lp.LeagueId == leagueId && lp.UserId == targetUserId && lp.LeftAtUtc == null);
+        if (membership is null)
+        {
+            return LeagueExpelResult.NotActiveParticipant;
+        }
+
+        // Solo se cierra el período de membresía: los Prediction globales y las
+        // evaluaciones históricas quedan intactos (ver DECISION_PRONOSTICO_GLOBAL).
+        membership.LeftAtUtc = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return LeagueExpelResult.Expelled;
+    }
 
     internal static async Task<(League? League, Dictionary<string, string[]> Errors)> CreatePrivateLeagueAsync(
         PlayPredictDbContext db, LeagueScoringService scoring, CreateLeagueDto dto, int userId)

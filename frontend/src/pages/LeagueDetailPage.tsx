@@ -133,6 +133,9 @@ export default function LeagueDetailPage() {
   const [expandedPredictionRounds, setExpandedPredictionRounds] = useState<Set<number>>(new Set())
   const [copiedCode, setCopiedCode] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<MatchWithPrediction | null>(null)
+  const [expelTarget, setExpelTarget] = useState<LeagueParticipantInfo | null>(null)
+  const [expelling, setExpelling] = useState(false)
+  const [participantsMsg, setParticipantsMsg] = useState<string | null>(null)
   const [actionFocusMatchId, setActionFocusMatchId] = useState<number | null>(null)
   const [rankingPolicyOpen, setRankingPolicyOpen] = useState(false)
   const [rankingView, setRankingView] = useState<'ranking' | 'prizes'>('ranking')
@@ -319,6 +322,33 @@ export default function LeagueDetailPage() {
       setTimeout(() => updateRow(match.id, { savedMessage: null }), 4000)
     } catch (err) {
       updateRow(match.id, { saving: false, error: err instanceof ApiError ? err.message : 'Ocurrió un error inesperado al eliminar.' })
+    }
+  }
+
+  async function reloadParticipants() {
+    const [l, p] = await Promise.all([
+      api.get<LeagueDetail>(`/leagues/${leagueId}`),
+      api.get<LeagueParticipantInfo[]>(`/leagues/${leagueId}/participants`),
+    ])
+    setLeague(l)
+    setParticipants(p)
+  }
+
+  async function confirmExpel() {
+    const target = expelTarget
+    if (!target) return
+    setExpelTarget(null)
+    setExpelling(true)
+    setParticipantsMsg(null)
+    try {
+      await api.del(`/leagues/${leagueId}/participants/${target.userId}`)
+      await reloadParticipants()
+      setParticipantsMsg(`${target.firstName} ${target.lastName} fue expulsado de la Liga. Sus pronósticos se conservan.`)
+    } catch (err) {
+      setParticipantsMsg(err instanceof ApiError ? err.message : 'Ocurrió un error inesperado al expulsar.')
+    } finally {
+      setExpelling(false)
+      setTimeout(() => setParticipantsMsg(null), 5000)
     }
   }
 
@@ -818,6 +848,7 @@ export default function LeagueDetailPage() {
       {activeTab === 'participantes' && (
         <div>
           {!participants && <StatusMessage kind="loading" message="Cargando participantes..." />}
+          {participantsMsg && <StatusMessage kind={participantsMsg.includes('fue expulsado') ? 'success' : 'error'} message={participantsMsg} />}
           {participants && participants.length === 0 && (
             <div className="pp-empty"><span className="pp-empty__icon">👥</span><p className="pp-empty__text">No hay participantes todavía.</p></div>
           )}
@@ -830,6 +861,16 @@ export default function LeagueDetailPage() {
                     <div className="pp-participant__name">{p.firstName} {p.lastName}</div>
                     {p.isCreator && <div className="pp-participant__badge">Creador</div>}
                   </div>
+                  {league?.isCreator && league?.leagueType === 'Private' && !p.isCreator && (
+                    <button
+                      type="button"
+                      className="pp-btn pp-btn--card-secondary pp-btn--sm"
+                      disabled={expelling}
+                      onClick={() => setExpelTarget(p)}
+                    >
+                      Expulsar
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -845,6 +886,15 @@ export default function LeagueDetailPage() {
         cancelLabel="Cancelar"
         onConfirm={deletePrediction}
         onCancel={() => setDeleteTarget(null)}
+      />
+      <ConfirmModal
+        open={expelTarget !== null}
+        title="Expulsar participante"
+        message={expelTarget ? `¿Querés expulsar a ${expelTarget.firstName} ${expelTarget.lastName} de esta Liga? Se cerrará su membresía, pero sus pronósticos deportivos se conservarán.` : ''}
+        confirmLabel={expelling ? 'Expulsando...' : 'Expulsar'}
+        cancelLabel="Cancelar"
+        onConfirm={confirmExpel}
+        onCancel={() => setExpelTarget(null)}
       />
       <TieBreakPolicyModal open={rankingPolicyOpen} onClose={() => setRankingPolicyOpen(false)} />
     </div>

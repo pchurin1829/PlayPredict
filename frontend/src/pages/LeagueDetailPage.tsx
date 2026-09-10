@@ -379,12 +379,13 @@ export default function LeagueDetailPage() {
     return <StatusMessage kind="loading" message="Cargando Liga..." />
   }
 
+  // P0 DEMO: sin tab Premios por Liga (Prize es por Edición/Fecha y se ve en
+  // /prizes). Se oculta en vez de mostrar un tab deshabilitado en la demo.
   const tabs: { key: Tab; label: string; soon?: boolean }[] = [
     { key: 'resumen', label: '📋 Resumen' },
     { key: 'pronosticos', label: '⚽ Pronósticos' },
     { key: 'resultados', label: '✅ Resultados' },
     { key: 'ranking', label: '🏆 Ranking' },
-    { key: 'premios', label: '🎁 Premios', soon: true },
     { key: 'participantes', label: '👥 Participantes' },
   ]
 

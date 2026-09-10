@@ -1,19 +1,18 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import ComingSoonBadge from './ComingSoonBadge'
 import './PlayerHeader.css'
 
 interface NavItem {
   label: string
-  to?: string
-  comingSoon?: boolean
+  to: string
 }
 
+// P0 DEMO: Premios sí tiene ruta player (/prizes). Fixture global no:
+// el fixture vive dentro de cada Liga. Campana sin funcionalidad: oculta.
 const PLAYER_NAV: NavItem[] = [
   { label: 'Inicio', to: '/' },
   { label: 'Mis Ligas', to: '/leagues' },
   { label: 'Ranking', to: '/rankings' },
-  { label: 'Fixture', comingSoon: true },
   { label: 'Premios', to: '/prizes' },
 ]
 
@@ -26,12 +25,6 @@ interface PlayerHeaderProps {
 export default function PlayerHeader({ menuOpen = false, onMenuToggle, onAdminReturn }: PlayerHeaderProps) {
   const { user, logout } = useAuth()
   const location = useLocation()
-  const navigate = useNavigate()
-
-  function handleNavClick(item: NavItem) {
-    if (item.comingSoon) return
-    if (item.to) navigate(item.to)
-  }
 
   return (
     <header className="pheader">
@@ -54,44 +47,18 @@ export default function PlayerHeader({ menuOpen = false, onMenuToggle, onAdminRe
       </div>
 
       <nav className="pheader__nav">
-        {PLAYER_NAV.map((item) => {
-          const isActive = item.to && location.pathname === item.to
-          const cls = [
-            'pheader__nav-item',
-            isActive && 'pheader__nav-item--active',
-            item.comingSoon && 'pheader__nav-item--soon',
-          ]
-            .filter(Boolean)
-            .join(' ')
-
-          return item.to && !item.comingSoon ? (
-            <Link key={item.label} to={item.to} className={cls}>
-              {item.label}
-            </Link>
-          ) : (
-            <button
-              key={item.label}
-              type="button"
-              className={cls}
-              onClick={() => handleNavClick(item)}
-              disabled={item.comingSoon}
-            >
-              {item.label}
-              {item.comingSoon && <ComingSoonBadge />}
-            </button>
-          )
-        })}
+        {PLAYER_NAV.map((item) => (
+          <Link
+            key={item.label}
+            to={item.to}
+            className={`pheader__nav-item${location.pathname === item.to ? ' pheader__nav-item--active' : ''}`}
+          >
+            {item.label}
+          </Link>
+        ))}
       </nav>
 
       <div className="pheader__right">
-        <button type="button" className="pheader__icon-btn pheader__icon-btn--soon" disabled>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-          <ComingSoonBadge />
-        </button>
-
         <div className="pheader__user">
           <div className="pheader__avatar">
             {user ? `${user.firstName[0]}${user.lastName[0]}` : 'U'}

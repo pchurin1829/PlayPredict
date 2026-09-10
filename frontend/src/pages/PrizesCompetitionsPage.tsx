@@ -64,7 +64,9 @@ export default function PrizesCompetitionsPage() {
   }
 
   const selectedItem = items.find((i) => i.competition.id === selectedCompId)
-  const publishedPrizes = selectedItem?.prizes.filter((p) => p.status === 'Published') ?? []
+  // El backend expone al PLAYER solo Published + Closed (PrizeEndpoints.cs).
+  // Se muestra exactamente ese conjunto, sin filtrar de más.
+  const publishedPrizes = selectedItem?.prizes.filter((p) => p.status === 'Published' || p.status === 'Closed') ?? []
 
   return (
     <div>

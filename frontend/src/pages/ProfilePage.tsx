@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { api, ApiError } from '../api/client'
 import type { User } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
@@ -6,7 +6,7 @@ import StatusMessage from '../components/StatusMessage'
 import './PlayerPages.css'
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
 
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
@@ -14,6 +14,13 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
   const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.firstName)
+      setLastName(user.lastName)
+    }
+  }, [user])
 
   if (!user) {
     return null
@@ -27,7 +34,8 @@ export default function ProfilePage() {
     setSaved(false)
 
     try {
-      await api.put<User>('/users/me', { firstName, lastName })
+      const updated = await api.put<User>('/users/me', { firstName, lastName })
+      updateUser(updated)
       setSaved(true)
     } catch (err) {
       if (err instanceof ApiError) {

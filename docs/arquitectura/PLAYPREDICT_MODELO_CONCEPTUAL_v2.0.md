@@ -8,6 +8,16 @@ Sustituye, para las decisiones aquí descriptas, a `MODELO_CONCEPTUAL_v1.0.md`, 
 
 No se eliminan ni se reescriben esos documentos: se conservan como historial del proyecto (Sprints 1 a 8). Este documento es, a partir de aquí, la referencia vigente para toda nueva funcionalidad.
 
+> NOTA DE VIGENCIA (2026-09-10, `DECISION_PRONOSTICO_GLOBAL_v1.0.md`):
+> el modelo de pronóstico por-liga descripto en este documento — identidad
+> `LeagueId + UserId + MatchId`, Sección 0 punto 6, Sección 8 y Sección 9
+> ("el Pronóstico pertenece a la Liga", "nunca se comparten entre Ligas",
+> "pronóstico distinto por Liga") — queda SIN EFECTO. El modelo vigente es
+> UN pronóstico por `UserId + MatchId`, reutilizado en todas las ligas
+> compatibles; las evaluaciones/rankings sí son por liga
+> (`PredictionId`, `LeagueId`). El resto del documento (roles, Liga,
+> alcances, Participantes, Ranking propio) sigue vigente.
+
 ---
 
 # 0. Origen de este documento

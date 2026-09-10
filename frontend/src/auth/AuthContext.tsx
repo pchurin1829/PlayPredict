@@ -17,6 +17,7 @@ interface AuthContextValue {
   loading: boolean
   login: (token: string, user: User) => void
   logout: () => void
+  updateUser: (user: User) => void
   viewMode: 'admin' | 'player'
   setViewMode: (mode: 'admin' | 'player') => void
 }
@@ -59,13 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearWelcomeCampaignSeenForSession()
   }
 
+  function updateUser(updated: User) {
+    setUser(updated)
+  }
+
   function setViewMode(mode: 'admin' | 'player') {
     localStorage.setItem('playpredict_view_mode', mode)
     setViewModeState(mode)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, viewMode, setViewMode }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser, viewMode, setViewMode }}>
       {children}
     </AuthContext.Provider>
   )

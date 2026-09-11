@@ -1,0 +1,103 @@
+name: playpredict-prod
+
+# PlayPredict — compose productivo (P2.2). Solo el proxy publica al host.
+# DB y backend quedan en red interna. Sin bind mounts de código.
+# Validación local: variables por entorno del shell (ver docs/DEPLOY_PRODUCTION.md).
+# VPS: archivo .env.production (NO versionado, ver .env.production.example).
+
+x-logging: &prod-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: playpredict_prod_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - playpredict_prod_db_data:/var/lib/postgresql
+    networks:
+      - prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *prod-logging
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: playpredict_prod_backend
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:?POSTGRES_DB is required};Username=${POSTGRES_USER:?POSTGRES_USER is required};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      Jwt__Key: ${Jwt__Key:?Jwt__Key is required}
+      Jwt__Issuer: ${Jwt__Issuer:-PlayPredict}
+      Jwt__Audience: ${Jwt__Audience:-PlayPredict}
+      Jwt__ExpiresMinutes: ${Jwt__ExpiresMinutes:-60}
+      UploadStorage__RootPath: /data/uploads
+      Forwarded__KnownNetworks: ${Forwarded__KnownNetworks:-10.20.0.0/24}
+      Cors__Origins: ${Cors__Origins:-}
+    volumes:
+      - playpredict_prod_uploads:/data/uploads
+    networks:
+      - prod
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *prod-logging
+
+  proxy:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: playpredict_prod_proxy
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "${PROXY_HTTP_PORT:-80}:80"
+      - "${PROXY_HTTPS_PORT:-443}:443"
+    volumes:
+      - playpredict_prod_caddy_data:/data
+      - playpredict_prod_caddy_config:/config
+    networks:
+      - prod
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging: *prod-logging
+
+volumes:
+  playpredict_prod_db_data:
+    name: playpredict_prod_db_data
+  playpredict_prod_uploads:
+    name: playpredict_prod_uploads
+  playpredict_prod_caddy_data:
+    name: playpredict_prod_caddy_data
+  playpredict_prod_caddy_config:
+    name: playpredict_prod_caddy_config
+
+networks:
+  prod:
+    name: playpredict_prod_network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.20.0.0/24

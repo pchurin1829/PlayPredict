@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.FileProviders;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Endpoints;
+using PlayPredict.Api.Health;
 using PlayPredict.Api.Imports;
 using PlayPredict.Api.LoginAppearance;
 using PlayPredict.Api.Security;
@@ -39,8 +40,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(FrontendCorsPolicy, policy =>
     {
+        // P2.2 — orígenes configurables. Producción same-origin (Caddy sirve /
+        // y /api): lista vacía = sin CORS cruzado. Desarrollo conserva localhost.
+        var origins = builder.Configuration["Cors:Origins"]?
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            ?? [];
+        if (origins.Length == 0 && !builder.Environment.IsProduction())
+            origins = ["http://localhost:5175", "http://127.0.0.1:5175"];
         policy
-            .WithOrigins("http://localhost:5175", "http://127.0.0.1:5175")
+            .WithOrigins(origins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -83,10 +91,13 @@ builder.Services.AddScoped<WelcomeCampaignService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddAuthRateLimiting();
 // P2.1 — tras proxy reverso: solo proxies loopback son confiables por defecto.
-// KnownProxies/KnownNetworks del proxy definitivo se parametrizan en P2.2/VPS.
+// P2.2 — KnownProxies/KnownNetworks del proxy productivo via configuración
+// (Forwarded:KnownNetworks, p. ej. la subnet del compose). Sin esto el
+// rate limiting por IP no ve la IP real. Valores inválidos se ignoran.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    ForwardedNetworkConfig.Apply(options, builder.Configuration);
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -113,8 +124,12 @@ ManagedImageStorage.CopyLegacyFiles(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// P2.2 — Swagger solo fuera de Production (además del bloqueo en borde Caddy).
+if (!app.Environment.IsProduction())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseForwardedHeaders();
 app.UseCors(FrontendCorsPolicy);
@@ -135,6 +150,18 @@ app.UseRateLimiter();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }))
     .WithName("GetHealth");
+
+// P2.2 — readiness: proceso vivo + PostgreSQL alcanzable (operación mínima).
+// La usan Docker/Caddy para saber si el backend atiende. No chequea migraciones
+// pendientes: el arranque ya aplica MigrateAsync con fail-fast antes de servir.
+app.MapGet("/api/health/ready", async (PlayPredictDbContext db) =>
+    {
+        var reachable = await ReadinessProbe.IsReadyAsync(db);
+        return reachable
+            ? Results.Ok(new { status = "ready" })
+            : Results.Json(new { status = "not-ready" }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    })
+    .WithName("GetReadiness");
 
 app.MapGet("/api/system/info", () => Results.Ok(new
 {

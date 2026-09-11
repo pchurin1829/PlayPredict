@@ -2,6 +2,8 @@
 .env
 .env.local
 .env.loadtest
+.env.production
+.env.prod.local
 
 # Backend (.NET)
 backend/bin/

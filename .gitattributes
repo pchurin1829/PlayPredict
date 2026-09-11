@@ -1,0 +1,2 @@
+# P2.2 — los scripts de deploy/backup deben conservar LF en cualquier checkout.
+*.sh text eol=lf

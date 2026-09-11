@@ -190,6 +190,11 @@
   color: var(--pp-login-danger);
 }
 
+.pp-register__hint {
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+
 /* ── Submit button ──────────────────────────────────────────── */
 .pp-register__actions {
   margin-top: 1.5rem;

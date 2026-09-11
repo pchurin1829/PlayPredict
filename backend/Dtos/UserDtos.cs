@@ -9,7 +9,8 @@ public record UserDto(
     bool IsActive,
     DateTime CreatedAtUtc,
     DateTime? LastAccessUtc,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    bool MustChangePassword = false);
 
 public record UpdateProfileDto(
     string FirstName,

@@ -97,6 +97,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
+  if (user.mustChangePassword && location.pathname !== '/profile') {
+    return <Navigate to="/profile" replace />
+  }
+
   return <>{children}</>
 }
 

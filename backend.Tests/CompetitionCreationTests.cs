@@ -207,12 +207,22 @@ public class CompetitionCreationTests
             {
                 if (block.Groups[1].Value == "__EFMigrationsHistory") continue;
                 var columns = block.Groups[2].Value;
+                // P2.1: el SQL canónico de DB0 precede a las columnas de seguridad.
+                // Equivalen a sus valores por defecto (cuenta sana, sin bloqueo).
+                var extraColumns = new List<string>();
+                var extraValues = new List<object>();
+                if (block.Groups[1].Value == "Users")
+                {
+                    extraColumns.AddRange(["\"FailedLoginAttempts\"", "\"LockoutUntilUtc\"", "\"TokenVersion\"", "\"MustChangePassword\""]);
+                    extraValues.AddRange([0, DBNull.Value, 0, 0]);
+                }
                 foreach (var row in block.Groups[3].Value.Split('\n', StringSplitOptions.RemoveEmptyEntries))
                 {
                     var values = row.Split('\t');
                     using var insert = connection.CreateCommand();
                     insert.Transaction = transaction;
-                    insert.CommandText = $"INSERT INTO \"{block.Groups[1].Value}\" ({columns}) VALUES ({string.Join(",", values.Select((_, i) => "$p" + i))})";
+                    var allColumns = columns + (extraColumns.Count == 0 ? "" : "," + string.Join(",", extraColumns));
+                    insert.CommandText = $"INSERT INTO \"{block.Groups[1].Value}\" ({allColumns}) VALUES ({string.Join(",", values.Select((_, i) => "$p" + i))}{(extraValues.Count == 0 ? "" : "," + string.Join(",", extraValues.Select((_, i) => "$x" + i)))})";
                     for (var i = 0; i < values.Length; i++)
                     {
                         object value = values[i] switch
@@ -222,6 +232,8 @@ public class CompetitionCreationTests
                         };
                         insert.Parameters.AddWithValue("$p" + i, value);
                     }
+                    for (var i = 0; i < extraValues.Count; i++)
+                        insert.Parameters.AddWithValue("$x" + i, extraValues[i]);
                     await insert.ExecuteNonQueryAsync();
                 }
             }

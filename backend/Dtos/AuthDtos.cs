@@ -13,4 +13,10 @@ public record LoginDto(
 
 public record AuthResponseDto(
     string Token,
-    UserDto User);
+    UserDto User,
+    bool MustChangePassword = false);
+
+public record ChangePasswordDto(
+    string CurrentPassword,
+    string NewPassword,
+    string ConfirmNewPassword);

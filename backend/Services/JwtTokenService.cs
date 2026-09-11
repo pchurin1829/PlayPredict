@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using PlayPredict.Api.Domain.Entities;
+using PlayPredict.Api.Security;
 
 namespace PlayPredict.Api.Services;
 
@@ -21,7 +22,7 @@ public class JwtTokenService
         var key = jwtSection["Key"]!;
         var issuer = jwtSection["Issuer"]!;
         var audience = jwtSection["Audience"]!;
-        var expiresMinutes = int.Parse(jwtSection["ExpiresMinutes"] ?? "480");
+        var expiresMinutes = int.Parse(jwtSection["ExpiresMinutes"] ?? "60");
 
         var claims = new List<Claim>
         {
@@ -29,7 +30,10 @@ public class JwtTokenService
             new("companyId", user.CompanyId.ToString()),
             new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}"),
             new(JwtRegisteredClaimNames.Email, user.Email),
+            new(AccountSecurityMiddleware.TokenVersionClaim, user.TokenVersion.ToString()),
         };
+        if (user.MustChangePassword)
+            claims.Add(new(AccountSecurityMiddleware.MustChangePasswordClaim, "true"));
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 

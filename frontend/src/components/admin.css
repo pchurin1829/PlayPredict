@@ -12,6 +12,10 @@
   font-size: 1.5rem;
 }
 
+.admin-notice {
+  margin-bottom: 1rem;
+}
+
 .breadcrumb {
   font-size: 0.85rem;
   color: #666;

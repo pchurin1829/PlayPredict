@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
@@ -8,13 +9,28 @@ using PlayPredict.Api.Data;
 using PlayPredict.Api.Endpoints;
 using PlayPredict.Api.Imports;
 using PlayPredict.Api.LoginAppearance;
+using PlayPredict.Api.Security;
 using PlayPredict.Api.Services;
 using PlayPredict.Api.WelcomeCampaigns;
 
 const string AppVersion = "0.1.0";
 const string FrontendCorsPolicy = "FrontendCorsPolicy";
+// Placeholder que NUNCA debe usarse para firmar en Production.
+const string UnsetJwtKeyPlaceholder = "__SET_JWT_KEY_VIA_ENVIRONMENT__";
 
 var builder = WebApplication.CreateBuilder(args);
+
+// P2.1 — secretos: en Production la clave JWT debe venir del entorno.
+// Falla rápido antes de atender una sola request con clave débil/conocida.
+if (builder.Environment.IsProduction())
+{
+    var productionKey = builder.Configuration["Jwt:Key"];
+    if (string.IsNullOrWhiteSpace(productionKey)
+        || productionKey == UnsetJwtKeyPlaceholder
+        || Encoding.UTF8.GetByteCount(productionKey) < 32)
+        throw new InvalidOperationException(
+            "Production requiere Jwt:Key de al menos 32 bytes provista por entorno/secreto (Jwt__Key). Arranque abortado.");
+}
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -65,6 +81,13 @@ builder.Services.AddSingleton<IWelcomeCampaignImageStorage, LocalWelcomeCampaign
 builder.Services.AddSingleton<WelcomeCampaignImageValidator>();
 builder.Services.AddScoped<WelcomeCampaignService>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddAuthRateLimiting();
+// P2.1 — tras proxy reverso: solo proxies loopback son confiables por defecto.
+// KnownProxies/KnownNetworks del proxy definitivo se parametrizan en P2.2/VPS.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -93,6 +116,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.UseForwardedHeaders();
 app.UseCors(FrontendCorsPolicy);
 
 app.UseStaticFiles();
@@ -104,7 +128,10 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseAuthentication();
+app.UseAccountSecurity();
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }))
     .WithName("GetHealth");

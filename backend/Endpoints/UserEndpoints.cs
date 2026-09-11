@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Dtos;
+using PlayPredict.Api.Security;
 using PlayPredict.Api.Services;
 
 namespace PlayPredict.Api.Endpoints;
@@ -44,6 +45,8 @@ public static class UserEndpoints
                 return Results.ValidationProblem(EmailIdentity.DuplicateError("newEmail"));
 
             user.Email = email;
+            // El email viaja en el JWT: el token anterior queda inválido.
+            user.TokenVersion++;
             if (verification == PasswordVerificationResult.SuccessRehashNeeded)
                 user.PasswordHash = hasher.HashPassword(user, dto.CurrentPassword);
             try
@@ -54,6 +57,34 @@ public static class UserEndpoints
             {
                 return Results.ValidationProblem(EmailIdentity.DuplicateError("newEmail"));
             }
+            var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
+            return Results.Ok(new AuthResponseDto(jwt.GenerateToken(user, roles), AuthEndpoints.ToUserDto(user, roles)));
+        });
+
+        group.MapPut("/me/password", async (ChangePasswordDto dto, ClaimsPrincipal principal, PlayPredictDbContext db, JwtTokenService jwt) =>
+        {
+            var errors = new Dictionary<string, string[]>();
+            if (string.IsNullOrEmpty(dto.CurrentPassword)) errors["currentPassword"] = ["Ingresá tu contraseña actual."];
+            foreach (var (field, messages) in PasswordPolicy.Validate(dto.NewPassword, "newPassword"))
+                errors[field] = messages;
+            if (dto.NewPassword != dto.ConfirmNewPassword) errors["confirmNewPassword"] = ["La confirmación no coincide con la nueva contraseña."];
+            if (errors.Count > 0) return Results.ValidationProblem(errors);
+
+            var user = await GetCurrentUserAsync(principal, db, includeRoles: true);
+            if (user is null || !user.IsActive) return Results.Unauthorized();
+            var hasher = new PasswordHasher<User>();
+            if (hasher.VerifyHashedPassword(user, user.PasswordHash, dto.CurrentPassword) == PasswordVerificationResult.Failed)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["currentPassword"] = ["La contraseña actual es incorrecta."] });
+            if (hasher.VerifyHashedPassword(user, user.PasswordHash, dto.NewPassword) != PasswordVerificationResult.Failed)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["newPassword"] = ["La nueva contraseña debe ser distinta de la actual."] });
+
+            user.PasswordHash = hasher.HashPassword(user, dto.NewPassword);
+            user.TokenVersion++;
+            user.MustChangePassword = false;
+            user.FailedLoginAttempts = 0;
+            user.LockoutUntilUtc = null;
+            await db.SaveChangesAsync();
+
             var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
             return Results.Ok(new AuthResponseDto(jwt.GenerateToken(user, roles), AuthEndpoints.ToUserDto(user, roles)));
         });

@@ -1,15 +1,27 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Dtos;
+using PlayPredict.Api.Security;
 using PlayPredict.Api.Services;
 
 namespace PlayPredict.Api.Endpoints;
 
 public static class AuthEndpoints
 {
+    private const string GenericLoginError = "Email o contraseña incorrectos.";
+
+    // Umbral de bloqueo por cuenta (P2.1): 10 fallos consecutivos → 15 minutos.
+    private const int MaxFailedAttempts = 10;
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
+    // Hash sintético precalculado UNA vez por proceso para igualar timing
+    // cuando el email no existe (anti-enumeración). Nunca se genera por request.
+    private static readonly Lazy<string> DummyHash = new(() =>
+        new PasswordHasher<User>().HashPassword(new User { Email = "nonexistent@invalid.local" }, Guid.NewGuid().ToString()));
 
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
@@ -22,7 +34,6 @@ public static class AuthEndpoints
             {
                 return Results.ValidationProblem(errors);
             }
-
             var email = EmailIdentity.Normalize(dto.Email);
 
             var emailTaken = await db.Users.AnyAsync(u => u.Email.ToLower() == email);
@@ -73,40 +84,60 @@ public static class AuthEndpoints
             var roles = new[] { RoleNames.Player };
             var token = jwt.GenerateToken(user, roles);
 
-            return Results.Created($"/api/users/me", new AuthResponseDto(token, ToUserDto(user, roles)));
-        });
+            return Results.Created($"/api/users/me", new AuthResponseDto(token, ToUserDto(user, roles), user.MustChangePassword));
+        }).RequireRateLimiting(AuthRateLimiting.RegisterPolicy);
 
         group.MapPost("/login", async (LoginDto dto, PlayPredictDbContext db, JwtTokenService jwt) =>
         {
             var email = EmailIdentity.Normalize(dto.Email);
             if (!EmailIdentity.IsValid(email) || string.IsNullOrEmpty(dto.Password))
-                return Results.Json(new { message = "Email o contraseña incorrectos." }, statusCode: StatusCodes.Status401Unauthorized);
+                return InvalidLogin();
 
             var user = await db.Users
                 .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == email);
 
-            if (user is null || !user.IsActive)
-            {
-                return Results.Json(new { message = "Email o contraseña incorrectos." }, statusCode: StatusCodes.Status401Unauthorized);
-            }
-
             var hasher = new PasswordHasher<User>();
-            var verification = hasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
-            if (verification == PasswordVerificationResult.Failed)
+            if (user is null)
             {
-                return Results.Json(new { message = "Email o contraseña incorrectos." }, statusCode: StatusCodes.Status401Unauthorized);
+                // Timing equivalente sin revelar si el email existe.
+                hasher.VerifyHashedPassword(new User(), DummyHash.Value, dto.Password);
+                return InvalidLogin();
             }
 
+            if (user.LockoutUntilUtc.HasValue && user.LockoutUntilUtc.Value > DateTime.UtcNow)
+                return InvalidLogin();
+
+            var verification = PasswordVerificationResult.Failed;
+            if (user.IsActive)
+                verification = hasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
+            else
+                // Inactivo: mismo costo PBKDF2, mismo mensaje. No filtrar estado.
+                hasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
+
+            if (!user.IsActive || verification == PasswordVerificationResult.Failed)
+            {
+                user.FailedLoginAttempts++;
+                if (user.FailedLoginAttempts >= MaxFailedAttempts)
+                    user.LockoutUntilUtc = DateTime.UtcNow.Add(LockoutDuration);
+                await db.SaveChangesAsync();
+                return InvalidLogin();
+            }
+
+            user.FailedLoginAttempts = 0;
+            user.LockoutUntilUtc = null;
             user.LastAccessUtc = DateTime.UtcNow;
             await db.SaveChangesAsync();
 
             var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
             var token = jwt.GenerateToken(user, roles);
 
-            return Results.Ok(new AuthResponseDto(token, ToUserDto(user, roles)));
-        });
+            return Results.Ok(new AuthResponseDto(token, ToUserDto(user, roles), user.MustChangePassword));
+        }).RequireRateLimiting(AuthRateLimiting.LoginPolicy);
     }
+
+    private static IResult InvalidLogin() =>
+        Results.Json(new { message = GenericLoginError }, statusCode: StatusCodes.Status401Unauthorized);
 
     private static Dictionary<string, string[]> ValidateRegister(RegisterDto dto)
     {
@@ -122,10 +153,8 @@ public static class AuthEndpoints
             errors["lastName"] = ["El apellido es obligatorio."];
         }
 
-        if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 6)
-        {
-            errors["password"] = ["La contraseña debe tener al menos 6 caracteres."];
-        }
+        foreach (var (field, messages) in PasswordPolicy.Validate(dto.Password))
+            errors[field] = messages;
 
         return errors;
     }
@@ -140,5 +169,6 @@ public static class AuthEndpoints
             user.IsActive,
             user.CreatedAtUtc,
             user.LastAccessUtc,
-            roles.ToList());
+            roles.ToList(),
+            user.MustChangePassword);
 }

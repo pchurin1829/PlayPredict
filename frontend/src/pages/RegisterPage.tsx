@@ -166,7 +166,7 @@ export default function RegisterPage() {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
@@ -194,6 +194,7 @@ export default function RegisterPage() {
             {fieldErrors.password && (
               <span className="pp-register__field-error">{fieldErrors.password[0]}</span>
             )}
+            <span className="pp-register__hint">Mínimo 10 caracteres.</span>
           </div>
 
           <div className="pp-register__actions">

@@ -4,6 +4,7 @@ import type { User } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import StatusMessage from '../components/StatusMessage'
 import ChangeEmailForm from '../components/ChangeEmailForm'
+import ChangePasswordForm from '../components/ChangePasswordForm'
 import './PlayerPages.css'
 
 export default function ProfilePage() {
@@ -113,6 +114,7 @@ export default function ProfilePage() {
           </div>
         </form>
         <ChangeEmailForm />
+        <ChangePasswordForm forced={user.mustChangePassword} />
       </div>
     </div>
   )

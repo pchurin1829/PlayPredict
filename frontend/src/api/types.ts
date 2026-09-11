@@ -78,11 +78,13 @@ export interface User {
   createdAtUtc: string
   lastAccessUtc: string | null
   roles: string[]
+  mustChangePassword: boolean
 }
 
 export interface AuthResponse {
   token: string
   user: User
+  mustChangePassword: boolean
 }
 
 export interface CompetitionDependencies {

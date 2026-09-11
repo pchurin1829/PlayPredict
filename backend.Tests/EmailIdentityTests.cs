@@ -20,6 +20,7 @@ using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Dtos;
 using PlayPredict.Api.Endpoints;
+using PlayPredict.Api.Security;
 using PlayPredict.Api.Services;
 using Xunit;
 
@@ -32,12 +33,12 @@ public sealed class EmailIdentityTests
     {
         await using var api = await TestApi.Create();
         using var response = await api.Client.PostAsJsonAsync("/api/auth/register",
-            new RegisterDto(" Test ", " Player ", " New@Example.com ", "test123", "new@example.COM"));
+            new RegisterDto(" Test ", " Player ", " New@Example.com ", "registro1234", "new@example.COM"));
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var auth = (await response.Content.ReadFromJsonAsync<AuthResponseDto>())!;
         Assert.Equal("new@example.com", auth.User.Email);
         Assert.Equal([RoleNames.Player], auth.User.Roles);
-        using var logged = await api.Login(" NEW@EXAMPLE.COM ", "test123");
+        using var logged = await api.Login(" NEW@EXAMPLE.COM ", "registro1234");
         Assert.Equal(HttpStatusCode.OK, logged.StatusCode);
     }
 
@@ -53,7 +54,7 @@ public sealed class EmailIdentityTests
     public async Task Registration_rejects_invalid_mismatched_missing_or_duplicate_email(string email, string? confirm, string field)
     {
         await using var api = await TestApi.Create();
-        using var response = await api.Client.PostAsJsonAsync("/api/auth/register", new RegisterDto("Test", "Player", email, "test123", confirm));
+        using var response = await api.Client.PostAsJsonAsync("/api/auth/register", new RegisterDto("Test", "Player", email, "registro1234", confirm));
         await AssertFieldError(response, field);
         Assert.Equal(2, await api.Read(db => db.Users.CountAsync()));
     }
@@ -63,7 +64,7 @@ public sealed class EmailIdentityTests
     {
         await using var api = await TestApi.Create();
         await api.Read(async db => { var u = await db.Users.FirstAsync(); u.Email = "Mixed@Example.com"; return await db.SaveChangesAsync(); });
-        using var response = await api.Client.PostAsJsonAsync("/api/auth/register", new RegisterDto("Test", "Player", "mixed@example.com", "test123", "mixed@example.com"));
+        using var response = await api.Client.PostAsJsonAsync("/api/auth/register", new RegisterDto("Test", "Player", "mixed@example.com", "registro1234", "mixed@example.com"));
         await AssertFieldError(response, "email");
     }
 
@@ -197,6 +198,7 @@ public sealed class EmailIdentityTests
             const string key = "email-tests-only-signing-key-012345678901234567890";
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { ["Jwt:Key"] = key, ["Jwt:Issuer"] = "email-tests", ["Jwt:Audience"] = "email-tests" });
             builder.Services.AddSingleton<JwtTokenService>();
+            builder.Services.AddAuthRateLimiting();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o => o.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true, ValidIssuer = "email-tests", ValidateAudience = true, ValidAudience = "email-tests",

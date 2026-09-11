@@ -77,6 +77,13 @@ PLAYER: usuario@playpredict.local / usuario
 
 Estas contraseñas son exclusivamente para DEMO. La base almacena sus hashes normales de PlayPredict, no las contraseñas en texto plano.
 
+> GO-LIVE (P2.1): las credenciales `admin123` / `usuario` son públicas por estar
+> documentadas y versionadas en el seeder. Antes de exponer un deployment real,
+> rotarlas: ingresar como ADMIN, usar "Resetear contraseña" (`/admin/users`) o
+> "Cambiar contraseña" (`/profile`, mínimo 10 caracteres). Los hashes históricos
+> de DB0 siguen permitiendo login local/demo, pero NO deben considerarse válidos
+> para producción.
+
 ## Restauración
 
 Los siguientes comandos se ejecutan desde la raíz del repositorio. La restauración reemplaza la base indicada: usar únicamente una PostgreSQL vacía o una base descartable cuyo contenido pueda eliminarse.

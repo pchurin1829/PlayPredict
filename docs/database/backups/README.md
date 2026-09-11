@@ -12,9 +12,22 @@ DB0_PlayPredict_BaseInicial_v1_2026-09-01.sql
 
 Es un dump SQL plano de PostgreSQL que incluye el esquema, el historial de migraciones y los datos. No incluye propietarios ni privilegios específicos de la instalación que lo generó.
 
-## BASE INICIAL PLAYPREDICT v1.0 — CERRADA
+## DB0 vigente — corrección de email del 2026-09-10
 
-Cierre aprobado el 2026-09-08 (opción B). Se mantiene este archivo como único DB0 canónico, sin modificaciones:
+Regenerado desde una base PostgreSQL vacía con las migraciones y el procedimiento
+oficial `--seed-initial-v1`, usando los XLS versionados. Incorpora las identidades
+`admin@playpredict.local` / `usuario@playpredict.local` y las 23 migraciones actuales.
+No incorpora datos creados durante la validación manual. Se conserva el nombre
+del archivo canónico para no romper las referencias existentes.
+
+La reconstrucción y el restore se verifican en bases aisladas. El restore usa
+`psql --single-transaction -v ON_ERROR_STOP=1` sobre una base vacía, sin seeder ni
+migraciones previas. Ambos logins canónicos deben funcionar antes y después del
+restore; `admin` y `usuario` deben devolver 401. No se imprimen PasswordHash ni tokens.
+
+## Cierre anterior — histórico, sustituido por la corrección de email
+
+Cierre aprobado el 2026-09-08 (opción B). En ese cierre se conservó el siguiente DB0; este hash es histórico y ya no identifica el archivo vigente:
 
 ```text
 docs/database/backups/DB0_PlayPredict_BaseInicial_v1_2026-09-01.sql
@@ -23,11 +36,11 @@ SHA-256: 3FCE46A9AE1FAFA4A2AFE4A087F84E6A079FE2552980749A3D2B9FC7AD4D231E
 
 Una reconstrucción independiente generó una base funcionalmente equivalente al DB0. La comparación de esquema, migraciones y datos confirmó que el candidato no incorporaba ninguna corrección material que justificara reemplazarlo. Sus diferencias eran identificadores y secuencias, timestamps, hashes demo, códigos de invitación, orden de filas y versión generadora del dump. Por ello se elimina el archivo `.candidate.sql` y se conserva el canónico.
 
-## Contenido validado al cierre
+## Contenido vigente esperado y validado
 
 ```text
-Migraciones: 22/22
-Head: 20260831013127_AddMatchesUniqueRoundHomeAway
+Migraciones: 23/23
+Head: 20260909012331_AddMatchScorerOwnGoals
 Competitions: 1
 Leagues: 2
 Users: 2
@@ -39,12 +52,12 @@ Predictions: 0
 PredictionEvaluations: 0
 PreferredPlayers (UserTeamPreferredPlayers): 0
 Goleadores registrados (MatchScorers): 0
-FK validadas: 37
+FK validadas: 38
 ```
 
-Sin FK rotas, datos huérfanos, duplicados relevantes, datos load-test ni residuos de tests. Los 60 partidos están programados (`Scheduled`), sin resultados cargados: Fechas 8, 9, 10 y 11, con 15 partidos cada una. La única participación corresponde a `USUARIO` en `COPA EL NENE`.
+Sin FK rotas, datos huérfanos, duplicados relevantes, datos load-test ni residuos de tests. Los 60 partidos están programados (`Scheduled`), sin resultados cargados: Fechas 8, 9, 10 y 11, con 15 partidos cada una. La única participación corresponde a `usuario@playpredict.local` en `COPA EL NENE`.
 
-El restore del DB0 canónico y del candidato se probó correctamente en bases temporales de una instancia PostgreSQL 18.4 independiente, con transacción única y `ON_ERROR_STOP`, sin aplicar migraciones ni seeders. Tras eliminar la primera base candidata, un segundo restore desde cero reprodujo los conteos críticos, el head y las 37 FK validadas. Las bases temporales se eliminaron y la instancia aislada se detuvo; no se utilizó ni modificó `playpredict_db`.
+Historial del cierre anterior (2026-09-08): el restore del DB0 anterior y del candidato se probó en PostgreSQL 18.4 independiente; reproducía 22 migraciones y 37 FK. Esa validación histórica no sustituye la reconstrucción y el restore de la revisión actual.
 
 Ligas:
 
@@ -58,8 +71,8 @@ COPA EL NENE
 Usuarios DEMO:
 
 ```text
-ADMIN / admin123
-USUARIO / usuario
+ADMIN: admin@playpredict.local / admin123
+PLAYER: usuario@playpredict.local / usuario
 ```
 
 Estas contraseñas son exclusivamente para DEMO. La base almacena sus hashes normales de PlayPredict, no las contraseñas en texto plano.

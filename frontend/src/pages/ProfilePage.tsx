@@ -3,6 +3,7 @@ import { api, ApiError } from '../api/client'
 import type { User } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import StatusMessage from '../components/StatusMessage'
+import ChangeEmailForm from '../components/ChangeEmailForm'
 import './PlayerPages.css'
 
 export default function ProfilePage() {
@@ -111,6 +112,7 @@ export default function ProfilePage() {
             </button>
           </div>
         </form>
+        <ChangeEmailForm />
       </div>
     </div>
   )

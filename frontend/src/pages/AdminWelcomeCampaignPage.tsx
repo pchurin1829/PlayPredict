@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { ActiveWelcomeCampaignSlide, WelcomeCampaign, WelcomeCampaignFitMode, WelcomeCampaignSlide } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
@@ -358,7 +357,6 @@ export default function AdminWelcomeCampaignPage() {
 
   return (
     <div>
-      <div className="breadcrumb"><Link to="/admin">← Volver a Administración</Link></div>
       <div className="admin-header">
         <div>
           <span className="admin-eyebrow">LOGIN</span>

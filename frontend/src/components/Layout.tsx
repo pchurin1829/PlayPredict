@@ -114,7 +114,12 @@ export default function Layout() {
               ))}
             </nav>
           </aside>
-          <main className="layout__content"><Outlet /></main>
+          <main className="layout__content">
+            {location.pathname !== '/admin' && (
+              <div className="breadcrumb"><Link to="/admin">← Volver al Dashboard</Link></div>
+            )}
+            <Outlet />
+          </main>
         </div>
       </div>
     )

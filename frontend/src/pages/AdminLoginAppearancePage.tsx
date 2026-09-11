@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { AdminLoginAppearanceSlot, LoginImageSlot } from '../api/types'
 import { LOGIN_IMAGE_CONTRACTS, getLoginImageWarnings } from '../login/imageContracts'
@@ -177,7 +176,6 @@ export default function AdminLoginAppearancePage() {
 
   return (
     <div>
-      <div className="breadcrumb"><Link to="/admin">← Volver a Administración</Link></div>
       <div className="admin-header">
         <div>
           <span className="admin-eyebrow">LOGIN</span>

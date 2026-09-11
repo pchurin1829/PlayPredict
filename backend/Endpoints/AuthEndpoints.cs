@@ -23,9 +23,9 @@ public static class AuthEndpoints
                 return Results.ValidationProblem(errors);
             }
 
-            var email = dto.Email.Trim().ToLowerInvariant();
+            var email = EmailIdentity.Normalize(dto.Email);
 
-            var emailTaken = await db.Users.AnyAsync(u => u.Email == email);
+            var emailTaken = await db.Users.AnyAsync(u => u.Email.ToLower() == email);
             if (emailTaken)
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -61,7 +61,14 @@ public static class AuthEndpoints
             user.UserRoles.Add(new UserRole { Role = userRole });
 
             db.Users.Add(user);
-            await db.SaveChangesAsync();
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException error) when (EmailIdentity.IsDuplicate(error))
+            {
+                return Results.ValidationProblem(EmailIdentity.DuplicateError());
+            }
 
             var roles = new[] { RoleNames.Player };
             var token = jwt.GenerateToken(user, roles);
@@ -71,11 +78,13 @@ public static class AuthEndpoints
 
         group.MapPost("/login", async (LoginDto dto, PlayPredictDbContext db, JwtTokenService jwt) =>
         {
-            var email = dto.Email.Trim().ToLowerInvariant();
+            var email = EmailIdentity.Normalize(dto.Email);
+            if (!EmailIdentity.IsValid(email) || string.IsNullOrEmpty(dto.Password))
+                return Results.Json(new { message = "Email o contraseña incorrectos." }, statusCode: StatusCodes.Status401Unauthorized);
 
             var user = await db.Users
                 .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(u => u.Email == email);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email);
 
             if (user is null || !user.IsActive)
             {
@@ -101,7 +110,7 @@ public static class AuthEndpoints
 
     private static Dictionary<string, string[]> ValidateRegister(RegisterDto dto)
     {
-        var errors = new Dictionary<string, string[]>();
+        var errors = EmailIdentity.Validate(dto.Email, dto.ConfirmEmail);
 
         if (string.IsNullOrWhiteSpace(dto.FirstName))
         {
@@ -111,11 +120,6 @@ public static class AuthEndpoints
         if (string.IsNullOrWhiteSpace(dto.LastName))
         {
             errors["lastName"] = ["El apellido es obligatorio."];
-        }
-
-        if (string.IsNullOrWhiteSpace(dto.Email) || !dto.Email.Contains('@'))
-        {
-            errors["email"] = ["El email es obligatorio y debe ser válido."];
         }
 
         if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 6)

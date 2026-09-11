@@ -4,7 +4,8 @@ public record RegisterDto(
     string FirstName,
     string LastName,
     string Email,
-    string Password);
+    string Password,
+    string? ConfirmEmail = null);
 
 public record LoginDto(
     string Email,

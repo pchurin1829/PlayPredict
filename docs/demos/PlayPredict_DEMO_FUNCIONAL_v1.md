@@ -5,7 +5,7 @@ Modelo vigente: UN pronóstico por `UserId + MatchId`
 (`docs/arquitectura/DECISION_PRONOSTICO_GLOBAL_v1.0.md`).
 
 Credenciales demo (Base Inicial v1.0, `InitialDatasetV1Seeder.cs`):
-ADMIN `admin` / `admin123` — USUARIO `usuario` / `usuario` (login por email).
+ADMIN `admin@playpredict.local` / `admin123` — PLAYER `usuario@playpredict.local` / `usuario` (login por email).
 
 > Solo pasos con funcionalidad existente. Sin Fixture global, sin notificaciones,
 > sin tab Premios por Liga (los premios se ven en `/prizes`).

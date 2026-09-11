@@ -238,7 +238,7 @@ public class CompetitionCreationTests
         {
             Client.DefaultRequestHeaders.Authorization = null;
             if (role is null) return;
-            var user = await Read(db => db.Users.AsNoTracking().SingleAsync(u => u.Email == (role == RoleNames.Admin ? "admin" : "usuario")));
+            var user = await Read(db => db.Users.AsNoTracking().SingleAsync(u => u.Email == (role == RoleNames.Admin ? InitialDatasetV1Seeder.AdminEmail : InitialDatasetV1Seeder.PlayerEmail)));
             Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", app.Services.GetRequiredService<JwtTokenService>().GenerateToken(user, [role]));
         }
 

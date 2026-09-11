@@ -15,5 +15,7 @@ public record UpdateProfileDto(
     string FirstName,
     string LastName);
 
+public record ChangeEmailDto(string NewEmail, string ConfirmEmail, string CurrentPassword);
+
 public record UpdateUserStatusDto(
     bool IsActive);

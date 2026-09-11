@@ -17,7 +17,7 @@ interface AuthContextValue {
   loading: boolean
   login: (token: string, user: User) => void
   logout: () => void
-  updateUser: (user: User) => void
+  updateUser: (user: User, token?: string) => void
   viewMode: 'admin' | 'player'
   setViewMode: (mode: 'admin' | 'player') => void
 }
@@ -60,7 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearWelcomeCampaignSeenForSession()
   }
 
-  function updateUser(updated: User) {
+  function updateUser(updated: User, token?: string) {
+    if (token) setToken(token)
     setUser(updated)
   }
 

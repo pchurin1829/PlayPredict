@@ -17,6 +17,8 @@ public static class InitialDatasetV1Seeder
 {
     public const string ReferenceName = "Torneo Clausura AFA 2026";
     public const string ClientLeagueName = "COPA EL NENE";
+    public const string AdminEmail = "admin@playpredict.local";
+    public const string PlayerEmail = "usuario@playpredict.local";
 
     public static async Task SeedAsync(
         PlayPredictDbContext db,
@@ -39,9 +41,9 @@ public static class InitialDatasetV1Seeder
         var playerRole = await db.Roles.SingleAsync(role => role.Name == RoleNames.Player, cancellationToken);
         var hasher = new PasswordHasher<User>();
 
-        var admin = NewUser(company.Id, "ADMIN", "Administrador", "Inicial", adminRole, now);
+        var admin = NewUser(company.Id, AdminEmail, "Administrador", "Inicial", adminRole, now);
         admin.PasswordHash = hasher.HashPassword(admin, "admin123");
-        var player = NewUser(company.Id, "USUARIO", "Usuario", "Inicial", playerRole, now);
+        var player = NewUser(company.Id, PlayerEmail, "Usuario", "Inicial", playerRole, now);
         player.PasswordHash = hasher.HashPassword(player, "usuario");
         db.Users.AddRange(admin, player);
 

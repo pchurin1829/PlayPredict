@@ -35,11 +35,11 @@ El comando del seeder:
 1. comprueba y aplica las migraciones pendientes;
 2. elimina datos demo/reemplazables, sin eliminar el esquema;
 3. crea empresa y roles base;
-4. crea `ADMIN` y `USUARIO` usando `PasswordHasher<User>`;
+4. crea `admin@playpredict.local` y `usuario@playpredict.local` usando `PasswordHasher<User>`;
 5. importa equipos y planteles mediante `TeamRosterImportConfirmationService`;
 6. importa exclusivamente los 60 partidos programados mediante `MatchImportConfirmationService`;
 7. crea la referencia AFA y `COPA EL NENE`, enlazadas con `SourceLeagueId`;
-8. incorpora `USUARIO` solamente a `COPA EL NENE`.
+8. incorpora `usuario@playpredict.local` solamente a `COPA EL NENE`.
 
 El seeder es deliberadamente explícito y destructivo respecto de los datos reemplazables. Nunca se ejecuta durante un arranque normal.
 
@@ -99,7 +99,19 @@ Partidos: Fechas 8, 9, 10 y 11 con 15 partidos cada una. No deben existir Fechas
 
 ## Credenciales de prueba
 
-- `ADMIN` / clave inicial indicada en el XLS de configuración.
-- `USUARIO` / clave inicial indicada en el XLS de configuración.
+- ADMIN: `admin@playpredict.local` / `admin123`.
+- PLAYER: `usuario@playpredict.local` / `usuario`.
+
+Corrección de identidad del 2026-09-10: el login usa email + contraseña, nunca los
+identificadores históricos `admin` / `usuario`. La fuente ejecutable de las cuentas
+es `InitialDatasetV1Seeder.AdminEmail` / `PlayerEmail`; las hojas README, USUARIOS
+y PARTICIPACIONES del XLS canónico reflejan esas mismas identidades. El seeder
+lee fixture y planteles mediante los importadores existentes; no importa usuarios
+arbitrarios desde el XLS. Un test comprueba la concordancia entre XLS y seeder.
+
+Registro exige email válido y Confirmar email, con trim/lowercase, coincidencia y
+unicidad. No hay email de confirmación ni segunda contraseña. El cambio de email
+se realiza por separado en Mi Perfil y exige la contraseña actual. Estas reglas
+no cambian las contraseñas DEMO iniciales.
 
 La base almacena solamente hashes generados por el mecanismo normal de PlayPredict. Este documento no contiene hashes, tokens ni claves de conexión adicionales.

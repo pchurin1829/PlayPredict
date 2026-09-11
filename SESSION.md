@@ -7,7 +7,26 @@ PlayPredict
 prueba-glm-ui (sincronizada con `origin/prueba-glm-ui`)
 
 ## Último commit
-27895d7 — WIP: demo visual player y login (commiteado y pusheado; commiteado fuera de una sesión de Claude Code, ver nota abajo)
+f2fdac8 — feat: harden email identity and finalize demo admin flow (rama `prueba-glm-ui`, sincronizada 0/0 con `origin/prueba-glm-ui`)
+
+## Estado del entorno (2026-09-11, cierre documental, sin Docker)
+- Git: rama `prueba-glm-ui`, HEAD `f2fdac8`, sincronizada 0/0. Untracked preservados y excluidos: `.qwen/`, `Nuevo Documento de texto.txt`, `docs/datos db inicio EL NENE/PlayPredict_Base_Inicial_v1.0_2026-09-01.xlsx`.
+- Docker: no levantado en esta sesión (no imprescindible; solo cierre documental/operativo, sin código nuevo).
+- Credenciales demo: ADMIN `admin@playpredict.local` / `admin123`, PLAYER `usuario@playpredict.local` / `usuario`.
+
+---
+
+## Sesión 2026-09-11 — Cierre documental posterior a `f2fdac8` (sin commit)
+
+Solo cierre documental/operativo de lo ya implementado, sin funcionalidad nueva ni cambios al importador.
+
+- Auditoría inicial: `git status` (solo los 3 untracked citados), `git log --oneline -8` (HEAD `f2fdac8`), `rev-list --left-right --count` 0/0. Sin `git add .`.
+- Plantilla: no existía ninguna plantilla oficial versionada del importador de Fixture (solo Base Inicial/Planteles, de otro contrato). Verificado contra `backend/Imports/SpreadsheetReader.cs`: hoja `IMPORTAR_PARTIDOS`, columnas exactas `FECHA_NRO, FECHA, HORA, LOCAL, VISITANTE, ESTADO`.
+- Creada `docs/plantillas/PlayPredict_Plantilla_Importar_Fixture.xlsx` (encabezados exactos, 3 filas ficticias marcadas `(FICTICIO)`, fechas Excel `yyyy-mm-dd`, horas `hh:mm`, todo `SCHEDULED`) + `docs/plantillas/README.md` (columnas, formatos, flujo preview → confirm, UPSERT según el código existente).
+- Validación con el `SpreadsheetReader` real (sin Docker, vía `dotnet run` contra el proyecto backend): `Matches=3 Issues=0 IsValid=True`. Sin inconsistencia: importador intacto.
+- `PROJECT_STATUS.md`: agregado bloque de cierre `f2fdac8` al inicio, sin reescribir historial.
+- `git diff --check`: pendiente al cierre de la sesión.
+- Estado pre-commit y archivos exactos a incluir: pendientes de mostrar para aprobación. NO COMMIT. NO PUSH.
 
 ## Estado del entorno (verificado 2026-08-12, sesión Claude Code)
 - Git: rama `prueba-glm-ui`, **working tree limpio**. Único ítem: `Nuevo Documento de texto.txt` (0 bytes, sin trackear, no forma parte del proyecto).

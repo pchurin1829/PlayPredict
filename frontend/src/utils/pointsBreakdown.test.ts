@@ -15,7 +15,7 @@ describe('buildPointsBreakdown', () => {
       { kind: 'result', label: 'Marcador exacto', pointsText: '6 pts' },
       {
         kind: 'bonus',
-        label: 'Sebastián Driussi · Jugador Preferido',
+        label: 'Sebastián Driussi',
         pointsText: '+2 pts',
       },
     ])
@@ -34,7 +34,7 @@ describe('buildPointsBreakdown', () => {
       { kind: 'result', label: 'Resultado correcto', pointsText: '3 pts' },
       {
         kind: 'bonus',
-        label: 'Miguel Merentiel · Jugador Preferido',
+        label: 'Miguel Merentiel',
         pointsText: '+2 pts',
       },
     ])
@@ -65,7 +65,7 @@ describe('buildPointsBreakdown', () => {
       { kind: 'result', label: 'Incorrecto', pointsText: '0 pts' },
       {
         kind: 'bonus',
-        label: 'Sebastián Driussi · Jugador Preferido',
+        label: 'Sebastián Driussi',
         pointsText: '+2 pts',
       },
     ])

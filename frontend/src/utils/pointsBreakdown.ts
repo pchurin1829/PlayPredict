@@ -34,7 +34,7 @@ export function buildPointsBreakdown(
   if (bonus > 0) {
     rows.push({
       kind: 'bonus',
-      label: `${input.preferredPlayerName ?? 'Jugador Preferido'} · Jugador Preferido`,
+      label: input.preferredPlayerName ?? 'Jugador Preferido',
       pointsText: `+${bonus} pts`,
     })
   }

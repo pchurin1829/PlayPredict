@@ -694,9 +694,10 @@ button.admin-selection__option {
 .result-scorers { margin: 1rem 0; padding-top: 1rem; border-top: 1px solid var(--pp-border); }
 .result-scorers h3 { margin: 0; font-size: 1rem; }
 .result-scorers h3 small { color: var(--pp-text-muted); font-weight: 500; }
-.result-scorer-row { display: grid; grid-template-columns: minmax(12rem,22rem) 70px minmax(10rem,auto); align-items: center; gap: .5rem; margin-bottom: .5rem; }
+.result-scorer-row { display: grid; grid-template-columns: minmax(9rem,13rem) minmax(12rem,22rem) 70px minmax(10rem,auto); align-items: center; gap: .5rem; margin-bottom: .5rem; }
 .result-scorer-row select,.result-scorer-row input { min-height: 42px; border: 1px solid var(--pp-border); border-radius: 7px; background: var(--pp-bg-surface); }
 .result-scorer-row input { text-align: center; }
+.result-scorer-row__search { padding: 0 .6rem; text-align: left; }
 .result-scorer-row__actions { display: flex; align-items: center; gap: .4rem; }
 .result-scorer-row__confirmed { color: var(--color-success); font-size: .78rem; font-weight: 700; }
 
@@ -768,6 +769,7 @@ button.admin-selection__option {
   .round-generator__manual { align-items: stretch; flex-direction: column; }
   .round-generator__controls .form-field { width: 100%; }
   .result-scorer-row { grid-template-columns: 1fr 64px; }
+    .result-scorer-row__search { grid-column: 1 / -1; }
     .result-scorer-row__actions { grid-column: 1 / -1; }
     .official-league-admin-card__actions,
     .official-fixture-round__header { align-items: stretch; flex-direction: column; }

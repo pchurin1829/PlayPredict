@@ -5,6 +5,7 @@ import type { LeagueDetail, MatchWithPrediction } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
 import ConfirmModal from '../components/ConfirmModal'
 import TeamBadge from '../components/player/TeamBadge'
+import PredictionPointsBreakdown from '../components/player/PredictionPointsBreakdown'
 import './PlayerPages.css'
 
 interface RowState {
@@ -411,12 +412,7 @@ export default function PredictionsMatchesPage() {
                           {m.predictionEligible ? `${m.myPrediction.points ?? 0} pts` : 'No elegible en esta Liga'}
                         </span>
                       </div>
-                      {m.myPrediction.evaluationLabel && (
-                        <div className="pp-match-card__result-row">
-                          <span className="pp-match-card__result-label">Motivo</span>
-                          <span className="pp-match-card__result-value">{m.myPrediction.evaluationLabel}</span>
-                        </div>
-                      )}
+                      <PredictionPointsBreakdown prediction={m.myPrediction} />
                     </>
                   ) : (
                     <div className="pp-match-card__result-row">

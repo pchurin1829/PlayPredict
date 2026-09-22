@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FocusEvent, type FormEvent, type KeyboardEvent, type MouseEvent } from 'react'
 import { api, ApiError } from '../api/client'
 import type { Match, TeamPlayer } from '../api/types'
+import { filterScorerPlayers } from './admin/scorerPlayerSearch'
 import ConfirmModal from './ConfirmModal'
 
 interface MatchResultModalProps {
@@ -22,6 +23,44 @@ interface ScorerRequirements {
   requiresScorerDetail: boolean
 }
 
+interface ScorerPlayerSelectProps {
+  index: number
+  row: ScorerRow
+  match: Match
+  homeGoals: number
+  awayGoals: number
+  eligiblePlayers: TeamPlayer[]
+  query: string
+  onQueryChange: (index: number, query: string) => void
+  onSelect: (teamPlayerId: number | null) => void
+  selectRef: (element: HTMLSelectElement | null) => void
+  focusGoals: () => void
+}
+
+/** Player dropdown with inline text search (filters the same eligible options). */
+function ScorerPlayerSelect({ index, row, match, homeGoals, awayGoals, eligiblePlayers, query, onQueryChange, onSelect, selectRef, focusGoals }: ScorerPlayerSelectProps) {
+  const homeOptions = filterScorerPlayers(eligiblePlayers.filter(player => player.teamId === match.homeTeamId), query)
+  const awayOptions = filterScorerPlayers(eligiblePlayers.filter(player => player.teamId === match.awayTeamId), query)
+  return (
+    <>
+      <input
+        type="search"
+        className="result-scorer-row__search"
+        aria-label={`Buscar goleador ${index + 1}`}
+        placeholder="Buscar jugador…"
+        autoComplete="off"
+        value={query}
+        onChange={event => onQueryChange(index, event.target.value)}
+      />
+      <select ref={selectRef} aria-label={`Goleador ${index + 1}`} value={row.teamPlayerId ?? 0} onChange={event => { const teamPlayerId = Number(event.target.value); onSelect(teamPlayerId > 0 ? teamPlayerId : null); if (teamPlayerId > 0) setTimeout(focusGoals) }} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); focusGoals() } }}>
+        <option value={0}>Seleccionar jugador</option>
+        {homeGoals > 0 && <optgroup label={match.participantHome}>{homeOptions.map(player => <option value={player.id} key={player.id}>{player.displayName}</option>)}</optgroup>}
+        {awayGoals > 0 && <optgroup label={match.participantAway}>{awayOptions.map(player => <option value={player.id} key={player.id}>{player.displayName}</option>)}</optgroup>}
+      </select>
+    </>
+  )
+}
+
 export default function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
   const [homeGoals, setHomeGoals] = useState(match.homeGoals ?? 0)
   const [awayGoals, setAwayGoals] = useState(match.awayGoals ?? 0)
@@ -32,6 +71,7 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
   const [scorers, setScorers] = useState<ScorerRow[]>(match.scorers
     .filter(s => (s.teamId === match.homeTeamId && (match.homeGoals ?? 0) > 0) || (s.teamId === match.awayTeamId && (match.awayGoals ?? 0) > 0))
     .map(s => ({ teamPlayerId: s.teamPlayerId, teamId: s.teamId, isOwnGoal: s.isOwnGoal, goals: s.goals, confirmed: true })))
+  const [scorerQueries, setScorerQueries] = useState<string[]>([])
   const homeGoalsRef = useRef<HTMLInputElement>(null)
   const awayGoalsRef = useRef<HTMLInputElement>(null)
   const scorerSelectRefs = useRef<Array<HTMLSelectElement | null>>([])
@@ -150,7 +190,26 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
   function addScorer() {
     const nextIndex = scorers.length
     setScorers(current => [...current, { teamPlayerId: null, teamId: null, isOwnGoal: false, goals: 1, confirmed: false }])
+    setScorerQueries(current => [...current, ''])
     setTimeout(() => scorerSelectRefs.current[nextIndex]?.focus())
+  }
+
+  function removeScorer(index: number) {
+    setScorers(current => current.filter((_, itemIndex) => itemIndex !== index))
+    setScorerQueries(current => current.filter((_, itemIndex) => itemIndex !== index))
+  }
+
+  function setScorerQuery(index: number, query: string) {
+    setScorerQueries(current => current.map((item, itemIndex) => itemIndex === index ? query : item))
+  }
+
+  function selectScorerPlayer(index: number, teamPlayerId: number | null) {
+    setScorers(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, teamPlayerId, confirmed: false } : item))
+  }
+
+  function focusScorerGoals(index: number) {
+    scorerGoalsRefs.current[index]?.focus()
+    scorerGoalsRefs.current[index]?.select()
   }
 
   function toggleOwnGoal(index: number) {
@@ -219,18 +278,26 @@ export default function MatchResultModal({ match, onClose, onSaved }: MatchResul
                 {awayGoals > 0 && <option value={match.awayTeamId}>{match.participantAway}</option>}
               </select>
               ) : (
-              <select ref={element => { scorerSelectRefs.current[index] = element }} aria-label={`Goleador ${index + 1}`} value={row.teamPlayerId ?? 0} onChange={event => { const teamPlayerId=Number(event.target.value); setScorers(current => current.map((item,itemIndex) => itemIndex===index ? {...item,teamPlayerId: teamPlayerId > 0 ? teamPlayerId : null,confirmed:false} : item)); if(teamPlayerId > 0) setTimeout(()=>scorerGoalsRefs.current[index]?.focus()) }} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();scorerGoalsRefs.current[index]?.focus();scorerGoalsRefs.current[index]?.select()}}}>
-                <option value={0}>Seleccionar jugador</option>
-                {homeGoals > 0 && <optgroup label={match.participantHome}>{eligiblePlayers.filter(player=>player.teamId===match.homeTeamId).map(player=><option value={player.id} key={player.id}>{player.displayName}</option>)}</optgroup>}
-                {awayGoals > 0 && <optgroup label={match.participantAway}>{eligiblePlayers.filter(player=>player.teamId===match.awayTeamId).map(player=><option value={player.id} key={player.id}>{player.displayName}</option>)}</optgroup>}
-              </select>
+              <ScorerPlayerSelect
+                index={index}
+                row={row}
+                match={match}
+                homeGoals={homeGoals}
+                awayGoals={awayGoals}
+                eligiblePlayers={eligiblePlayers}
+                query={scorerQueries[index] ?? ''}
+                onQueryChange={setScorerQuery}
+                onSelect={teamPlayerId => selectScorerPlayer(index, teamPlayerId)}
+                selectRef={element => { scorerSelectRefs.current[index] = element }}
+                focusGoals={() => focusScorerGoals(index)}
+              />
               )}
               <input ref={element => { scorerGoalsRefs.current[index] = element }} aria-label="Cantidad de goles" type="number" min={1} max={99} inputMode="numeric" value={row.goals} onFocus={selectValue} onChange={event=>setScorers(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,goals:Math.max(1,Number(event.target.value)),confirmed:false}:item))} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();confirmScorer(index)}}}/>
               <div className="result-scorer-row__actions">
                 {!row.confirmed && <button type="button" className="btn btn-primary" onClick={()=>confirmScorer(index)}>Confirmar</button>}
                 {row.confirmed && <span className="result-scorer-row__confirmed">{row.isOwnGoal ? 'Autogol asignado' : 'Asignado'}</span>}
                 {!row.confirmed && <button type="button" className="btn btn-tertiary" onClick={()=>toggleOwnGoal(index)}>{row.isOwnGoal ? 'Es de un jugador' : 'Es autogol'}</button>}
-                <button type="button" className="btn btn-tertiary" onClick={()=>setScorers(current=>current.filter((_,itemIndex)=>itemIndex!==index))}>Quitar</button>
+                <button type="button" className="btn btn-tertiary" onClick={()=>removeScorer(index)}>Quitar</button>
               </div>
             </div>)}
             <button ref={addScorerRef} type="button" className="btn btn-secondary" disabled={!canAddScorer} onClick={addScorer}>+ Agregar goleador</button>

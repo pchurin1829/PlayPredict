@@ -7,6 +7,7 @@ import ComingSoonBadge from '../components/player/ComingSoonBadge'
 import ConfirmModal from '../components/ConfirmModal'
 import TeamBadge from '../components/player/TeamBadge'
 import QuickPreferredPlayerPicker from '../components/player/QuickPreferredPlayerPicker'
+import PredictionPointsBreakdown from '../components/player/PredictionPointsBreakdown'
 import TieBreakPolicyModal from '../components/player/TieBreakPolicyModal'
 import AwardStandingsTable from '../components/player/AwardStandingsTable'
 import { useAuth } from '../auth/AuthContext'
@@ -762,12 +763,7 @@ export default function LeagueDetailPage() {
                                     <span className="pp-match-card__result-label">Puntos</span>
                                     <span className={`pp-match-card__result-points ${(m.myPrediction.points ?? 0) > 0 ? 'pp-match-card__result-points--positive' : ''}`}>{m.predictionEligible ? `${m.myPrediction.points ?? 0} pts` : 'No elegible en esta Liga'}</span>
                                   </div>
-                                  {m.myPrediction.evaluationLabel && (
-                                    <div className="pp-match-card__result-row">
-                                      <span className="pp-match-card__result-label">Motivo</span>
-                                      <span className="pp-match-card__result-value">{m.myPrediction.evaluationLabel}</span>
-                                    </div>
-                                  )}
+                                  <PredictionPointsBreakdown prediction={m.myPrediction} />
                                 </>
                               ) : (
                                 <div className="pp-match-card__result-row">

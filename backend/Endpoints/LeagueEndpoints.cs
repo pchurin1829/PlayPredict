@@ -141,6 +141,11 @@ public static class LeagueEndpoints
                 return Results.NotFound();
             }
 
+            if (league.LeagueType == LeagueType.Private)
+            {
+                return Forbidden("Para unirte a una Liga de Amigos necesitás un código de invitación.");
+            }
+
             if (!league.IsActive)
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>

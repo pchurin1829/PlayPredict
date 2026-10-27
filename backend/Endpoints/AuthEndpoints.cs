@@ -7,6 +7,7 @@ using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Dtos;
 using PlayPredict.Api.Security;
 using PlayPredict.Api.Services;
+using PlayPredict.Api.LoginAppearance;
 
 namespace PlayPredict.Api.Endpoints;
 
@@ -27,9 +28,25 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
 
-        group.MapPost("/register", async (RegisterDto dto, PlayPredictDbContext db, JwtTokenService jwt) =>
+        group.MapPost("/register", async (RegisterDto dto, PlayPredictDbContext db, JwtTokenService jwt, ILoginAppearanceCompanyResolver companyResolver, CancellationToken cancellationToken) =>
         {
+            int companyId;
+            try
+            {
+                companyId = await companyResolver.ResolvePublicCompanyIdAsync(cancellationToken);
+            }
+            catch (LoginAppearanceConfigurationException)
+            {
+                return Results.Json(new { code = "PUBLIC_COMPANY_NOT_CONFIGURED", message = "La empresa pública del registro no está configurada." }, statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+
+            var registrationCompany = await db.Companies.FirstOrDefaultAsync(c => c.Id == companyId && c.IsActive, cancellationToken);
+            if (registrationCompany is null)
+                return Results.Json(new { code = "PUBLIC_COMPANY_NOT_CONFIGURED", message = "La empresa pública del registro no está configurada." }, statusCode: StatusCodes.Status503ServiceUnavailable);
+
             var errors = ValidateRegister(dto);
+            if (registrationCompany.RequireAdultConfirmation && !dto.IsAdultConfirmed)
+                errors["isAdultConfirmed"] = ["Debés declarar que sos mayor de 18 años."];
             if (errors.Count > 0)
             {
                 return Results.ValidationProblem(errors);
@@ -45,11 +62,7 @@ public static class AuthEndpoints
                 });
             }
 
-            var company = await db.Companies.OrderBy(c => c.Id).FirstOrDefaultAsync(c => c.IsActive);
-            if (company is null)
-            {
-                return Results.Problem("No hay una empresa configurada.", statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var company = registrationCompany;
 
             var userRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == RoleNames.Player);
             if (userRole is null)
@@ -64,7 +77,8 @@ public static class AuthEndpoints
                 LastName = dto.LastName.Trim(),
                 Email = email,
                 IsActive = true,
-                CreatedAtUtc = DateTime.UtcNow
+                CreatedAtUtc = DateTime.UtcNow,
+                AdultConfirmedAtUtc = company.RequireAdultConfirmation ? DateTime.UtcNow : null
             };
 
             var hasher = new PasswordHasher<User>();

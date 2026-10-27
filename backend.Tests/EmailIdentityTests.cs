@@ -20,6 +20,7 @@ using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Domain.Entities;
 using PlayPredict.Api.Dtos;
 using PlayPredict.Api.Endpoints;
+using PlayPredict.Api.LoginAppearance;
 using PlayPredict.Api.Security;
 using PlayPredict.Api.Services;
 using Xunit;
@@ -198,6 +199,7 @@ public sealed class EmailIdentityTests
             const string key = "email-tests-only-signing-key-012345678901234567890";
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { ["Jwt:Key"] = key, ["Jwt:Issuer"] = "email-tests", ["Jwt:Audience"] = "email-tests" });
             builder.Services.AddSingleton<JwtTokenService>();
+            builder.Services.AddSingleton<ILoginAppearanceCompanyResolver, TestPublicCompanyResolver>();
             builder.Services.AddAuthRateLimiting();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o => o.TokenValidationParameters = new TokenValidationParameters
             {
@@ -246,5 +248,10 @@ public sealed class EmailIdentityTests
             return await action(scope.ServiceProvider.GetRequiredService<PlayPredictDbContext>());
         }
         public async ValueTask DisposeAsync() { Client.Dispose(); await app.DisposeAsync(); await connection.DisposeAsync(); }
+    }
+
+    private sealed class TestPublicCompanyResolver : ILoginAppearanceCompanyResolver
+    {
+        public Task<int> ResolvePublicCompanyIdAsync(CancellationToken cancellationToken = default) => Task.FromResult(1);
     }
 }

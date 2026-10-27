@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { AuthResponse } from '../api/types'
@@ -21,6 +21,17 @@ export default function RegisterPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+  const [requireAdultConfirmation, setRequireAdultConfirmation] = useState(false)
+  const [adultConfirmed, setAdultConfirmed] = useState(false)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [registrationSettingsError, setRegistrationSettingsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    api.get<{ requireAdultConfirmation: boolean }>('/public/registration-settings')
+      .then(settings => { setRequireAdultConfirmation(settings.requireAdultConfirmation); setRegistrationSettingsError(null) })
+      .catch(() => setRegistrationSettingsError('No se pudo cargar la configuración del registro. Intentá nuevamente más tarde.'))
+      .finally(() => setSettingsLoaded(true))
+  }, [])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -30,6 +41,10 @@ export default function RegisterPage() {
     const errors = validateEmailPair(email, confirmEmail)
     if (Object.keys(errors).length) {
       setFieldErrors(errors)
+      return
+    }
+    if (requireAdultConfirmation && !adultConfirmed) {
+      setFieldErrors({ isAdultConfirmed: ['Debés declarar que sos mayor de 18 años.'] })
       return
     }
 
@@ -42,6 +57,7 @@ export default function RegisterPage() {
         email: normalizeEmail(email),
         confirmEmail: normalizeEmail(confirmEmail),
         password,
+        isAdultConfirmed: adultConfirmed,
       })
       login(response.token, response.user)
       const target = response.user.roles.includes('ADMIN') ? '/admin' : '/'
@@ -82,6 +98,7 @@ export default function RegisterPage() {
           <h1>Crear cuenta</h1>
 
           {error && <StatusMessage kind="error" message={error} />}
+          {registrationSettingsError && <StatusMessage kind="error" message={registrationSettingsError} />}
 
           <div className="pp-register__row">
             <div className="pp-register__field">
@@ -197,8 +214,25 @@ export default function RegisterPage() {
             <span className="pp-register__hint">Mínimo 10 caracteres.</span>
           </div>
 
+          {requireAdultConfirmation && (
+            <div className="pp-register__field">
+              <label className="pp-register__legal-check">
+                <input type="checkbox" checked={adultConfirmed} onChange={e => setAdultConfirmed(e.target.checked)} />
+                <span>Declaro que soy mayor de 18 años</span>
+              </label>
+              {fieldErrors.isAdultConfirmed && <span className="pp-register__field-error">{fieldErrors.isAdultConfirmed[0]}</span>}
+            </div>
+          )}
+
+          <p className="pp-register__legal-note">Documentos provisionales en revisión legal. Su publicación no implica aprobación.</p>
+          <p className="pp-register__legal-links">
+            <Link to="/terminos-y-condiciones">Términos y Condiciones</Link>
+            {' · '}
+            <Link to="/politica-de-privacidad">Política de Privacidad</Link>
+          </p>
+
           <div className="pp-register__actions">
-            <button type="submit" className="pp-register__submit" disabled={saving}>
+            <button type="submit" className="pp-register__submit" disabled={saving || !settingsLoaded || !!registrationSettingsError}>
               {saving ? 'Creando cuenta...' : 'Crear cuenta'}
             </button>
           </div>

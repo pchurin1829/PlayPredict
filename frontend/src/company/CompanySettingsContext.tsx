@@ -4,7 +4,7 @@ import type { CompanySettings } from '../api/types'
 
 const FALLBACK: CompanySettings = { name:'PlayPredict', shortName:'PlayPredict', logoUrl:null, generalExactScorePoints:6,
   generalCorrectOutcomePoints:3, generalIncorrectPoints:0, generalPreferredPlayerEnabled:true,
-  generalPreferredPlayerPointsPerGoal:2, generalPreferredPlayerPositions:['Mediocampista','Delantero'] }
+  generalPreferredPlayerPointsPerGoal:2, generalPreferredPlayerPositions:['Mediocampista','Delantero'], requireAdultConfirmation:false }
 
 interface CompanySettingsContextValue {
   company: CompanySettings

@@ -1,0 +1,94 @@
+BORRADOR PARA REVISIÓN LEGAL — NO PUBLICAR SIN APROBACIÓN POLÍTICA DE
+PRIVACIDAD Y USO DE DATOS — COPA EL NENE Versión: 0.1 | Fecha:
+27/10/2026
+
+1.  RESPONSABLE DEL TRATAMIENTO El responsable del tratamiento de los
+    datos personales es [RAZÓN SOCIAL], CUIT [CUIT], domicilio
+    [DOMICILIO], correo de privacidad [EMAIL]. Esta política explica el
+    tratamiento de información de quienes utilizan la Aplicación de la
+    Copa El Nene.
+
+2.  DATOS QUE SE RECOPILAN Según las funciones efectivamente
+    habilitadas, pueden tratarse: nombre o alias, dirección de correo
+    electrónico, identificadores de cuenta, credenciales almacenadas de
+    manera protegida, preferencias deportivas, ligas, pronósticos,
+    puntuaciones, registros técnicos de acceso y comunicaciones de
+    soporte. [VERIFICAR INVENTARIO REAL DE CAMPOS, LOGS, COOKIES,
+    ANALÍTICA, IP, DATOS DE EDAD Y PROVEEDORES.] No se debe afirmar que
+    se recopilan datos que la Aplicación no solicita.
+
+3.  FINALIDADES Los datos se utilizan para crear y administrar cuentas;
+    autenticar participantes; registrar pronósticos; calcular
+    puntuaciones y rankings; prevenir fraude; atender consultas;
+    mantener seguridad y disponibilidad; y cumplir obligaciones legales.
+    La utilización de los datos para un futuro “Club de Socios El Nene”,
+    promociones comerciales, marketing o integración con sistemas de
+    venta NO queda automáticamente autorizada por participar en el
+    Juego. Esas finalidades deben informarse y, cuando corresponda,
+    solicitar consentimiento separado y específico.
+
+4.  FUNDAMENTO Y CONSENTIMIENTOS El tratamiento se realizará conforme a
+    la Ley argentina 25.326 y las demás normas aplicables, sobre las
+    bases jurídicas y autorizaciones que correspondan. Las opciones de
+    marketing, comunicaciones promocionales u otros usos no necesarios
+    para operar el Juego deben poder gestionarse separadamente, según la
+    normativa aplicable.
+
+5.  VISIBILIDAD DE RANKINGS Y DATOS DE OTROS USUARIOS La Aplicación
+    puede mostrar alias, posición, puntos y datos de participación en
+    rankings y ligas. [DEFINIR QUÉ INFORMACIÓN ES PÚBLICA, QUÉ SE
+    MUESTRA SOLO A INTEGRANTES DE UNA LIGA Y CÓMO SE PROTEGE LA
+    IDENTIDAD.] Se recomienda evitar publicar correos electrónicos,
+    teléfonos u otros datos personales innecesarios.
+
+6.  DESTINATARIOS Y PROVEEDORES Los datos podrán ser tratados por
+    proveedores tecnológicos indispensables para alojar y operar la
+    Aplicación, bajo las condiciones y salvaguardas que correspondan.
+    [IDENTIFICAR HOSTING, CORREO, ANALÍTICA, SERVICIOS EXTERNOS Y
+    EVENTUALES TRANSFERENCIAS INTERNACIONALES.] No se compartirán datos
+    con terceros para fines comerciales independientes sin la
+    información y autorizaciones legalmente exigibles.
+
+7.  CONSERVACIÓN Los datos se conservarán durante el tiempo necesario
+    para las finalidades informadas y los plazos legales aplicables.
+    [DEFINIR PLAZOS POR CUENTAS, PRONÓSTICOS, RANKINGS, COPIAS DE
+    SEGURIDAD Y REGISTROS DE SEGURIDAD.] Cumplidos esos plazos, se
+    eliminarán o anonimizarán cuando corresponda.
+
+8.  SEGURIDAD Se aplicarán medidas técnicas y organizativas razonables
+    para proteger los datos contra accesos no autorizados, pérdida,
+    alteración o divulgación. Ningún sistema puede garantizar seguridad
+    absoluta. [VALIDAR CONTROLES REALES: HTTPS, cifrado, contraseñas,
+    acceso administrativo, backups y respuesta a incidentes.]
+
+9.  DERECHOS DE LAS PERSONAS Las personas podrán ejercer los derechos de
+    acceso, rectificación, actualización y supresión que correspondan,
+    mediante [EMAIL Y PROCEDIMIENTO]. El responsable responderá conforme
+    a los plazos y requisitos legales. La Agencia de Acceso a la
+    Información Pública es la autoridad de control de la Ley 25.326. El
+    texto legal de referencia sobre el derecho de acceso y las demás
+    leyendas obligatorias deberá ser validado por el abogado.
+
+10. MENORES DE EDAD La política de tratamiento de datos de menores debe
+    ser coherente con los requisitos de participación aprobados. Una
+    casilla que declara mayoría de edad no verifica la edad real.
+    [DEFINIR SI SE EXCLUYE A MENORES Y QUÉ HACER ANTE CUENTAS
+    DETECTADAS.]
+
+11. COOKIES Y TECNOLOGÍAS SIMILARES [IDENTIFICAR COOKIES, ALMACENAMIENTO
+    LOCAL, IDENTIFICADORES DE SESIÓN, ANALÍTICA Y SUS FINALIDADES.]
+    Cuando corresponda, se informarán opciones de configuración y
+    consentimiento.
+
+12. MODIFICACIONES Y CONTACTO Esta política podrá actualizarse
+    informando la fecha de vigencia y notificando cambios relevantes
+    conforme a la normativa aplicable. Consultas de privacidad: [EMAIL].
+
+PENDIENTES PARA EL ABOGADO Y EL EQUIPO TÉCNICO - Identificar responsable
+y datos de contacto reales. - Auditar los datos efectivamente
+recolectados y los proveedores. - Definir publicación de alias y
+rankings. - Establecer plazos de conservación y procedimiento de baja. -
+Revisar textos de derechos ARCO y leyendas legales obligatorias. -
+Separar expresamente la participación en Copa El Nene de futuras
+finalidades comerciales o Club de Socios. - Confirmar política sobre
+menores, cookies, analítica y transferencias internacionales.

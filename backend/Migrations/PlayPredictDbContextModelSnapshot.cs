@@ -63,6 +63,10 @@ namespace PlayPredict.Api.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
+                    b.Property<bool>("RequireAdultConfirmation")
+                        .HasDefaultValue(false)
+                        .HasColumnType("boolean");
+
                     b.Property<string>("ShortName")
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)");
@@ -842,6 +846,17 @@ namespace PlayPredict.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AcceptedPrivacyVersion")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("AcceptedTermsVersion")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("AdultConfirmedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("CompanyId")
                         .HasColumnType("integer");
 
@@ -881,6 +896,12 @@ namespace PlayPredict.Api.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("PrivacyAcceptedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("TermsAcceptedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("TokenVersion")
                         .HasColumnType("integer");

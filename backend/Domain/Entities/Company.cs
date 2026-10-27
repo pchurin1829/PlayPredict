@@ -16,6 +16,7 @@ public class Company
     public bool GeneralPreferredPlayerEnabled { get; set; } = true;
     public int GeneralPreferredPlayerPointsPerGoal { get; set; } = 2;
     public PlayerPosition GeneralPreferredPlayerPositions { get; set; } = PlayerPosition.Midfielder | PlayerPosition.Forward;
+    public bool RequireAdultConfirmation { get; set; }
 
     public ICollection<User> Users { get; set; } = new List<User>();
     public ICollection<CompanyLoginImageSlot> LoginImageSlots { get; set; } = new List<CompanyLoginImageSlot>();

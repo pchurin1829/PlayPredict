@@ -16,6 +16,11 @@ public class User
     public DateTime? LockoutUntilUtc { get; set; }
     public int TokenVersion { get; set; }
     public bool MustChangePassword { get; set; }
+    public DateTime? AdultConfirmedAtUtc { get; set; }
+    public string? AcceptedTermsVersion { get; set; }
+    public DateTime? TermsAcceptedAtUtc { get; set; }
+    public string? AcceptedPrivacyVersion { get; set; }
+    public DateTime? PrivacyAcceptedAtUtc { get; set; }
 
     public Company Company { get; set; } = null!;
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();

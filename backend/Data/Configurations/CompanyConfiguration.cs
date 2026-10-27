@@ -25,6 +25,9 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
 
         builder.Property(c => c.CreatedAtUtc)
             .IsRequired();
+        builder.Property(c => c.RequireAdultConfirmation)
+            .IsRequired()
+            .HasDefaultValue(false);
         builder.Property(c => c.GeneralPreferredPlayerPositions).IsRequired();
 
         builder.HasIndex(c => c.Name)

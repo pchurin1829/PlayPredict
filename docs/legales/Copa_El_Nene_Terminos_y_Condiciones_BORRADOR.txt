@@ -1,0 +1,103 @@
+BORRADOR PARA REVISIÓN LEGAL — NO PUBLICAR SIN APROBACIÓN TÉRMINOS Y
+CONDICIONES DE PARTICIPACIÓN — COPA EL NENE Versión: 0.1 | Fecha:
+27/10/2026
+
+1.  ORGANIZADOR E IDENTIFICACIÓN La actividad denominada “Copa El Nene”
+    (en adelante, el “Juego”) es organizada por [RAZÓN SOCIAL], CUIT
+    [CUIT], con domicilio en [DOMICILIO], correo de contacto [EMAIL] (en
+    adelante, el “Organizador”). La aplicación utilizada para participar
+    se denomina, a efectos de estos términos, “la Aplicación”.
+
+2.  OBJETO Y ALCANCE La Aplicación permite a usuarios registrados
+    formular pronósticos sobre resultados deportivos y participar en
+    clasificaciones o ligas, conforme a las reglas publicadas en cada
+    competencia. La participación, vigencia territorial, calendario y
+    condiciones particulares serán las informadas en la Aplicación y en
+    las bases de cada edición.
+
+3.  REQUISITOS DE PARTICIPACIÓN Y EDAD La participación está sujeta a
+    los requisitos legales y de edad definidos por el Organizador y
+    aprobados por su asesoría legal. [EL ABOGADO DEBE ELEGIR UNA
+    REDACCIÓN CONSISTENTE: participación exclusiva de mayores de 18
+    años; o régimen que contemple menores con los consentimientos y
+    restricciones correspondientes.] Cuando la configuración de la
+    Aplicación exija declaración de mayoría de edad, el participante
+    deberá confirmar que tiene al menos 18 años. Esa declaración no
+    constituye por sí sola una verificación documental de identidad o
+    edad. El Organizador podrá solicitar documentación o comprobaciones
+    adicionales cuando corresponda legalmente, especialmente antes de
+    entregar premios. La ausencia de la casilla de declaración de edad
+    no modifica los requisitos de participación establecidos en estas
+    condiciones.
+
+4.  REGISTRO Y CUENTA El participante debe proporcionar información
+    veraz y mantener la confidencialidad de sus credenciales. Cada
+    persona podrá mantener [CANTIDAD] cuenta(s), según las reglas que
+    establezca el Organizador. Se prohíben la suplantación de identidad,
+    las cuentas fraudulentas y las acciones destinadas a alterar la
+    competencia.
+
+5.  MECÁNICA DEL JUEGO Los pronósticos deberán registrarse dentro de los
+    plazos que muestre la Aplicación. Las reglas de puntuación,
+    criterios de desempate, correcciones, cancelaciones y fuentes
+    oficiales de resultados deberán estar publicadas y disponibles antes
+    de cada competencia. [VALIDAR MECÁNICA ACTUAL: puntos por resultado
+    acertado, jugadores preferidos/goleadores, cierres de pronósticos y
+    reglas por liga.] Los resultados deportivos y las decisiones de las
+    autoridades competentes serán considerados conforme a las reglas
+    específicas publicadas.
+
+6.  PARTICIPACIÓN GRATUITA, PREMIOS Y PROMOCIONES [CONFIRMAR SI LA
+    PARTICIPACIÓN ES GRATUITA Y SI EXISTEN PREMIOS.] Si hubiera premios,
+    deberán publicarse previamente las bases de la promoción,
+    elegibilidad, fechas, mecanismos de adjudicación, entrega, impuestos
+    y restricciones aplicables. Cualquier modalidad que pudiera ser
+    considerada apuesta o juego de azar requiere evaluación jurídica
+    específica antes de su implementación. No se presume la existencia
+    de premios ni contraprestaciones por el solo uso de la Aplicación.
+
+7.  USO ACEPTABLE No se permite interferir con el servicio, manipular
+    pronósticos o clasificaciones, utilizar bots no autorizados,
+    explotar fallas, acceder a cuentas ajenas ni cargar contenido
+    ilícito. Las medidas ante incumplimientos deberán ser proporcionales
+    y comunicadas de acuerdo con la normativa aplicable.
+
+8.  DISPONIBILIDAD Y ERRORES El Organizador procurará mantener el
+    servicio disponible, pero pueden producirse tareas de mantenimiento,
+    fallas técnicas o interrupciones. Los procedimientos para resolver
+    errores de carga, resultados controvertidos y reclamos serán
+    [PROCEDIMIENTO Y PLAZO]. Ninguna disposición limita derechos
+    irrenunciables reconocidos por la legislación aplicable.
+
+9.  SUSPENSIÓN O BAJA El Organizador podrá adoptar medidas justificadas
+    ante fraude o incumplimientos, respetando las reglas publicadas, la
+    posibilidad de reclamo y las obligaciones legales. El usuario podrá
+    solicitar la baja de su cuenta mediante [CANAL Y PROCEDIMIENTO], sin
+    perjuicio de las obligaciones de conservación de datos que
+    correspondan.
+
+10. DATOS PERSONALES El tratamiento de datos personales se describe en
+    la Política de Privacidad, accesible desde la Aplicación. La
+    aceptación de estos términos no sustituye los consentimientos
+    específicos que puedan requerirse para finalidades opcionales, como
+    publicidad personalizada.
+
+11. CAMBIOS EN LOS TÉRMINOS Las modificaciones serán informadas
+    indicando fecha de vigencia. Los cambios sustanciales requerirán el
+    mecanismo de notificación y, cuando corresponda, nueva aceptación
+    que determine la normativa aplicable.
+
+12. LEGISLACIÓN, CONSULTAS Y RECLAMOS Se aplicará la normativa argentina
+    que resulte pertinente, incluidas las disposiciones de protección de
+    consumidores y datos personales cuando correspondan. Consultas y
+    reclamos: [EMAIL / CANAL]. La jurisdicción y los mecanismos de
+    resolución se determinarán respetando las normas imperativas
+    aplicables.
+
+PENDIENTES PARA EL ABOGADO - Razón social, CUIT, domicilio, contacto y
+jurisdicción. - Edad mínima real y procedimiento para menores o
+exclusión. - Reglas exactas de puntuación, desempates, cierres y
+rectificaciones. - Gratuidad, premios, sorteos, publicidad y bases
+promocionales. - Plazos de reclamos, baja y vigencia de cada edición. -
+Compatibilidad con normativa argentina, provincial y municipal
+aplicable.

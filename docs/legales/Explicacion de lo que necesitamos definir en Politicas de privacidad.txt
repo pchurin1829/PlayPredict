@@ -1,0 +1,85 @@
+# COPA EL NENE
+## Explicación de los puntos pendientes de la Política de Privacidad
+
+Este documento explica qué información necesitamos definir para que el abogado pueda preparar y aprobar la Política de Privacidad de la aplicación.
+
+**1. ¿Quién es responsable de los datos?**
+
+Debemos indicar qué empresa es responsable de la información de los participantes: razón social, CUIT, domicilio y un correo electrónico donde los usuarios puedan hacer consultas o reclamos.
+
+**2. ¿Qué datos guardamos y quiénes pueden acceder a ellos?**
+
+Necesitamos identificar qué información solicita y almacena la aplicación: por ejemplo, nombre, correo electrónico, usuario, pronósticos y puntos obtenidos.
+
+También debemos identificar qué empresas externas intervienen en el funcionamiento, como el proveedor del servidor donde se guardan los datos.
+
+El equipo técnico verificará exactamente qué información se almacena.
+
+**3. ¿Qué información pueden ver otros participantes?**
+
+La aplicación muestra clasificaciones o rankings. Debemos definir qué datos serán visibles para los demás jugadores.
+
+Por ejemplo, podemos mostrar el nombre de usuario, los puntos y la posición, pero evitar publicar datos personales como el correo electrónico.
+
+**4. ¿Durante cuánto tiempo guardaremos los datos?**
+
+Debemos establecer cuánto tiempo conservaremos las cuentas y los resultados de los participantes.
+
+También debemos definir qué sucede cuando alguien solicita darse de baja: cómo puede hacerlo, qué información se elimina y qué datos deben conservarse por razones legales o de seguridad.
+
+**5. ¿Qué derechos tienen los participantes sobre sus datos?**
+
+La legislación argentina reconoce derechos relacionados con la información personal.
+
+Se conocen habitualmente como derechos ARCO:
+
+- **Acceso:** saber qué datos tenemos de una persona.
+- **Rectificación:** corregir información incorrecta.
+- **Cancelación:** solicitar la eliminación de datos cuando corresponda.
+- **Oposición:** oponerse a determinados usos de sus datos, cuando resulte aplicable.
+
+El abogado deberá verificar cómo informar estos derechos y cuáles son las leyendas legales obligatorias según la normativa argentina.
+
+**6. ¿Podemos utilizar los datos para un futuro Club de Socios El Nene?**
+
+Este punto es especialmente importante.
+
+Una persona que se registra para participar en la Copa El Nene no está autorizando automáticamente que sus datos se utilicen para publicidad, promociones comerciales o un futuro Club de Socios.
+
+Si la empresa desea ofrecer esos servicios, debemos definir cómo informar esa finalidad y solicitar la autorización correspondiente cuando sea necesaria.
+
+La idea es permitir que la Copa El Nene se convierta en una herramienta para futuras iniciativas comerciales, pero respetando las decisiones y los derechos de cada participante.
+
+**7. ¿Qué hacemos con los menores de edad?**
+
+El abogado deberá determinar si la participación estará reservada exclusivamente a mayores de 18 años.
+
+La aplicación podrá mostrar una casilla donde el participante declare ser mayor de edad, según una configuración administrable.
+
+Sin embargo, esa declaración no demuestra por sí sola la edad real. Debemos definir qué medidas adicionales serán necesarias, especialmente si existen premios.
+
+**8. ¿Qué son las cookies y la analítica?**
+
+Las cookies y otras tecnologías similares permiten, por ejemplo, mantener iniciada una sesión o recordar determinadas preferencias.
+
+La analítica permite conocer cómo se utiliza la aplicación: cantidad de visitas, pantallas más utilizadas o posibles errores.
+
+El equipo técnico deberá confirmar cuáles de estas tecnologías utiliza realmente PlayPredict, para informar correctamente a los participantes.
+
+**9. ¿Qué significa transferencia internacional de datos?**
+
+Si alguna empresa que presta servicios a la aplicación guarda o procesa información fuera de Argentina, podría existir una transferencia internacional de datos.
+
+El equipo técnico deberá identificar si ocurre y el abogado determinará qué información y garantías legales corresponden.
+
+---
+
+## ¿Qué necesitamos de cada parte?
+
+**La empresa El Nene:** identificar al responsable, decidir las condiciones de participación, definir qué información será pública y establecer si desea utilizar los datos para futuras promociones o un Club de Socios.
+
+**El equipo técnico de PlayPredict:** informar qué datos se guardan realmente, dónde se almacenan, qué proveedores intervienen, cómo se protegen y cómo puede solicitarse una baja.
+
+**El abogado:** revisar esas definiciones, establecer los requisitos legales aplicables y aprobar la versión definitiva de los documentos.
+
+**Objetivo:** que los participantes conozcan claramente las reglas, que sus datos se utilicen de forma transparente y que la empresa pueda desarrollar nuevas funcionalidades sobre una base legal adecuada.

@@ -1,0 +1,10 @@
+.pp-legal { min-height: 100vh; color: #18222f; background: #f4f6f8; }
+.pp-legal__header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem max(1.5rem, calc((100vw - 900px) / 2)); background: #102538; color: white; }
+.pp-legal__header a { color: white; font-weight: 700; text-decoration: none; }
+.pp-legal__header span { color: #ffe3a3; font-size: .75rem; font-weight: 700; }
+.pp-legal__content { max-width: 900px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px; line-height: 1.65; }
+.pp-legal__content h1 { margin-top: 0; }
+.pp-legal__content h2 { margin-top: 1.7rem; font-size: 1.15rem; }
+.pp-legal__status, .pp-legal__pending { padding: .85rem 1rem; border-left: 4px solid #d38d14; background: #fff7e6; }
+.pp-legal__content a { color: #1769aa; }
+@media (max-width: 640px) { .pp-legal__content { margin: 1rem; padding: 1.25rem; } }

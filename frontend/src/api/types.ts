@@ -119,6 +119,7 @@ export interface CompanySettings {
   generalPreferredPlayerEnabled: boolean
   generalPreferredPlayerPointsPerGoal: number
   generalPreferredPlayerPositions: PlayerPosition[]
+  requireAdultConfirmation: boolean
 }
 
 export type LoginImageFitMode = 'Contain' | 'Cover'

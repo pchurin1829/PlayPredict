@@ -30,6 +30,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.CreatedAtUtc)
             .IsRequired();
 
+        builder.Property(u => u.AcceptedTermsVersion).HasMaxLength(50);
+        builder.Property(u => u.AcceptedPrivacyVersion).HasMaxLength(50);
+
         builder.HasIndex(u => u.Email)
             .IsUnique();
     }

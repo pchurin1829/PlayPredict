@@ -1,0 +1,7 @@
+# Implementación provisional de documentos y registro
+
+- Las rutas `/terminos-y-condiciones` y `/politica-de-privacidad` son públicas y rotulan el contenido como borrador no aprobado.
+- La aceptación de versiones legales no se activa mientras ambos documentos sigan en revisión. Los campos `AcceptedTermsVersion`, `TermsAcceptedAtUtc`, `AcceptedPrivacyVersion` y `PrivacyAcceptedAtUtc` son nullable para mantener compatibilidad con las cuentas existentes y permitir registrar versiones y fechas en una etapa futura. Ninguna cuenta recibe aceptación durante esta etapa.
+- `RequireAdultConfirmation` se guarda por empresa, tiene valor predeterminado `false`, se gestiona desde Configuración de administrador y se publica en `/api/public/registration-settings`. Tanto la consulta pública como el registro usan el resolvedor de empresa pública existente; si no hay un tenant público inequívoco, fallan cerrados con `503`. El servidor evalúa la opción guardada al registrar. `AdultConfirmedAtUtc` solo registra la declaración marcada cuando la opción está activa; no acredita edad ni identidad.
+- La migración `20261027141751_AddRegistrationLegalAndAdultSettings` agrega configuración y campos opcionales. Debe revisarse y aplicarse en un despliegue posterior autorizado. No fue ejecutada en esta etapa.
+- Antes de activar la aceptación de documentos, publicar los textos aprobados, asignar versiones definitivas, habilitar la validación obligatoria del servidor y añadir la captura de esas versiones en el registro.

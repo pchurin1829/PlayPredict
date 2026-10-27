@@ -5,7 +5,8 @@ public record RegisterDto(
     string LastName,
     string Email,
     string Password,
-    string? ConfirmEmail = null);
+    string? ConfirmEmail = null,
+    bool IsAdultConfirmed = false);
 
 public record LoginDto(
     string Email,

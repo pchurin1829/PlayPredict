@@ -4,6 +4,7 @@ using PlayPredict.Api.Data;
 using PlayPredict.Api.Domain.Constants;
 using PlayPredict.Api.Services;
 using PlayPredict.Api.Domain.Enums;
+using PlayPredict.Api.LoginAppearance;
 
 namespace PlayPredict.Api.Endpoints;
 
@@ -11,6 +12,22 @@ public static class CompanySettingsEndpoints
 {
     public static void MapCompanySettingsEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/api/public/registration-settings", async (PlayPredictDbContext db, ILoginAppearanceCompanyResolver resolver, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var companyId = await resolver.ResolvePublicCompanyIdAsync(cancellationToken);
+                var company = await db.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Id == companyId && c.IsActive, cancellationToken);
+                return company is null
+                    ? Results.Json(new { code = "PUBLIC_COMPANY_NOT_CONFIGURED", message = "La empresa pública del registro no está configurada." }, statusCode: StatusCodes.Status503ServiceUnavailable)
+                    : Results.Ok(new PublicRegistrationSettingsDto(company.RequireAdultConfirmation));
+            }
+            catch (LoginAppearanceConfigurationException)
+            {
+                return Results.Json(new { code = "PUBLIC_COMPANY_NOT_CONFIGURED", message = "La empresa pública del registro no está configurada." }, statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        }).WithTags("Public Settings");
+
         var group = app.MapGroup("/api/company-settings")
             .WithTags("Company Settings")
             .RequireAuthorization();
@@ -23,7 +40,7 @@ public static class CompanySettingsEndpoints
                 : await db.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Id == companyId);
 
             return Results.Ok(company is null
-                ? new CompanySettingsDto("PlayPredict", "PlayPredict", null, 6, 3, 0, true, 2, ["Mediocampista", "Delantero"])
+                ? new CompanySettingsDto("PlayPredict", "PlayPredict", null, 6, 3, 0, true, 2, ["Mediocampista", "Delantero"], false)
                 : ToDto(company));
         });
 
@@ -49,6 +66,8 @@ public static class CompanySettingsEndpoints
             company.GeneralPreferredPlayerEnabled = dto.GeneralPreferredPlayerEnabled;
             company.GeneralPreferredPlayerPointsPerGoal = dto.GeneralPreferredPlayerPointsPerGoal;
             company.GeneralPreferredPlayerPositions = ParsePositions(dto.GeneralPreferredPlayerPositions);
+            if (dto.RequireAdultConfirmation.HasValue)
+                company.RequireAdultConfirmation = dto.RequireAdultConfirmation.Value;
             await db.SaveChangesAsync();
 
             return Results.Ok(ToDto(company));
@@ -101,7 +120,7 @@ public static class CompanySettingsEndpoints
 
     private static CompanySettingsDto ToDto(PlayPredict.Api.Domain.Entities.Company company) => new(company.Name, company.ShortName ?? company.Name, company.LogoUrl,
         company.GeneralExactScorePoints, company.GeneralCorrectOutcomePoints, company.GeneralIncorrectPoints,
-        company.GeneralPreferredPlayerEnabled, company.GeneralPreferredPlayerPointsPerGoal, PlayerPositionCatalog.ToLabels(company.GeneralPreferredPlayerPositions));
+        company.GeneralPreferredPlayerEnabled, company.GeneralPreferredPlayerPointsPerGoal, PlayerPositionCatalog.ToLabels(company.GeneralPreferredPlayerPositions), company.RequireAdultConfirmation);
 
     private static PlayerPosition ParsePositions(IEnumerable<string> labels)
     {
@@ -113,7 +132,8 @@ public static class CompanySettingsEndpoints
 
 public record CompanySettingsDto(string Name, string ShortName, string? LogoUrl, int GeneralExactScorePoints,
     int GeneralCorrectOutcomePoints, int GeneralIncorrectPoints, bool GeneralPreferredPlayerEnabled,
-    int GeneralPreferredPlayerPointsPerGoal, IReadOnlyList<string> GeneralPreferredPlayerPositions);
+    int GeneralPreferredPlayerPointsPerGoal, IReadOnlyList<string> GeneralPreferredPlayerPositions, bool RequireAdultConfirmation);
 public record UpdateCompanySettingsDto(string Name, string ShortName, string? LogoUrl, int GeneralExactScorePoints,
     int GeneralCorrectOutcomePoints, int GeneralIncorrectPoints, bool GeneralPreferredPlayerEnabled,
-    int GeneralPreferredPlayerPointsPerGoal, IReadOnlyList<string> GeneralPreferredPlayerPositions);
+    int GeneralPreferredPlayerPointsPerGoal, IReadOnlyList<string> GeneralPreferredPlayerPositions, bool? RequireAdultConfirmation = null);
+public record PublicRegistrationSettingsDto(bool RequireAdultConfirmation);

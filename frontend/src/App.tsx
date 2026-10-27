@@ -46,6 +46,7 @@ import AdminSettingsPage from './pages/AdminSettingsPage'
 import AdminLoginAppearancePage from './pages/AdminLoginAppearancePage'
 import AdminWelcomeCampaignPage from './pages/AdminWelcomeCampaignPage'
 import WelcomeCampaignInterstitialPage from './pages/WelcomeCampaignInterstitialPage'
+import LegalDocumentPage from './pages/LegalDocumentPage'
 import { CompanySettingsProvider } from './company/CompanySettingsContext'
 import './components/admin.css'
 import './components/player/ComingSoonBadge.css'
@@ -61,6 +62,8 @@ function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/terminos-y-condiciones" element={<LegalDocumentPage document="terms" />} />
+      <Route path="/politica-de-privacidad" element={<LegalDocumentPage document="privacy" />} />
       <Route path="/welcome" element={<RequireAuth><WelcomeCampaignInterstitialPage /></RequireAuth>} />
 
       <Route

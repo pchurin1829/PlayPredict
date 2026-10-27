@@ -288,3 +288,7 @@
     margin-top: 1rem;
   }
 }
+.pp-register__legal-check { display: flex; align-items: flex-start; gap: .65rem; }
+.pp-register__legal-check input { margin-top: .2rem; }
+.pp-register__legal-note { font-size: .78rem; opacity: .8; }
+.pp-register__legal-links, .pp-login__legal-links { font-size: .85rem; text-align: center; }

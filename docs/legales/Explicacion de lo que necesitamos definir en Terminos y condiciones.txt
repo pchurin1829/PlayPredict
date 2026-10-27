@@ -1,0 +1,150 @@
+# COPA EL NENE
+## Explicación de los puntos pendientes de los Términos y Condiciones
+
+Este documento explica, en palabras sencillas, qué aspectos necesitamos definir para que el abogado pueda preparar y aprobar los Términos y Condiciones de participación en la Copa El Nene.
+
+El objetivo es establecer reglas claras, evitar conflictos y proteger tanto a los participantes como a la empresa organizadora.
+
+### 1. ¿Qué empresa organiza la Copa El Nene?
+
+Debemos identificar legalmente a la empresa responsable de organizar el juego.
+
+Para eso necesitamos:
+
+- Razón social y CUIT.
+- Domicilio legal.
+- Correo electrónico o medio de contacto para consultas y reclamos.
+- Jurisdicción y condiciones legales aplicables.
+
+**¿Por qué es importante?**
+
+Porque los participantes deben saber quién organiza la competencia y a quién dirigirse si tienen algún inconveniente.
+
+El abogado determinará qué información debe publicarse y cómo establecer la jurisdicción respetando los derechos de los participantes.
+
+### 2. ¿Pueden participar menores de 18 años?
+
+Debemos decidir si la Copa El Nene estará destinada exclusivamente a mayores de edad o si también podrán participar menores bajo determinadas condiciones.
+
+La aplicación tendrá una opción configurable para mostrar una casilla que diga:
+
+**"Declaro que soy mayor de 18 años".**
+
+Esta casilla estará desactivada por defecto y podrá activarse desde la configuración de la aplicación.
+
+Sin embargo, el abogado debe determinar si corresponde exigir mayoría de edad, independientemente de que la casilla esté visible o no.
+
+También deberá establecer qué hacer si se detecta que un menor se registró o participa sin cumplir los requisitos.
+
+**¿Por qué es importante?**
+
+Porque una simple declaración no garantiza que el participante realmente sea mayor de edad. Además, si existen premios, pueden aplicarse restricciones adicionales.
+
+### 3. ¿Cuáles son las reglas exactas del juego?
+
+Necesitamos dejar claramente establecido cómo funciona la Copa El Nene.
+
+Por ejemplo:
+
+- Cuántos puntos se obtienen por acertar un resultado.
+- Cómo se asignan los puntos adicionales por jugadores preferidos o goleadores, según las reglas vigentes.
+- Qué sucede cuando dos participantes terminan con el mismo puntaje.
+- Hasta qué momento se puede ingresar o modificar un pronóstico.
+- Qué sucede si un partido se suspende, posterga o cancela.
+- Cómo se corrigen resultados o puntuaciones cargados incorrectamente.
+
+**¿Por qué es importante?**
+
+Porque todos los participantes deben competir bajo las mismas reglas y conocerlas antes de jugar.
+
+Las reglas deben coincidir exactamente con el funcionamiento real de PlayPredict. El equipo técnico verificará estos detalles.
+
+### 4. ¿La participación es gratuita? ¿Habrá premios?
+
+Debemos definir si participar en la Copa El Nene será completamente gratuito y si se entregarán premios.
+
+Si existen premios, habrá que establecer:
+
+- Qué premios se entregarán y quiénes podrán recibirlos.
+- Cómo se determinarán los ganadores.
+- Cuándo y dónde se entregarán.
+- Qué sucede si un ganador no cumple los requisitos.
+- Si habrá sorteos adicionales o promociones comerciales.
+- Si será necesario presentar documentación para recibirlos.
+
+También debemos definir qué publicidad podrá aparecer dentro de la aplicación y cómo se informarán las promociones.
+
+**¿Por qué es importante?**
+
+Porque las promociones, concursos, sorteos y premios pueden estar sujetos a requisitos legales específicos.
+
+El abogado deberá determinar si necesitamos bases y condiciones particulares para cada promoción, además de los Términos y Condiciones generales.
+
+### 5. ¿Cuánto tiempo tienen los participantes para reclamar o darse de baja?
+
+Debemos establecer procedimientos claros para resolver inconvenientes.
+
+Por ejemplo:
+
+- Cómo reclamar si un pronóstico no se guardó correctamente.
+- Cómo solicitar la revisión de una puntuación.
+- Cuánto tiempo habrá para presentar reclamos deportivos o administrativos.
+- Cómo solicitar la baja de una cuenta.
+- Qué sucede con los pronósticos y puntos de una persona que deja de participar.
+
+También debemos definir cuándo comienza y termina cada edición de la Copa El Nene.
+
+**¿Por qué es importante?**
+
+Porque permite resolver conflictos de manera ordenada y evita decisiones improvisadas.
+
+Los plazos y procedimientos deberán ser razonables y respetar los derechos legales de los participantes.
+
+### 6. ¿Qué leyes debemos cumplir?
+
+Aunque la Copa El Nene se desarrolle a través de una aplicación, debemos verificar qué normas corresponden a la actividad.
+
+El abogado deberá analizar la legislación argentina y, cuando corresponda, las disposiciones de la Provincia de Buenos Aires y del municipio donde se organice la promoción.
+
+En particular, deberá revisar las normas relacionadas con:
+
+- Concursos, sorteos y promociones comerciales.
+- Participación de menores.
+- Protección de consumidores.
+- Publicidad y entrega de premios.
+- Protección de datos personales.
+- Posibles restricciones relacionadas con apuestas o juegos de azar.
+
+**¿Por qué es importante?**
+
+Porque un juego gratuito de pronósticos deportivos no necesariamente tiene las mismas exigencias legales que una promoción con premios o una actividad de apuestas.
+
+La evaluación dependerá de cómo funcione realmente la Copa El Nene.
+
+---
+
+## ¿Qué necesitamos de cada parte?
+
+**La empresa El Nene**
+
+Identificar al organizador, definir quiénes pueden participar, confirmar si la participación es gratuita, establecer los premios y decidir las condiciones generales de cada edición.
+
+**El equipo técnico de PlayPredict**
+
+Documentar el funcionamiento real del sistema: registro, pronósticos, puntuaciones, desempates, cierre de partidos, correcciones, clasificaciones y mecanismos de baja.
+
+**El abogado**
+
+Determinar los requisitos legales aplicables, revisar las restricciones de edad, establecer las condiciones de promociones y premios, y aprobar los textos definitivos.
+
+---
+
+## Objetivo final
+
+Queremos que la Copa El Nene tenga reglas simples, transparentes y fáciles de consultar desde la aplicación.
+
+Los participantes deben saber **quién organiza, quién puede jugar, cómo se gana, qué premios existen y cómo reclamar**.
+
+Al mismo tiempo, la empresa debe contar con condiciones claras y jurídicamente revisadas antes de lanzar oficialmente la competencia.
+
+**Este documento es una guía explicativa para facilitar el trabajo del abogado. No reemplaza su revisión ni constituye la versión definitiva de los Términos y Condiciones.**

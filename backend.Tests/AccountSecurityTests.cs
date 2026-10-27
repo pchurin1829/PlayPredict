@@ -22,6 +22,7 @@ using PlayPredict.Api.Dtos;
 using PlayPredict.Api.Endpoints;
 using PlayPredict.Api.Security;
 using PlayPredict.Api.Services;
+using PlayPredict.Api.LoginAppearance;
 using Xunit;
 
 namespace PlayPredict.Api.Tests;
@@ -60,6 +61,73 @@ public sealed class AccountSecurityTests
         using var tooLong = await api.Client.PostAsJsonAsync("/api/auth/register",
             new RegisterDto("Test", "Player", "largo@example.com", new string('x', 201), "largo@example.com"));
         Assert.Equal(HttpStatusCode.BadRequest, tooLong.StatusCode);
+    }
+
+    [Fact]
+    public async Task Registration_adult_confirmation_is_optional_by_default_and_enforced_by_server_when_enabled()
+    {
+        await using var api = await TestApi.Create();
+        using var defaultSettings = await api.Client.GetAsync("/api/public/registration-settings");
+        Assert.Equal(HttpStatusCode.OK, defaultSettings.StatusCode);
+        Assert.False((await defaultSettings.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("requireAdultConfirmation").GetBoolean());
+        var existingUserLegalState = await api.Read(async db => await db.Users
+            .Where(u => u.Email == InitialDatasetV1Seeder.PlayerEmail)
+            .Select(u => new { u.AcceptedTermsVersion, u.TermsAcceptedAtUtc, u.AcceptedPrivacyVersion, u.PrivacyAcceptedAtUtc })
+            .SingleAsync());
+        Assert.Null(existingUserLegalState.AcceptedTermsVersion);
+        Assert.Null(existingUserLegalState.TermsAcceptedAtUtc);
+        Assert.Null(existingUserLegalState.AcceptedPrivacyVersion);
+        Assert.Null(existingUserLegalState.PrivacyAcceptedAtUtc);
+        using var defaultRegistration = await api.Client.PostAsJsonAsync("/api/auth/register",
+            new RegisterDto("Adult", "Off", "adult-off@example.com", "StrongPass123!", "adult-off@example.com"));
+        Assert.Equal(HttpStatusCode.Created, defaultRegistration.StatusCode);
+        var noDeclarationTimestamp = await api.Read(async db => await db.Users.Where(u => u.Email == "adult-off@example.com").Select(u => u.AdultConfirmedAtUtc).SingleAsync());
+        Assert.Null(noDeclarationTimestamp);
+
+        await api.Read(async db =>
+        {
+            var company = await db.Companies.FirstAsync();
+            company.RequireAdultConfirmation = true;
+            return await db.SaveChangesAsync();
+        });
+        using var enabledSettings = await api.Client.GetAsync("/api/public/registration-settings");
+        Assert.True((await enabledSettings.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("requireAdultConfirmation").GetBoolean());
+
+        using var missingDeclaration = await api.Client.PostAsJsonAsync("/api/auth/register",
+            new RegisterDto("Adult", "Missing", "adult-missing@example.com", "StrongPass123!", "adult-missing@example.com"));
+        Assert.Equal(HttpStatusCode.BadRequest, missingDeclaration.StatusCode);
+        Assert.False(await api.Read(async db => await db.Users.AnyAsync(u => u.Email == "adult-missing@example.com")));
+
+        using var declared = await api.Client.PostAsJsonAsync("/api/auth/register",
+            new RegisterDto("Adult", "On", "adult-on@example.com", "StrongPass123!", "adult-on@example.com", true));
+        Assert.Equal(HttpStatusCode.Created, declared.StatusCode);
+        Assert.NotNull(await api.Read(async db => await db.Users.Where(u => u.Email == "adult-on@example.com").Select(u => u.AdultConfirmedAtUtc).SingleAsync()));
+    }
+
+    [Fact]
+    public async Task Public_registration_uses_configured_company_when_multiple_tenants_are_active()
+    {
+        await using var api = await TestApi.Create(publicCompanyId: 2);
+        await api.Read(async db =>
+        {
+            db.Companies.Add(new Company { Name = "Tenant Two", ShortName = "Two", CreatedAtUtc = DateTime.UtcNow, RequireAdultConfirmation = true });
+            return await db.SaveChangesAsync();
+        });
+
+        using var settings = await api.Client.GetAsync("/api/public/registration-settings");
+        Assert.True((await settings.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("requireAdultConfirmation").GetBoolean());
+
+        using var missingDeclaration = await api.Client.PostAsJsonAsync("/api/auth/register",
+            new RegisterDto("Tenant", "Two", "tenant-two@example.com", "StrongPass123!", "tenant-two@example.com"));
+        Assert.Equal(HttpStatusCode.BadRequest, missingDeclaration.StatusCode);
+
+        using var declared = await api.Client.PostAsJsonAsync("/api/auth/register",
+            new RegisterDto("Tenant", "Two", "tenant-two@example.com", "StrongPass123!", "tenant-two@example.com", true));
+        Assert.Equal(HttpStatusCode.Created, declared.StatusCode);
+        var stored = await api.Read(async db => await db.Users.Where(u => u.Email == "tenant-two@example.com")
+            .Select(u => new { u.CompanyId, u.AdultConfirmedAtUtc }).SingleAsync());
+        Assert.Equal(2, stored.CompanyId);
+        Assert.NotNull(stored.AdultConfirmedAtUtc);
     }
 
     [Fact]
@@ -290,7 +358,7 @@ public sealed class AccountSecurityTests
     {
         public HttpClient Client { get; } = app.GetTestClient();
 
-        public static async Task<TestApi> Create()
+        public static async Task<TestApi> Create(int publicCompanyId = 1)
         {
             var connection = new SqliteConnection("Data Source=:memory:");
             await connection.OpenAsync();
@@ -300,6 +368,7 @@ public sealed class AccountSecurityTests
             const string key = "p21-tests-only-signing-key-01234567890123456789";
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { ["Jwt:Key"] = key, ["Jwt:Issuer"] = "p21-tests", ["Jwt:Audience"] = "p21-tests" });
             builder.Services.AddSingleton<JwtTokenService>();
+            builder.Services.AddSingleton<ILoginAppearanceCompanyResolver>(new TestPublicCompanyResolver(publicCompanyId));
             builder.Services.AddAuthRateLimiting();
             builder.Services.Configure<ForwardedHeadersOptions>(o =>
                 o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
@@ -317,6 +386,7 @@ public sealed class AccountSecurityTests
             app.UseAuthorization();
             app.UseRateLimiter();
             app.MapAuthEndpoints();
+            app.MapCompanySettingsEndpoints();
             app.MapUserEndpoints();
             app.MapAdminUserEndpoints();
             await using (var scope = app.Services.CreateAsyncScope())
@@ -376,5 +446,10 @@ public sealed class AccountSecurityTests
         }
 
         public async ValueTask DisposeAsync() { Client.Dispose(); await app.DisposeAsync(); await connection.DisposeAsync(); }
+    }
+
+    private sealed class TestPublicCompanyResolver(int companyId) : ILoginAppearanceCompanyResolver
+    {
+        public Task<int> ResolvePublicCompanyIdAsync(CancellationToken cancellationToken = default) => Task.FromResult(companyId);
     }
 }

@@ -157,6 +157,8 @@ export default function LoginPage() {
               ¿No tenés cuenta? <Link to="/register">Registrate</Link>
             </p>
 
+            <p className="pp-login__legal-links"><Link to="/terminos-y-condiciones">Términos y Condiciones</Link>{' · '}<Link to="/politica-de-privacidad">Política de Privacidad</Link></p>
+
             <p className="pp-login__footer">PlayPredict © 2026 · Todos los derechos reservados</p>
           </form>
         </div>

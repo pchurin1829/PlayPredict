@@ -16,4 +16,4 @@ WORKDIR /srv
 COPY --from=build /app/dist /srv/www
 COPY Caddyfile /etc/caddy/Caddyfile
 
-EXPOSE 80 443
+EXPOSE 80

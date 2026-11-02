@@ -1,31 +1,33 @@
-# PlayPredict — Caddy productivo (P2.2).
-# Un solo punto de entrada TLS. Sirve el SPA y proxifica /api/* al backend.
-#
-# Variables (vía environment del contenedor):
-#   SITE_ADDRESS — dominio público (p. ej. jugar.el-nene.com.ar) para TLS
-#     automático, o ":80" para validación local sin TLS.
-#
-# En producción con dominio, Caddy solicita y renueva Let's Encrypt solo.
-# /swagger* queda bloqueado en borde (además del gate por entorno en backend).
-{$SITE_ADDRESS} {
-	encode gzip
+# HTTP interno: Nginx del host termina HTTPS.
+{
+	auto_https off
+	servers {
+		trusted_proxies static {$NGINX_TRUSTED_PROXY:127.0.0.1}
+		trusted_proxies_strict
+	}
+}
 
+:80 {
+	encode gzip
+	log
 	header {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
 	}
 
-	# API (incluye /api/uploads/*) → backend. Mismo origen: sin CORS.
+	# Incluye uploads; conserva el prefijo /api.
 	handle /api/* {
-		reverse_proxy backend:8080
+		reverse_proxy backend:8080 {
+			# Una IP validada: ASP.NET consume un salto (ForwardLimit=1).
+			header_up X-Forwarded-For {client_ip}
+			header_up -Forwarded
+		}
 	}
 
-	# Swagger nunca público (cinturón adicional al gate por entorno).
 	handle /swagger* {
 		respond "Not Found" 404
 	}
 
-	# SPA con fallback a index.html (BrowserRouter).
 	handle {
 		root * /srv/www
 		try_files {path} /index.html

@@ -1,2 +1,5 @@
 # P2.2 — los scripts de deploy/backup deben conservar LF en cualquier checkout.
 *.sh text eol=lf
+# VPS-PROD-03: shebang/systemd/nginx must keep LF (Windows checkout).
+scripts/https-prod/* text eol=lf
+docs/nginx/*.conf text eol=lf

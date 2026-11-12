@@ -1,0 +1,11 @@
+[Unit]
+Description=Twice-daily renewal check for prode.odusport.com
+
+[Timer]
+OnCalendar=*-*-* 00,12:20:00 UTC
+RandomizedDelaySec=30min
+Persistent=true
+Unit=playpredict-cert-renew.service
+
+[Install]
+WantedBy=timers.target

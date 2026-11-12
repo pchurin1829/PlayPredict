@@ -1,0 +1,21 @@
+[Unit]
+Description=Renew only prode.odusport.com in its dedicated Certbot store
+Wants=network-online.target
+After=network-online.target nginx.service
+ConditionPathExists=/etc/letsencrypt-playpredict/renewal/prode.odusport.com.conf
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+Environment=PATH=/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/bin/certbot renew --config /etc/playpredict-https/certbot.ini --config-dir /etc/letsencrypt-playpredict --work-dir /var/lib/letsencrypt-playpredict --logs-dir /var/log/letsencrypt-playpredict --cert-name prode.odusport.com --no-directory-hooks --quiet
+# Runs only when certbot exits 0 (no renewal due or renewal succeeded).
+# Compares served vs on-disk public certificate and reloads Nginx only if needed.
+# A certbot failure stops the unit here, so renewal errors are not masked.
+ExecStart=/usr/local/sbin/playpredict-tls-refresh
+TimeoutStartSec=15min
+PrivateTmp=true
+NoNewPrivileges=true
+

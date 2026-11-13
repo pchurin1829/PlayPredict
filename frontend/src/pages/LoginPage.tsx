@@ -9,7 +9,7 @@ import { LoginAdsColumn, LoginCampaign } from '../login/LoginVisuals'
 import './LoginPage.css'
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, sessionExpired } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -41,12 +41,13 @@ export default function LoginPage() {
       const from = fromLocation ? `${fromLocation.pathname}${fromLocation.search ?? ''}` : undefined
       const isAdmin = response.user.roles.includes('ADMIN')
       const home = isAdmin ? '/admin' : '/'
+      const destination = from ?? home
       if (isAdmin) {
-        navigate(home, { replace: true })
+        navigate(destination, { replace: true })
       } else {
         // El PLAYER siempre pasa primero por la Campaña de Bienvenida (si corresponde);
         // esa pantalla decide si hay algo para mostrar y preserva el destino original.
-        navigate('/welcome', { replace: true, state: { destination: from ?? home } })
+        navigate('/welcome', { replace: true, state: { destination } })
       }
     } catch (err) {
       if (err instanceof ApiError) {
@@ -91,6 +92,7 @@ export default function LoginPage() {
             <h1>Iniciar sesión</h1>
 
             {error && <StatusMessage kind="error" message={error} />}
+            {sessionExpired && !error && <StatusMessage kind="info" message="Tu sesión venció. Iniciá sesión nuevamente para continuar." />}
 
             <div className="pp-login__field">
               <label htmlFor="email">Email</label>

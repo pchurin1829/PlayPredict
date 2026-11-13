@@ -1,4 +1,19 @@
-import { getToken } from '../auth/token'
+import { clearToken, getToken } from '../auth/token'
+
+export const SESSION_EXPIRED_EVENT = 'playpredict:session-expired'
+
+function isAuthEndpoint(path: string): boolean {
+  return path === '/auth/login' || path === '/auth/register'
+}
+
+function notifySessionExpired(path: string, token: string | null): void {
+  if (!token || isAuthEndpoint(path) || getToken() !== token) return
+
+  clearToken()
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT))
+  }
+}
 
 export class ApiError extends Error {
   status: number
@@ -22,6 +37,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       ...options?.headers,
     },
   })
+
+  if (response.status === 401) {
+    notifySessionExpired(path, token)
+  }
 
   if (!response.ok) {
     let message = `Error ${response.status}`
@@ -67,6 +86,9 @@ export const api = {
   download: async (path: string): Promise<Blob> => {
     const token = getToken()
     const response = await fetch(`/api${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (response.status === 401) {
+      notifySessionExpired(path, token)
+    }
     if (!response.ok) throw new ApiError(`Error ${response.status}`, response.status)
     return response.blob()
   },

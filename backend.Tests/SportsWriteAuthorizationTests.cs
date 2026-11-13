@@ -28,6 +28,29 @@ public class SportsWriteAuthorizationTests
         Enumerable.Range(0, 6).SelectMany(operation => new string?[] { null, RoleNames.Player, RoleNames.Admin }
             .Select(role => new object?[] { operation, role }));
 
+    [Fact]
+    public async Task Expired_admin_token_is_unauthorized_and_preserves_data()
+    {
+        await using var api = await SportsApi.Create(expiresMinutes: -10);
+        var before = await api.Snapshot();
+        using var request = new HttpRequestMessage(HttpMethod.Put, "/api/rounds/1")
+        {
+            Content = JsonContent.Create(new
+            {
+                name = "Expired update",
+                order = 2,
+                startDateUtc = "2026-10-02T00:00:00Z",
+                endDateUtc = "2026-10-03T00:00:00Z"
+            })
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", api.Token(RoleNames.Admin));
+
+        using var response = await api.Client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(before, await api.Snapshot());
+    }
+
     [Theory]
     [MemberData(nameof(AccessCases))]
     public async Task Writes_require_admin_and_rejected_requests_preserve_data(int operation, string? role)
@@ -78,7 +101,7 @@ public class SportsWriteAuthorizationTests
         public HttpClient Client { get; } = app.GetTestClient();
         private const string Key = "sports-authorization-tests-only-signing-key-0123456789";
 
-        public static async Task<SportsApi> Create()
+        public static async Task<SportsApi> Create(int expiresMinutes = 5)
         {
             var connection = new SqliteConnection("Data Source=:memory:");
             await connection.OpenAsync();
@@ -86,7 +109,7 @@ public class SportsWriteAuthorizationTests
             builder.WebHost.UseTestServer();
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Jwt:Key"] = Key, ["Jwt:Issuer"] = "sports-tests", ["Jwt:Audience"] = "sports-tests", ["Jwt:ExpiresMinutes"] = "5"
+                ["Jwt:Key"] = Key, ["Jwt:Issuer"] = "sports-tests", ["Jwt:Audience"] = "sports-tests", ["Jwt:ExpiresMinutes"] = expiresMinutes.ToString()
             });
             builder.Services.AddSingleton<JwtTokenService>();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
@@ -95,7 +118,7 @@ public class SportsWriteAuthorizationTests
                     ValidateIssuer = true, ValidIssuer = "sports-tests",
                     ValidateAudience = true, ValidAudience = "sports-tests",
                     ValidateIssuerSigningKey = true, IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Key)),
-                    ValidateLifetime = true
+                    ValidateLifetime = true, ClockSkew = TimeSpan.FromMinutes(1)
                 });
             builder.Services.AddAuthorization();
             builder.Services.AddDbContext<PlayPredictDbContext>(options => options.UseSqlite(connection));

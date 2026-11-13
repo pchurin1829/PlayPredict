@@ -11,7 +11,7 @@ vi.mock('../api/client', () => ({
   api: { get: (...args: unknown[]) => apiGet(...args), post: vi.fn() },
   ApiError: class ApiError extends Error { fieldErrors = {} },
 }))
-vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ login: vi.fn() }) }))
+vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ login: vi.fn(), sessionExpired: false }) }))
 
 describe('legal pages and registration settings', () => {
   afterEach(() => { cleanup(); apiGet.mockReset() })

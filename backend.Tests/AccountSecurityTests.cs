@@ -64,6 +64,23 @@ public sealed class AccountSecurityTests
     }
 
     [Fact]
+    public async Task Registration_assigns_only_the_player_role()
+    {
+        await using var api = await TestApi.Create();
+        using var response = await api.Client.PostAsJsonAsync("/api/auth/register",
+            new RegisterDto("Role", "Player", "role@example.com", "StrongPass123!", "role@example.com"));
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var roles = await api.Read(async db => await db.Users
+            .Where(u => u.Email == "role@example.com")
+            .SelectMany(u => u.UserRoles)
+            .Select(ur => ur.Role.Name)
+            .ToListAsync());
+        Assert.Equal([RoleNames.Player], roles);
+        Assert.DoesNotContain(RoleNames.Admin, roles);
+    }
+
+    [Fact]
     public async Task Registration_adult_confirmation_is_optional_by_default_and_enforced_by_server_when_enabled()
     {
         await using var api = await TestApi.Create();

@@ -406,6 +406,63 @@ public sealed class ScoringResultEndpointTests
             .Where(e => e.LeagueId == leagueId && e.Prediction.MatchId == secondMatchId).Select(e => e.Points).SingleAsync()));
     }
 
+    [Fact]
+    public async Task Prediction_is_rejected_after_kickoff_and_update_cannot_bypass_the_cutoff()
+    {
+        await using var api = await ScoringApi.Create();
+        var nextRoundOrder = 2;
+        async Task<int> AddMatch(DateTime startsAtUtc, MatchStatus status)
+        {
+            var roundOrder = nextRoundOrder++;
+            return await api.Read(async db =>
+            {
+                var round = new Round { EditionId = 1, Name = $"Fecha {roundOrder}", Order = roundOrder };
+                var match = new Match
+                {
+                    Round = round, HomeTeamId = 1, AwayTeamId = 2, ParticipantHome = "Local", ParticipantAway = "Visita",
+                    StartsAtUtc = startsAtUtc, Status = status, CreatedAtUtc = DateTime.UtcNow,
+                };
+                db.Matches.Add(match);
+                await db.SaveChangesAsync();
+                return match.Id;
+            });
+        }
+
+        var startedMatchId = await AddMatch(DateTime.UtcNow.AddMinutes(-1), MatchStatus.Scheduled);
+        await api.AsPlayer();
+        using var started = await api.Client.PostAsJsonAsync("/api/predictions",
+            new { leagueId = 1, matchId = startedMatchId, predictedHomeScore = 1, predictedAwayScore = 0 });
+        Assert.Equal(HttpStatusCode.BadRequest, started.StatusCode);
+        var startedBody = await started.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(startedBody.GetProperty("errors").TryGetProperty("status", out _));
+        Assert.False(await api.Read(db => db.Predictions.AnyAsync(p => p.MatchId == startedMatchId)));
+
+        var inProgressMatchId = await AddMatch(DateTime.UtcNow.AddHours(1), MatchStatus.InProgress);
+        using var inProgress = await api.Client.PostAsJsonAsync("/api/predictions",
+            new { leagueId = 1, matchId = inProgressMatchId, predictedHomeScore = 1, predictedAwayScore = 0 });
+        Assert.Equal(HttpStatusCode.BadRequest, inProgress.StatusCode);
+
+        var futureMatchId = await AddMatch(DateTime.UtcNow.AddHours(2), MatchStatus.Scheduled);
+        await api.CreatePrediction(matchId: futureMatchId, leagueId: 1, home: 1, away: 0, preferredPlayerId: null);
+        var predictionId = await api.Read(db => db.Predictions.Where(p => p.MatchId == futureMatchId).Select(p => p.Id).SingleAsync());
+
+        await api.Read(async db =>
+        {
+            var match = await db.Matches.SingleAsync(m => m.Id == futureMatchId);
+            match.StartsAtUtc = DateTime.UtcNow.AddMinutes(-1);
+            await db.SaveChangesAsync();
+            return 0;
+        });
+
+        using var update = await api.Client.PutAsJsonAsync($"/api/predictions/{predictionId}",
+            new { leagueId = 1, predictedHomeScore = 3, predictedAwayScore = 2, updatePreferredPlayer = false });
+        Assert.Equal(HttpStatusCode.BadRequest, update.StatusCode);
+        Assert.Equal((1, 0), await api.Read(db => db.Predictions
+            .Where(p => p.Id == predictionId)
+            .Select(p => new ValueTuple<int, int>(p.PredictedHomeScore, p.PredictedAwayScore))
+            .SingleAsync()));
+    }
+
     private sealed class ScoringApi(WebApplication app, SqliteConnection connection) : IAsyncDisposable
     {
         public HttpClient Client { get; } = app.GetTestClient();

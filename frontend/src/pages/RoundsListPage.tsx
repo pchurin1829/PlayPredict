@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { Edition, Round } from '../api/types'
 import StatusMessage from '../components/StatusMessage'
@@ -16,6 +16,7 @@ interface GenerateRoundsResult {
 export default function RoundsListPage() {
   const { editionId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const adminFlow = searchParams.get('adminFlow')
   const flowQuery = adminFlow ? `?adminFlow=${adminFlow}` : ''
@@ -26,6 +27,14 @@ export default function RoundsListPage() {
   const [generateCount, setGenerateCount] = useState(1)
   const [generating, setGenerating] = useState(false)
   const [generationMessage, setGenerationMessage] = useState<string | null>(null)
+  const [flashMessage, setFlashMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    const state = location.state as { flash?: unknown } | null
+    if (typeof state?.flash !== 'string' || state.flash.length === 0) return
+    setFlashMessage(state.flash)
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [location.pathname, location.search, location.state, navigate])
 
   useEffect(() => {
     let cancelled = false
@@ -92,6 +101,7 @@ export default function RoundsListPage() {
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}
+      {flashMessage && <StatusMessage kind="success" message={flashMessage} />}
       {!rounds && !error && <StatusMessage kind="loading" message="Cargando fechas..." />}
 
       {rounds && adminFlow !== 'results' && (

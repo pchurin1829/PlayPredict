@@ -18,6 +18,7 @@ import CurrentRoundCard from '../components/player/CurrentRoundCard'
 import PrizeHighlight from '../components/player/PrizeHighlight'
 import SponsorBanner from '../components/player/SponsorBanner'
 import ComingSoonBadge from '../components/player/ComingSoonBadge'
+import { formatArgentinaDate, formatArgentinaTime } from '../utils/argentinaDateTime'
 import './PlayerDashboardPage.css'
 
 export default function PlayerDashboardPage() {
@@ -191,7 +192,7 @@ export default function PlayerDashboardPage() {
                       {group.matches.length} partido{group.matches.length === 1 ? '' : 's'} pendiente{group.matches.length === 1 ? '' : 's'}
                     </span>
                     <span className="pdash__context-time">
-                      Primer cierre: {new Date(group.matches[0].startsAtUtc).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      Primer cierre: {formatArgentinaDate(group.matches[0].startsAtUtc)} {formatArgentinaTime(group.matches[0].startsAtUtc)}
                     </span>
                   </div>
                   <Link className="pp-btn pp-btn--primary pdash__context-cta" to={`/leagues/${group.league.id}?tab=pronosticos&round=${group.roundId}`}>

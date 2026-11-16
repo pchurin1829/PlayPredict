@@ -11,6 +11,7 @@ import PredictionPointsBreakdown from '../components/player/PredictionPointsBrea
 import TieBreakPolicyModal from '../components/player/TieBreakPolicyModal'
 import AwardStandingsTable from '../components/player/AwardStandingsTable'
 import { useAuth } from '../auth/AuthContext'
+import { formatArgentinaDate, formatArgentinaTime } from '../utils/argentinaDateTime'
 import './PlayerPages.css'
 
 type Tab = 'resumen' | 'pronosticos' | 'resultados' | 'ranking' | 'premios' | 'participantes'
@@ -630,7 +631,6 @@ export default function LeagueDetailPage() {
 
                           const row = rows[m.id]
                           if (!row) return null
-                          const startsAt = new Date(m.startsAtUtc)
                           const action = predictionAction(row)
                           const saved = row.hasPrediction && !isDirty(row)
                           return (
@@ -651,8 +651,8 @@ export default function LeagueDetailPage() {
                                 </div>
                               </div>
                               <div className="pp-match-card__info">
-                                <span>{startsAt.toLocaleDateString([], { day: 'numeric', month: 'short' })}</span>
-                                <span>{startsAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span>{formatArgentinaDate(m.startsAtUtc)}</span>
+                                <span>{formatArgentinaTime(m.startsAtUtc)}</span>
                               </div>
                               <div className="pp-match-card__prediction">
                                 <span className="pp-match-card__prediction-label">

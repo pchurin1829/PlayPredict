@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { Round } from '../api/types'
@@ -19,7 +19,7 @@ export default function RoundFormPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
-  const [saved, setSaved] = useState(false)
+  const savingRef = useRef(false)
 
   useEffect(() => {
     if (!isEdit) {
@@ -48,14 +48,15 @@ export default function RoundFormPage() {
       })
       .catch((err) => setError(err.message ?? 'No se pudo cargar la fecha.'))
       .finally(() => setLoading(false))
-  }, [roundId, isEdit])
+  }, [roundId, isEdit, editionIdParam])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (savingRef.current) return
+    savingRef.current = true
     setSaving(true)
     setError(null)
     setFieldErrors({})
-    setSaved(false)
 
     const payload = {
       name,
@@ -65,12 +66,16 @@ export default function RoundFormPage() {
     try {
       if (isEdit) {
         await api.put(`/rounds/${roundId}`, payload)
-        setSaved(true)
+        navigate(`/editions/${editionId ?? editionIdParam}/rounds`, {
+          replace: true,
+          state: { flash: 'Fecha actualizada correctamente.' },
+        })
       } else {
-        const created = await api.post<Round>(`/editions/${editionIdParam}/rounds`, payload)
-        setSaved(true)
-        navigate(`/rounds/${created.id}/edit`, { replace: true })
-        return
+        await api.post<Round>(`/editions/${editionIdParam}/rounds`, payload)
+        navigate(`/editions/${editionIdParam}/rounds`, {
+          replace: true,
+          state: { flash: 'Fecha creada correctamente.' },
+        })
       }
     } catch (err) {
       if (err instanceof ApiError) {
@@ -80,12 +85,14 @@ export default function RoundFormPage() {
         setError('Ocurrió un error inesperado al guardar.')
       }
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
   }
 
   function handleOrderChange(nextOrder: number) {
     setOrder(nextOrder)
+    setError(null)
     const occupied = existingRounds.find((round) => round.order === nextOrder)
     setFieldErrors((current) => {
       const next = { ...current }
@@ -109,13 +116,12 @@ export default function RoundFormPage() {
       </div>
 
       {error && <StatusMessage kind="error" message={error} />}
-      {saved && <StatusMessage kind="success" message="Fecha guardada correctamente." />}
       {!isEdit && <p className="admin-help">Próxima fecha sugerida: <strong>Fecha {suggestedOrder} (orden {suggestedOrder})</strong></p>}
 
       <form className="form-card" onSubmit={handleSubmit}>
         <div className="form-field">
           <label htmlFor="name">Nombre</label>
-          <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
+          <input id="name" type="text" value={name} onChange={(e) => { setName(e.target.value); setError(null) }} />
           {fieldErrors.name && <span className="form-field-error">{fieldErrors.name[0]}</span>}
         </div>
 

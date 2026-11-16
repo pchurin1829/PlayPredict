@@ -6,6 +6,7 @@ import StatusMessage from '../components/StatusMessage'
 import ConfirmModal from '../components/ConfirmModal'
 import TeamBadge from '../components/player/TeamBadge'
 import PredictionPointsBreakdown from '../components/player/PredictionPointsBreakdown'
+import { formatArgentinaDate, formatArgentinaTime } from '../utils/argentinaDateTime'
 import './PlayerPages.css'
 
 interface RowState {
@@ -32,14 +33,13 @@ function isReady(row: RowState): boolean {
   return row.homeInput !== '' && row.awayInput !== ''
 }
 
-function predictionAction(row: RowState): { label: string; kind: 'none' | 'save' | 'delete'; disabled: boolean } {
+function predictionAction(row: RowState): { label: string; kind: 'none' | 'save'; disabled: boolean } {
   const empty = row.homeInput === '' && row.awayInput === ''
   if (row.saving) return { label: 'Guardando...', kind: 'none', disabled: true }
   if (!row.hasPrediction && empty) return { label: '¡Pronosticá!', kind: 'none', disabled: true }
   if (!row.hasPrediction && !isReady(row)) return { label: 'Completá ambos resultados', kind: 'none', disabled: true }
   if (!row.hasPrediction) return { label: 'Guardar pronóstico', kind: 'save', disabled: false }
   if (!isDirty(row)) return { label: 'Pronosticado', kind: 'none', disabled: true }
-  if (empty) return { label: 'Eliminar pronóstico', kind: 'delete', disabled: false }
   if (!isReady(row)) return { label: 'Completá ambos resultados', kind: 'none', disabled: true }
   return { label: 'Guardar cambios', kind: 'save', disabled: false }
 }
@@ -282,12 +282,9 @@ export default function PredictionsMatchesPage() {
             {pendingMatches.map((m) => {
               const row = rows[m.id]
               if (!row) return null
-              const startsAt = new Date(m.startsAtUtc)
               const saved = isSaved(row)
               const action = predictionAction(row)
-              const btnClass = saved
-                ? 'pp-btn pp-btn--saved'
-                : action.kind === 'delete' ? 'pp-btn pp-btn--danger' : 'pp-btn pp-btn--primary'
+              const btnClass = saved ? 'pp-btn pp-btn--saved' : 'pp-btn pp-btn--primary'
 
               return (
                 <div
@@ -308,8 +305,8 @@ export default function PredictionsMatchesPage() {
                   </div>
 
                   <div className="pp-match-card__info">
-                    <span>{startsAt.toLocaleDateString([], { day: 'numeric', month: 'short' })}</span>
-                    <span>{startsAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span>{formatArgentinaDate(m.startsAtUtc)}</span>
+                    <span>{formatArgentinaTime(m.startsAtUtc)}</span>
                   </div>
 
                   <div className="pp-match-card__prediction">
@@ -350,11 +347,21 @@ export default function PredictionsMatchesPage() {
                       className={btnClass}
                       style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }}
                       disabled={action.disabled}
-                      onClick={() => action.kind === 'delete' ? setDeleteTarget(m) : savePrediction(m)}
+                      onClick={() => savePrediction(m)}
                       data-prediction-action
                     >
                       {action.label}
                     </button>
+                    {row.hasPrediction && (
+                      <button
+                        type="button"
+                        className="pp-btn pp-btn--danger pp-btn--sm"
+                        disabled={row.saving}
+                        onClick={() => setDeleteTarget(m)}
+                      >
+                        Eliminar pronóstico
+                      </button>
+                    )}
                     {row.hasPrediction && !saved && (
                       <span className="pp-match-card__hint">
                         Podés modificar tu pronóstico hasta el cierre del partido.

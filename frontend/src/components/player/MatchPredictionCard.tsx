@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { api, ApiError } from '../../api/client'
 import type { MatchWithPrediction } from '../../api/types'
+import ConfirmModal from '../ConfirmModal'
 import TeamBadge from './TeamBadge'
 import QuickPreferredPlayerPicker from './QuickPreferredPlayerPicker'
 import './MatchPredictionCard.css'
@@ -31,8 +32,11 @@ export default function MatchPredictionCard({
     ? String(match.myPrediction.preferredPlayerId)
     : '')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
+  const deleteInFlightRef = useRef(false)
 
   const startsAt = new Date(match.startsAtUtc)
   const editable = match.canPredict
@@ -81,6 +85,32 @@ export default function MatchPredictionCard({
       setError(err instanceof ApiError ? err.message : 'Error al guardar')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function deletePrediction() {
+    const prediction = match.myPrediction
+    if (!prediction || deleteInFlightRef.current) return
+
+    deleteInFlightRef.current = true
+    setDeleting(true)
+    setConfirmingDelete(false)
+    setError(null)
+    setSavedMessage(null)
+
+    try {
+      await api.del<void>(`/predictions/${prediction.id}?leagueId=${leagueId}`)
+      setHomeInput('')
+      setAwayInput('')
+      setPreferredPlayerId('')
+      onPredictionUpdated({ ...match, myPrediction: null })
+      setSavedMessage('Pronóstico eliminado correctamente.')
+      setTimeout(() => setSavedMessage(null), 3000)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Ocurrió un error inesperado al eliminar.')
+    } finally {
+      deleteInFlightRef.current = false
+      setDeleting(false)
     }
   }
 
@@ -155,14 +185,26 @@ export default function MatchPredictionCard({
             {match.preferredPlayerEnabled && <div className="mpcard__preferred"><span>Jugador Preferido <small>(opcional)</small></span>
               <QuickPreferredPlayerPicker homeTeam={match.participantHome} awayTeam={match.participantAway} homePlayers={match.homePlayers} awayPlayers={match.awayPlayers} quickPlayers={quickPreferredPlayers} value={preferredPlayerId} selectedPlayerName={match.myPrediction?.preferredPlayerName} onChange={value => { setPreferredPlayerId(value); setSavedMessage(null) }} />
             </div>}
-            <button
-              type="button"
-              className="mpcard__save-btn"
-              disabled={saving}
-              onClick={savePrediction}
-            >
-              {saving ? 'Guardando...' : match.myPrediction ? 'Actualizar' : '¡Pronosticá!'}
-            </button>
+            <div className="mpcard__actions">
+              <button
+                type="button"
+                className="mpcard__save-btn"
+                disabled={saving || deleting}
+                onClick={savePrediction}
+              >
+                {saving ? 'Guardando...' : match.myPrediction ? 'Actualizar' : '¡Pronosticá!'}
+              </button>
+              {match.myPrediction && (
+                <button
+                  type="button"
+                  className="mpcard__delete-btn"
+                  disabled={saving || deleting}
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  {deleting ? 'Eliminando...' : 'Eliminar pronóstico'}
+                </button>
+              )}
+            </div>
           </>
         ) : isFinished && match.myPrediction ? (
           <div className="mpcard__result">
@@ -195,6 +237,16 @@ export default function MatchPredictionCard({
           Resultado: {match.homeGoals} - {match.awayGoals}
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmingDelete}
+        title="Eliminar pronóstico"
+        message="¿Querés eliminar este pronóstico? Se borrará para este partido en todas las Ligas que lo utilizan."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        onConfirm={deletePrediction}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </div>
   )
 }

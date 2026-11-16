@@ -69,13 +69,12 @@ function hasNoScores(row: RowState): boolean {
   return row.homeInput === '' && row.awayInput === ''
 }
 
-function predictionAction(row: RowState): { label: string; kind: 'none' | 'save' | 'delete'; disabled: boolean } {
+function predictionAction(row: RowState): { label: string; kind: 'none' | 'save'; disabled: boolean } {
   if (row.saving) return { label: 'Guardando...', kind: 'none', disabled: true }
   if (!row.hasPrediction && hasNoScores(row)) return { label: '¡Pronosticá!', kind: 'none', disabled: true }
   if (!row.hasPrediction && !hasBothScores(row)) return { label: 'Completá ambos resultados', kind: 'none', disabled: true }
   if (!row.hasPrediction) return { label: 'Guardar pronóstico', kind: 'save', disabled: false }
   if (!isDirty(row)) return { label: 'Pronosticado', kind: 'none', disabled: true }
-  if (hasNoScores(row)) return { label: 'Eliminar pronóstico', kind: 'delete', disabled: false }
   if (!hasBothScores(row)) return { label: 'Completá ambos resultados', kind: 'none', disabled: true }
   return { label: 'Guardar cambios', kind: 'save', disabled: false }
 }
@@ -144,6 +143,7 @@ export default function LeagueDetailPage() {
   const [awardStandings, setAwardStandings] = useState<AwardStanding[] | null>(null)
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const rankingUserRowRef = useRef<HTMLTableRowElement>(null)
+  const deleteInFlightRef = useRef(false)
 
   useEffect(() => {
     if (actionFocusMatchId == null) return
@@ -311,7 +311,8 @@ export default function LeagueDetailPage() {
 
   async function deletePrediction() {
     const match = deleteTarget
-    if (!match?.myPrediction) return
+    if (!match?.myPrediction || deleteInFlightRef.current) return
+    deleteInFlightRef.current = true
     setDeleteTarget(null)
     updateRow(match.id, { saving: true, error: null, savedMessage: null })
     try {
@@ -324,6 +325,8 @@ export default function LeagueDetailPage() {
       setTimeout(() => updateRow(match.id, { savedMessage: null }), 4000)
     } catch (err) {
       updateRow(match.id, { saving: false, error: err instanceof ApiError ? err.message : 'Ocurrió un error inesperado al eliminar.' })
+    } finally {
+      deleteInFlightRef.current = false
     }
   }
 
@@ -675,15 +678,25 @@ export default function LeagueDetailPage() {
                                 )}
                                 <button
                                   type="button"
-                                  className={saved ? 'pp-btn pp-btn--saved' : action.kind === 'delete' ? 'pp-btn pp-btn--danger' : 'pp-btn pp-btn--primary'}
+                                  className={saved ? 'pp-btn pp-btn--saved' : 'pp-btn pp-btn--primary'}
                                   style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }}
                                   disabled={action.disabled}
-                                  onClick={() => action.kind === 'delete' ? setDeleteTarget(m) : savePrediction(m)}
+                                  onClick={() => savePrediction(m)}
                                   data-prediction-action
                                 >
                                   {action.label}
                                 </button>
-                                {row.hasPrediction && !saved && action.kind !== 'delete' && <span className="pp-match-card__hint">Podés modificar tu pronóstico hasta el cierre del partido.</span>}
+                                {row.hasPrediction && (
+                                  <button
+                                    type="button"
+                                    className="pp-btn pp-btn--danger pp-btn--sm"
+                                    disabled={row.saving}
+                                    onClick={() => setDeleteTarget(m)}
+                                  >
+                                    Eliminar pronóstico
+                                  </button>
+                                )}
+                                {row.hasPrediction && !saved && <span className="pp-match-card__hint">Podés modificar tu pronóstico hasta el cierre del partido.</span>}
                               </div>
                               {row.error && <div className="pp-match-card__error">{row.error}</div>}
                               {row.savedMessage && <div className="pp-match-card__saved">{row.savedMessage}</div>}

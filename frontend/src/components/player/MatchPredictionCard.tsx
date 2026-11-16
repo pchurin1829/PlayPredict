@@ -3,6 +3,7 @@ import { api, ApiError } from '../../api/client'
 import type { MatchWithPrediction } from '../../api/types'
 import ConfirmModal from '../ConfirmModal'
 import TeamBadge from './TeamBadge'
+import TrashIcon from './TrashIcon'
 import QuickPreferredPlayerPicker from './QuickPreferredPlayerPicker'
 import './MatchPredictionCard.css'
 
@@ -198,10 +199,12 @@ export default function MatchPredictionCard({
                 <button
                   type="button"
                   className="mpcard__delete-btn"
+                  title="Eliminar pronóstico"
+                  aria-label="Eliminar pronóstico"
                   disabled={saving || deleting}
                   onClick={() => setConfirmingDelete(true)}
                 >
-                  {deleting ? 'Eliminando...' : 'Eliminar pronóstico'}
+                  <TrashIcon size={16} />
                 </button>
               )}
             </div>

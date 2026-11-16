@@ -1255,6 +1255,40 @@
   gap: 0.5rem;
 }
 
+.pp-match-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+
+.pp-match-card__delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--pp-danger) 35%, transparent);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--pp-danger);
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pp-match-card__delete-btn:hover:not(:disabled) {
+  background: var(--pp-danger-soft);
+  border-color: var(--pp-danger);
+}
+
+.pp-match-card__delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .pp-match-card__prediction-label {
   font-size: 0.6rem;
   font-weight: 700;
@@ -1834,6 +1868,12 @@
   .pp-match-card__info,
   .pp-match-card__result-row {
     flex-wrap: wrap;
+  }
+
+  .pp-match-card__delete-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding-inline: 0.75rem;
   }
 
   .pp-prediction-round__toggle {

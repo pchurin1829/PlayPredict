@@ -136,7 +136,10 @@ describe('LeagueDetailPage delete action', () => {
     renderPage()
 
     expect(await screen.findByRole('button', { name: 'Pronosticado' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Eliminar pronóstico' })).toBeTruthy()
+    const deleteButton = screen.getByRole('button', { name: 'Eliminar pronóstico' })
+    expect(deleteButton.getAttribute('title')).toBe('Eliminar pronóstico')
+    expect(deleteButton.querySelector('svg')).toBeTruthy()
+    expect(screen.queryByText('Eliminar pronóstico')).toBeNull()
   })
 
   it('removes the saved prediction after confirmation', async () => {

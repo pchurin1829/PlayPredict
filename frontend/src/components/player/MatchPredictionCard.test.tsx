@@ -98,9 +98,12 @@ describe('MatchPredictionCard delete action', () => {
     render(<CardHarness onUpdated={onUpdated} />)
 
     expect(screen.getByRole('button', { name: 'Actualizar' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Eliminar pronóstico' })).toBeTruthy()
+    const deleteButton = screen.getByRole('button', { name: 'Eliminar pronóstico' })
+    expect(deleteButton.getAttribute('title')).toBe('Eliminar pronóstico')
+    expect(deleteButton.querySelector('svg')).toBeTruthy()
+    expect(screen.queryByText('Eliminar pronóstico')).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Eliminar pronóstico' }))
+    fireEvent.click(deleteButton)
     expect(screen.getByRole('heading', { name: 'Eliminar pronóstico' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }))
 

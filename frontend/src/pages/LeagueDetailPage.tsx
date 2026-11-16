@@ -6,6 +6,7 @@ import StatusMessage from '../components/StatusMessage'
 import ComingSoonBadge from '../components/player/ComingSoonBadge'
 import ConfirmModal from '../components/ConfirmModal'
 import TeamBadge from '../components/player/TeamBadge'
+import TrashIcon from '../components/player/TrashIcon'
 import QuickPreferredPlayerPicker from '../components/player/QuickPreferredPlayerPicker'
 import PredictionPointsBreakdown from '../components/player/PredictionPointsBreakdown'
 import TieBreakPolicyModal from '../components/player/TieBreakPolicyModal'
@@ -676,26 +677,30 @@ export default function LeagueDetailPage() {
                                     )}
                                   </label>
                                 )}
-                                <button
-                                  type="button"
-                                  className={saved ? 'pp-btn pp-btn--saved' : 'pp-btn pp-btn--primary'}
-                                  style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }}
-                                  disabled={action.disabled}
-                                  onClick={() => savePrediction(m)}
-                                  data-prediction-action
-                                >
-                                  {action.label}
-                                </button>
-                                {row.hasPrediction && (
+                                <div className="pp-match-card__actions">
                                   <button
                                     type="button"
-                                    className="pp-btn pp-btn--danger pp-btn--sm"
-                                    disabled={row.saving}
-                                    onClick={() => setDeleteTarget(m)}
+                                    className={saved ? 'pp-btn pp-btn--saved' : 'pp-btn pp-btn--primary'}
+                                    style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }}
+                                    disabled={action.disabled}
+                                    onClick={() => savePrediction(m)}
+                                    data-prediction-action
                                   >
-                                    Eliminar pronóstico
+                                    {action.label}
                                   </button>
-                                )}
+                                  {row.hasPrediction && (
+                                    <button
+                                      type="button"
+                                      className="pp-match-card__delete-btn"
+                                      title="Eliminar pronóstico"
+                                      aria-label="Eliminar pronóstico"
+                                      disabled={row.saving}
+                                      onClick={() => setDeleteTarget(m)}
+                                    >
+                                      <TrashIcon size={16} />
+                                    </button>
+                                  )}
+                                </div>
                                 {row.hasPrediction && !saved && <span className="pp-match-card__hint">Podés modificar tu pronóstico hasta el cierre del partido.</span>}
                               </div>
                               {row.error && <div className="pp-match-card__error">{row.error}</div>}
